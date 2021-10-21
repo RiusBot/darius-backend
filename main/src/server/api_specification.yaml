@@ -1,0 +1,21 @@
+openapi: 3.0.1
+info:
+  title: darius-backend
+  version: 1.0.0
+servers:
+- url: /api/v1
+tags:
+- name: pet
+- name: Health Check
+paths:
+  /health_liveness:
+    get:
+      tags:
+      - Health Check
+      summary: Return a 200 status if health check is successful
+      operationId: main.src.controllers.v1.general.get_health_liveness
+      responses:
+        200:
+          description: Liveness Health check is successful
+        404:
+          description: Not Found
