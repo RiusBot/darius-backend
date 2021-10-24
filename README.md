@@ -17,3 +17,15 @@ python -m main.src.server.service
 
 # Swagger UI
 http://localhost:8080/api/v1/ui
+
+# TODO
+##### dada
+* fee
+
+##### irene
+* frontend dashboard
+
+
+##### ray
+* login
+* mysql
