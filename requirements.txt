@@ -1,6 +1,6 @@
 aiodns==3.0.0
 aiohttp==3.7.4.post0
-aiohttp-jinja2==1.5
+aiohttp-jinja2==1.4
 async-timeout==3.0.1
 attrs==21.2.0
 cchardet==2.1.7
@@ -18,7 +18,7 @@ importlib-metadata==4.2.0
 inflection==0.5.1
 isodate==0.6.0
 itsdangerous==1.1.0
-Jinja2==3.0.2
+Jinja2==2.10.1
 jsonschema==3.2.0
 MarkupSafe==2.0.1
 mccabe==0.6.1
@@ -39,3 +39,7 @@ urllib3==1.26.7
 Werkzeug==1.0.1
 yarl==1.7.0
 zipp==3.6.0
+ccxt==1.59.18
+firebase_admin=4.4.0
+SQLAlchemy==1.4.22
+PyMySQL==1.0.2

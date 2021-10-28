@@ -1,5 +1,5 @@
 PROJECT_ID=darius
-CREDENTIAL=super.json
+CREDENTIAL=darius-330411-84bf777b0918.json
 
 
 ###########################
@@ -116,6 +116,15 @@ version:
 
 start-local:
 	GOOGLE_APPLICATION_CREDENTIALS=$(CREDENTIAL) project_id=$(PROJECT_ID) python -m main.src.server.service
+
+mysql-proxy:
+	wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+	chmod +x cloud_sql_proxy
+	export DB_HOST='127.0.0.1:3306'
+	export DB_USER='root'
+	export DB_PASS='dadarius'
+	export DB_NAME='<DB_NAME>'
+	./cloud_sql_proxy -instances=darius-330411:asia-east1:mysql-1=tcp:3306 -credential_file=$(CREDENTIAL) &
 
 
 ###########################
