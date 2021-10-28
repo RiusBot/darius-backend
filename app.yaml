@@ -1,0 +1,21 @@
+# configuration document: https://cloud.google.com/appengine/docs/flexible/python/reference/app-yaml
+runtime: custom
+env: flex
+service: darius-backend
+
+resources:
+  cpu: 1
+  memory_gb: 4
+  disk_size_gb: 20
+  
+liveness_check:
+  check_interval_sec: 120
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+# entrypoint: gunicorn -b :$PORT main:app
+# manual_scaling:
+#   instances: 1
+# env_variables:
+#   GOOGLE_API_KEY: ""
