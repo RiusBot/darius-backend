@@ -5,7 +5,7 @@ info:
 servers:
 - url: /api/v1
 tags:
-- name: pet
+- name: fee
 - name: Health Check
 paths:
   /health_liveness:
@@ -17,5 +17,34 @@ paths:
       responses:
         200:
           description: Liveness Health check is successful
+        404:
+          description: Not Found
+
+  /user_confirm_payment:
+    post:
+      tags:
+      - fee
+      summary: give payment confirmation results and new due date
+      operationId: main.src.controllers.v1.fee.user_confirm_payment
+      responses:
+        200:
+          description: give payment confirmation results
+        401:
+          description: unauthenticate
+        404:
+          description: Not Found
+
+
+  /get_user_due_date:
+    post:
+      tags:
+      - fee
+      summary: get user due date
+      operationId: main.src.controllers.v1.fee.get_user_due_date
+      responses:
+        200:
+          description: get user due date
+        401:
+          description: unauthenticate
         404:
           description: Not Found
