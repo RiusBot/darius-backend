@@ -11,6 +11,8 @@ conda activate ${MY_SERVICE}
 # install packages
 pip install -r requirements.txt
 
+# add config file to main/config/config.yaml (ask a teammate for help)
+
 # start the microservice (in project root folder)
 python -m main.src.server.service
 ```
