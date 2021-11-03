@@ -2,23 +2,12 @@ import logging
 
 from aiohttp import web
 from connexion import AioHttpApp
+from tortoise.contrib.aiohttp import register_tortoise
 
-from main.src.config import app_config
+from main.src.config import app_config, db_config
 from main.src.controllers.v1.general import get_health_liveness, get_health_readiness
-from main.src.db import start_db_connection, close_db_connection
 
 logger = logging.getLogger(__name__)
-
-
-async def init_tortoise(app):
-    # Starup phase
-    logger.info('Starting DB connection')
-    await start_db_connection(app_config)
-    yield
-
-    # Cleanup phase
-    logger.info('Shutting down DB connection')
-    await close_db_connection()
 
 
 def main():
@@ -30,7 +19,7 @@ def main():
         web.get('/health_liveness', get_health_liveness),
         web.get('/health_readiness', get_health_readiness),
     ])
-    app.app.cleanup_ctx.append(init_tortoise)
+    register_tortoise(app.app, db_config, generate_schemas=True)
     app.run()
 
 

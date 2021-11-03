@@ -74,3 +74,27 @@ def get_app_config() -> dict:
 
 
 app_config = get_app_config()
+
+
+def generate_db_config(app_config, models_path="main.src.models") -> dict:
+    connect_config = {
+        "default": {
+            "engine": "tortoise.backends.mysql",
+            "credentials": {
+                "host": app_config['DARIUSDB_HOST'],
+                "user": app_config['DARIUSDB_USER'],
+                "password": app_config['DARIUSDB_PASSWD'],
+                "database": app_config['DARIUSDB_DB'],
+                "port": app_config['DARIUSDB_PORT']
+            }
+        },
+    }
+    model_config = {"darius": {"models": [models_path], "default_connection": "default"}}
+
+    return {
+        "connections": connect_config,
+        "apps": model_config
+    }
+
+
+db_config = generate_db_config(app_config)
