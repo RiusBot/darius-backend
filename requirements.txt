@@ -37,9 +37,11 @@ swagger-ui-bundle==0.0.9
 typing-extensions==3.10.0.2
 urllib3==1.26.7
 Werkzeug==1.0.1
-yarl==1.7.0
+yarl==1.6.3
 zipp==3.6.0
 ccxt==1.59.18
-firebase_admin=4.4.0
+firebase_admin==4.4.0
 SQLAlchemy==1.4.22
 PyMySQL==1.0.2
+tortoise-orm==0.17.2
+aiomysql==0.0.21
