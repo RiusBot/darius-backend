@@ -6,8 +6,8 @@ from main.src.models import BaseModel
 
 class BotOrder(BaseModel):
 
-    user_id = fields.ForeignKeyField("models.User", related_name="user")
-    config_id = fields.ForeignKeyField("models.BotConfig", related_name="config")
+    user_id = fields.ForeignKeyField("darius.User", related_name="bot_user")
+    config_id = fields.ForeignKeyField("darius.BotConfig", related_name="bot_config")
     signal = fields.CharField(32, null=False)
 
     class Meta:

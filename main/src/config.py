@@ -1,6 +1,7 @@
 from typing import Type
 import os
 import yaml
+import logging
 
 
 ENVIRON_KEYS = [
@@ -47,7 +48,7 @@ def overwrite_config_from_yaml(env_config: Type[BaseConfig]) -> Type[BaseConfig]
     try:
         new_config = _read_yaml(new_config, yaml_file_path)
     except (IOError, OSError):
-        pass
+        logging.exception("")
     return new_config
 
 
@@ -69,7 +70,8 @@ def get_app_config() -> dict:
     dict_conf = {}
 
     for key in dir(obj_conf):
-        dict_conf[key] = getattr(obj_conf, key)
+        if not key.startswith("_"):
+            dict_conf[key] = getattr(obj_conf, key)
     return dict_conf
 
 

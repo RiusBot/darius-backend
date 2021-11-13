@@ -164,7 +164,6 @@ def init_unix_connection_engine(db_config):
     return pool
 
 
-
 db = init_connection_engine()
 # Create tables (if they don't already exist)
 with db.connect() as conn:

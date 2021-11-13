@@ -6,9 +6,9 @@ from main.src.models.base import BaseModel
 
 class Trade(BaseModel):
 
-    user_id = fields.ForeignKeyField("models.User", related_name="user")
-    bot_id = fields.ForeignKeyField("models.BotOrder", related_name="Bot")
-    message_id = fields.ForeignKeyField("models.Message", related_name="message")
+    user_id = fields.ForeignKeyField("darius.User", related_name="trade_user")
+    bot_id = fields.ForeignKeyField("darius.BotOrder", related_name="trade_bot")
+    message_id = fields.ForeignKeyField("darius.Message", related_name="trade_message")
     status = fields.CharField(16, null=False)
     error = fields.CharField(1024, null=True)
 

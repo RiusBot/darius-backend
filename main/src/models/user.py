@@ -6,7 +6,7 @@ from main.src.models.base import BaseModel
 
 class User(BaseModel):
 
-    username = fields.CharField(100, null=True)
+    user_name = fields.CharField(100, null=True)
 
     class Meta:
         table = "user"

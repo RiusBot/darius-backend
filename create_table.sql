@@ -75,7 +75,6 @@ CREATE TABLE IF NOT EXISTS `bot_order` (
     KEY (`channel`),
     KEY (`created_at`),
     KEY (`config_id`),
-    FOREIGN KEY(config_id) REFERENCES bot_config(id),
     FOREIGN KEY(user_id) REFERENCES user(id)
 ) CHARACTER SET utf8;
 

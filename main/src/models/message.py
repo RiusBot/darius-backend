@@ -1,7 +1,13 @@
+from enum import Enum
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models.base import BaseModel
+
+
+class Action(str, Enum):
+    BUY = "BUY"
+    SELL = "SELL"
 
 
 class Message(BaseModel):
@@ -9,7 +15,7 @@ class Message(BaseModel):
     channel = fields.CharField(32, null=False)
     content = fields.CharField(1024, null=False)
     symbol = fields.CharField(16, null=True)
-    action = fields.CharEnumField(16, null=True)
+    action = fields.CharEnumField(Action, "action", 16, null=True)
 
     class Meta:
         table = "message"
@@ -24,4 +30,4 @@ class Message(BaseModel):
 
 
 MessageSchemaModel = pydantic_model_creator(Message, name="Message")
-MessageSchemaModel = pydantic_model_creator(Message, name="MessageIn", exclude_readonly=True)
+MessageInSchemaModel = pydantic_model_creator(Message, name="MessageIn", exclude_readonly=True)

@@ -10,6 +10,17 @@ from main.src.controllers.v1.general import get_health_liveness, get_health_read
 logger = logging.getLogger(__name__)
 
 
+async def debug(request):
+    import tortoise
+    print(tortoise.Tortoise.apps)
+    print(tortoise.Tortoise.apps.get('darius'))
+    print(tortoise.Tortoise.apps.keys())
+
+    from main.src.models import User
+    users = await User.all()
+    return web.json_response({"users": [str(user) for user in users]})
+
+
 def main():
     app = AioHttpApp(__name__, port=app_config['PORT'], specification_dir='openapi/')
 
@@ -18,8 +29,15 @@ def main():
     app.app.router.add_routes([
         web.get('/health_liveness', get_health_liveness),
         web.get('/health_readiness', get_health_readiness),
+        web.get("/", debug)
     ])
-    register_tortoise(app.app, db_config, generate_schemas=True)
+    register_tortoise(
+        app.app,
+        db_config,
+        # generate_schemas=True,
+        # modules={"models": ["models"]},
+    )
+
     app.run()
 
 
