@@ -21,13 +21,4 @@ python -m main.src.server.service
 http://localhost:8080/api/v1/ui
 
 # TODO
-##### dada
-* fee
-
-##### irene
-* frontend dashboard
-
-
-##### ray
-* login
-* mysql
+https://www.notion.so/1aaab7908e7d47dd9a49b516b12df4e9?v=de8f485cabdc455292b3e089ed014754
