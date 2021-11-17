@@ -17,8 +17,17 @@ paths:
       responses:
         200:
           description: Liveness Health check is successful
-        404:
-          description: Not Found
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+        default:
+          $ref: '#/components/responses/Unexpected'
 
   /user_confirm_payment:
     post:
@@ -26,13 +35,42 @@ paths:
       - fee
       summary: give payment confirmation results and new due date
       operationId: main.src.controllers.v1.fee.user_confirm_payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                # add
+              required:
+              - user_id
       responses:
-        200:
+        '200':
           description: give payment confirmation results
-        401:
-          description: unauthenticate
-        404:
-          description: Not Found
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  status:
+                    type: string
+                required:
+                - status
+        '400':
+          description: The specified user ID is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/Unexpected'
 
 
   /get_user_due_date:
@@ -41,10 +79,86 @@ paths:
       - fee
       summary: get user due date
       operationId: main.src.controllers.v1.fee.get_user_due_date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                # add
+              required:
+              - user_id
+            example:
+              user_id: 0
       responses:
-        200:
-          description: get user due date
-        401:
-          description: unauthenticate
-        404:
-          description: Not Found
+        '200':
+          description: Get user due date.
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  timestamp:
+                    type: number
+                required:
+                - timestamp
+        '400':
+          description: The specified user ID is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+components:
+
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unexpected:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required:
+      - message
+      - code
+      properties:
+        message:
+          type: string
+        code:
+          type: integer
+          minimum: 100
+          maximum: 600
+    ExtendedError:
+      allOf:
+      - $ref: '#/components/schemas/Error'
+      - type: object
+        required:
+        - rootCause
+        properties:
+          rootCause:
+            type: string          

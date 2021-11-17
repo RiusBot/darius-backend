@@ -24,13 +24,21 @@ async def debug(request):
 def main():
     app = AioHttpApp(__name__, port=app_config['PORT'], specification_dir='openapi/')
 
-    app.add_api('specification.yaml', pass_context_arg_name='request')
+    app.add_api(
+        'specification.yaml',
+        pass_context_arg_name='request',
+        strict_validation=True,
+        validate_responses=True,
+        auth_all_paths=False,
+    )
 
-    app.app.router.add_routes([
-        web.get('/health_liveness', get_health_liveness),
-        web.get('/health_readiness', get_health_readiness),
-        web.get("/", debug)
-    ])
+    # Use openapi spec, no need add routes
+    # app.app.router.add_routes([
+    #     web.get('/health_liveness', get_health_liveness),
+    #     web.get('/health_readiness', get_health_readiness),
+    #     web.get("/", debug)
+    # ])
+
     register_tortoise(
         app.app,
         db_config,
