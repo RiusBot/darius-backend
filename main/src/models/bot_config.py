@@ -2,7 +2,7 @@ from enum import Enum
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
-from main.src.models.base import BaseModel
+from main.src.models import BaseModel
 
 
 class TargetType(str, Enum):
@@ -18,10 +18,10 @@ class OrderType(str, Enum):
 
 class BotConfig(BaseModel):
 
-    bot_id = fields.ForeignKeyField("darius.BotOrder", related_name="config_bot")
+    bot = fields.OneToOneField("darius.BotOrder", related_name="config_bot")
     test = fields.BooleanField(null=False, default=False)
-    duplicate_position = fields.BooleanField(null=True, default=False)
-    target = fields.CharEnumField(TargetType, null=False)
+    duplicate = fields.BooleanField(null=True, default=False)
+    target = fields.CharEnumField(TargetType, null=False, max_length=16)
     quantity = fields.FloatField(null=False)
     leverage = fields.FloatField(null=False, default=1.0)
     margin = fields.FloatField(null=True)

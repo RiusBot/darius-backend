@@ -6,7 +6,10 @@ from main.src.models.base import BaseModel
 
 class User(BaseModel):
 
-    user_name = fields.CharField(100, null=True)
+    user_name = fields.CharField(50, null=False)
+    email = fields.CharField(50, null=False)
+    password = fields.CharField(50, null=False)
+    role = fields.ForeignKeyField("darius.Role", related_name="user_role")
 
     class Meta:
         table = "user"
@@ -14,10 +17,10 @@ class User(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "modified_at", "id"]
+        exclude = ["created_at", "id"]
 
     def __str__(self):
-        return f"User [{self.id}]"
+        return f"User [{self.id}] {self.user_name} {self.email}"
 
 
 UserSchemaModel = pydantic_model_creator(User, name="User")
