@@ -1,31 +1,33 @@
 -- permission
 CREATE TABLE `permission` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `role_id` int(11) NOT NULL,
-    `service` varchar(50) NOT NULL,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `role_id` int(11),
+    `service` varchar(50) UNIQUE NOT NULL,
     KEY (`role_id`)
 ) CHARACTER SET utf8;
 
 -- role
 CREATE TABLE `role` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `permission_id` int(11) NOT NULL,
     KEY (`permission_id`),
-    CONSTRAINT FOREIGN KEY(`permission_id`) REFERENCES `permission`(id)
+    CONSTRAINT FOREIGN KEY(`permission_id`) REFERENCES `permission`(id) ON DELETE CASCADE
 ) CHARACTER SET utf8;
 
 
-ALTER TABLE `permission` ADD  CONSTRAINT FOREIGN KEY(`role_id`) REFERENCES `role`(id);
+ALTER TABLE `permission` ADD  CONSTRAINT FOREIGN KEY(`role_id`) REFERENCES `role`(id) ON DELETE CASCADE;
 
 
 -- user
 CREATE TABLE `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   `user_name` varchar(50) NOT NULL,
   `email` varchar(50) NOT NULL,
   `password` varchar(50) NOT NULL,
   `role_id` int(11) NOT NULL,
-  `created_at` datetime NOT NULL,
    KEY (`user_name`),
    KEY (`email`),
    KEY (`created_at`),
@@ -35,6 +37,7 @@ CREATE TABLE `user` (
 -- plan
 CREATE TABLE `plan` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `price` decimal(19, 4) NOT NULL,
   `day` decimal(10, 0) NOT NULL -- should modify the term, available_day
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -42,6 +45,7 @@ CREATE TABLE `plan` (
 -- subscription
 CREATE TABLE `subscription` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `user_id` int(11) NOT NULL,
   `expire_date` datetime NOT NULL,
   `plan_id` int(11) NOT NULL,
@@ -55,8 +59,9 @@ CREATE TABLE `subscription` (
 -- api
 CREATE TABLE `api` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `user_id` int(11) NOT NULL,
-        `api_key` varchar(50) NOT NULL,
+    `api_key` varchar(50) NOT NULL,
     `api_secret` varchar(50) NOT NULL,
     KEY (`user_id`),
     CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id)
@@ -82,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `bot_order` (
 -- bot config
 CREATE TABLE IF NOT EXISTS `bot_config` (
     `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    `bot_id` INT NOT NULL,
+    `bot_id` INT,
     `created_at` DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6),
     `test` BOOLEAN  DEFAULT FALSE,
     `target` VARCHAR(16) NOT NULL,
@@ -133,3 +138,14 @@ CREATE TABLE IF NOT EXISTS `trade_history` (
     FOREIGN KEY(bot_id) REFERENCES bot_order(id),
     FOREIGN KEY(message_id) REFERENCES message(id)
 ) CHARACTER SET utf8;
+
+ALTER TABLE role add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE permission add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE subscription add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE plan add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE api add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE user add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE bot_order add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE bot_config add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE trade_history add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE message add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
