@@ -6,12 +6,13 @@ servers:
 - url: /api/v1
 tags:
 - name: fee
-- name: Health Check
+- name: bot
+- name: general
 paths:
   /health_liveness:
     get:
       tags:
-      - Health Check
+      - general
       summary: Return a 200 status if health check is successful
       operationId: main.src.controllers.v1.general.get_health_liveness
       responses:
@@ -28,7 +29,83 @@ paths:
                 - message
         default:
           $ref: '#/components/responses/Unexpected'
+          
+  /health_readiness:
+    get:
+      tags:
+      - general
+      summary: Return a 200 status if health check is successful
+      operationId: main.src.controllers.v1.general.get_health_readiness
+      responses:
+        200:
+          description: Readiness Health check is successful
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                - message
+        default:
+          $ref: '#/components/responses/Unexpected'
 
+  /create_test_data:
+    get:
+      tags:
+      - general
+      summary: create test data in database
+      operationId: main.src.controllers.v1.general.create_test_data
+      responses:
+        '200':
+          description: received
+        default:
+          $ref: '#/components/responses/Unexpected'
+  
+  /bot_signal:
+    post:
+      tags:
+      - bot
+      summary: recieve signal info and make orders
+      operationId: main.src.controllers.v1.bot.bot_signal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel:
+                  type: string
+                content:
+                  type: string
+                  nullable: true
+                message_timestamp:
+                  type: number
+                recieve_timestamp:
+                  type: number
+                symbol:
+                  type: string
+                  nullable: true
+                  maxLength: 16
+                # action:
+                #   type: sting
+                #   nullable: true
+                #   enum: [BUY, SELL, null]
+              required:
+              - channel
+              - content
+              - message_timestamp
+              - recieve_timestamp
+              - symbol
+              # - action
+      responses:
+        '200':
+          description: received
+        default:
+          $ref: '#/components/responses/Unexpected'
+  
   /user_confirm_payment:
     post:
       tags:
@@ -43,7 +120,7 @@ paths:
               type: object
               properties:
                 user_id:
-                  type: string
+                  type: integer
                 # add
               required:
               - user_id
