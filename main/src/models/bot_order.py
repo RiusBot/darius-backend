@@ -5,7 +5,7 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from main.src.models import BaseModel
 
 
-class StatusType(str, Enum):
+class BotStatusType(str, Enum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUSPEND = "SUSPEND"
@@ -17,7 +17,7 @@ class BotOrder(BaseModel):
     user = fields.ForeignKeyField("darius.User", related_name="bot_user")
     config = fields.OneToOneField("darius.BotConfig", related_name="bot_config")
     channel = fields.CharField(32, null=False)
-    status = fields.CharEnumField(StatusType, max_length=16, null=False, default=StatusType.PENDING)
+    status = fields.CharEnumField(BotStatusType, max_length=16, null=False, default=BotStatusType.PENDING)
 
     class Meta:
         table = "bot_order"

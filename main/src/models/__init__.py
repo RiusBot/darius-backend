@@ -6,6 +6,7 @@ from .message import Message
 from .trade import Trade
 from .role import Role
 from .permission import Permission
+from .api import Api
 
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "Trade",
     "Role",
     "Permission",
+    "Api",
 ]

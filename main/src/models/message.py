@@ -5,7 +5,7 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from main.src.models.base import BaseModel
 
 
-class Action(str, Enum):
+class ActionType(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
 
@@ -15,7 +15,9 @@ class Message(BaseModel):
     channel = fields.CharField(32, null=False)
     content = fields.CharField(1024, null=False)
     symbol = fields.CharField(16, null=True)
-    action = fields.CharEnumField(Action, "action", 16, null=True)
+    action = fields.CharEnumField(ActionType, "action", 16, null=True)
+    message_timestamp = fields.DatetimeField(null=False)
+    recieve_timestamp = fields.DatetimeField(null=False)
 
     class Meta:
         table = "message"

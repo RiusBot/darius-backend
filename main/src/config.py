@@ -100,3 +100,23 @@ def generate_db_config(app_config, models_path="main.src.models") -> dict:
 
 
 db_config = generate_db_config(app_config)
+
+
+def get_logging_level():
+    return os.getenv("LOGGING_LEVEL", "INFO")
+
+
+def configure_logging():
+    logging_level = get_logging_level().upper()
+    numeric_level = getattr(logging, logging_level, None)
+
+    if not isinstance(numeric_level, int):
+        raise Exception(f"Invalid log level: {numeric_level}")
+
+    logging.basicConfig(
+        level=numeric_level,
+        datefmt="%Y-%m-%d %H:%M:%S",
+        format="[%(asctime)s] [%(levelname)s] [%(module)s]: #%(funcName)s @%(lineno)d: %(message)s",
+        # format="[%(asctime)s] [%(process)s] [%(levelname)s] [%(module)s]: #%(funcName)s @%(lineno)d: %(message)s",
+    )
+    logging.info(f"Logging level: {logging_level}")

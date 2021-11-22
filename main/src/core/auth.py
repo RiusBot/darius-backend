@@ -6,11 +6,11 @@ from firebase_admin import auth, initialize_app
 
 
 initialize_app()
-usingProjectId = os.getenv('project_id', 'darius-dev')
+usingProjectId = os.getenv('project_id', 'darius')
 
 
 def authenticate(json_payload):
-    if usingProjectId != "darius-dev":
+    if usingProjectId != "darius":
         if check_client_access(json_payload) is False:
             if check_server_access(json_payload) is False:
                 return False

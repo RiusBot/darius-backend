@@ -1,5 +1,6 @@
 import logging
 from aiohttp.web import json_response
+from tortoise.transactions import in_transaction, atomic
 
 
 async def get_health_liveness(request):
@@ -12,43 +13,60 @@ async def get_health_readiness(request):
 
 
 async def create_test_data(request):
-    try:
-        from main.src.models import BotConfig, BotOrder, User, Role, Permission
+    
+    @atomic()
+    async def create():
+        from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api
 
-        permission = await Permission.get_or_create(
-            service="test"
+#         permission = await Permission.create(
+#             service="test"
+#         )
+
+#         role = await Role.create(
+#             permission=permission
+#         )
+
+#         permission.role = role
+#         await permission.save()
+    
+#         user = await User.create(
+#             user_name="test2",
+#             email="test2",
+#             password="test2",
+#             role=role
+#         )
+
+        
+
+        user = await User.first()
+        
+        api = await Api.create(
+            user=user,
+            api_key="test3",
+            api_secret="test3",
+            exchange="binance",
         )
 
-        role = await Role.get_or_create(
-            permission=permission
-        )
-
-        permission.role = role
-        await permission.save()
-
-        user = await User.get_or_create(
-            user_name="test",
-            email="test",
-            password="test",
-            role=role
-        )
-
-        bot_config = await BotConfig.get_or_create(
+        bot_config = await BotConfig.create(
             test=False,
             duplicate=False,
-            target="SPOT",
+            target="FUTURE",
             quantity=10,
+            api=api,
         )
 
-        bot_order = await BotOrder.get_or_create(
-            channel="test",
+        bot_order = await BotOrder.create(
+            channel="test2",
             user=user,
             config=bot_config
         )
 
         bot_config.bot = bot_order
         await bot_config.save()
-
+    
+    
+    try:
+        await create()
         return json_response(
             status=200,
             data={},

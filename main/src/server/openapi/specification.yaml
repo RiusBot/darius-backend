@@ -89,17 +89,15 @@ paths:
                   type: string
                   nullable: true
                   maxLength: 16
-                # action:
-                #   type: sting
-                #   nullable: true
-                #   enum: [BUY, SELL, null]
+                action:
+                  $ref: '#/components/schemas/Action'
               required:
               - channel
               - content
               - message_timestamp
               - recieve_timestamp
               - symbol
-              # - action
+              - action
       responses:
         '200':
           description: received
@@ -222,7 +220,6 @@ components:
       type: object
       required:
       - message
-      - code
       properties:
         message:
           type: string
@@ -238,4 +235,11 @@ components:
         - rootCause
         properties:
           rootCause:
-            type: string          
+            type: string
+    Action:
+      type: string
+      nullable: true
+      enum:
+        - BUY
+        - SELL
+        - null

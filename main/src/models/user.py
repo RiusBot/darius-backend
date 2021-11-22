@@ -1,13 +1,13 @@
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
-from main.src.models.base import BaseModel
+from main.src.models import BaseModel
 
 
 class User(BaseModel):
 
     user_name = fields.CharField(50, null=False)
-    email = fields.CharField(50, null=False)
+    email = fields.CharField(50, null=False, unique=True)
     password = fields.CharField(50, null=False)
     role = fields.ForeignKeyField("darius.Role", related_name="user_role")
 

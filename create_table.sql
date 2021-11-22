@@ -25,7 +25,7 @@ CREATE TABLE `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   `user_name` varchar(50) NOT NULL,
-  `email` varchar(50) NOT NULL,
+  `email` varchar(50) UNIQUE NOT NULL,
   `password` varchar(50) NOT NULL,
   `role_id` int(11) NOT NULL,
    KEY (`user_name`),
@@ -61,9 +61,11 @@ CREATE TABLE `api` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `user_id` int(11) NOT NULL,
-    `api_key` varchar(50) NOT NULL,
-    `api_secret` varchar(50) NOT NULL,
+    `api_key` varchar(50) UNIQUE NOT NULL,
+    `api_secret` varchar(50) UNIQUE NOT NULL,
+    `exchange` varchar(16) NOT NULL,
     KEY (`user_id`),
+    KEY (`exchange`),
     CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id)
 ) CHARACTER SET utf8;
 
@@ -88,6 +90,7 @@ CREATE TABLE IF NOT EXISTS `bot_order` (
 CREATE TABLE IF NOT EXISTS `bot_config` (
     `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `bot_id` INT,
+    `api_id` INT NOT NULL,
     `created_at` DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6),
     `test` BOOLEAN  DEFAULT FALSE,
     `target` VARCHAR(16) NOT NULL,
@@ -98,14 +101,15 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
     `order_type` VARCHAR(16) NOT NULL   DEFAULT 'MARKET',
     `stop_loss_type` VARCHAR(16) NOT NULL   DEFAULT 'MARKET',
     `take_profit_type` VARCHAR(16) NOT NULL DEFAULT 'MARKET',
-    `margin` DOUBLE,
+    `margin` DOUBLE NOT NULL DEFAULT 0.0,
     `duplicate` BOOLEAN DEFAULT FALSE,
     `minimum_volume` DOUBLE,
     KEY (`bot_id`),
-    FOREIGN KEY(bot_id) REFERENCES bot_order(id)
+    FOREIGN KEY(bot_id) REFERENCES bot_order(id),
+    FOREIGN KEY(api_id) REFERENCES api(id)
 ) CHARACTER SET utf8;
 
-ALTER TABLE `bot_order` ADD CONSTRAINT FOREIGN KEY(`config_id`) REFERENCES `bot_config`(id);
+ALTER TABLE `bot_order` ADD CONSTRAINT FOREIGN KEY(`config_id`) REFERENCES `bot_config`(id) ON DELETE CASCADE;
 
 -- message
 CREATE TABLE IF NOT EXISTS `message` (
@@ -115,7 +119,7 @@ CREATE TABLE IF NOT EXISTS `message` (
     `recieve_timestamp` DATETIME(6),
     `channel` VARCHAR(32) NOT NULL,
     `content` VARCHAR(1024) NOT NULL,
-    `symbol` VARCHAR(16) NOT NULL,
+    `symbol` VARCHAR(16),
     `action` VARCHAR(16),
     KEY (`created_at`),
     KEY (`channel`),
@@ -143,8 +147,8 @@ ALTER TABLE role add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE permission add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE subscription add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE plan add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
-ALTER TABLE api add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE user add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE api add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE bot_order add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE bot_config add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE trade_history add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;

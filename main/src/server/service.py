@@ -3,13 +3,15 @@ import logging
 from connexion import AioHttpApp
 from tortoise.contrib.aiohttp import register_tortoise
 
-from main.src.config import app_config, db_config
+from main.src.config import app_config, db_config, configure_logging
 
 
 logger = logging.getLogger(__name__)
 
 
 def main():
+    configure_logging()
+
     app = AioHttpApp(__name__, port=app_config['PORT'], specification_dir='openapi/')
 
     app.add_api(

@@ -19,12 +19,13 @@ class OrderType(str, Enum):
 class BotConfig(BaseModel):
 
     bot = fields.OneToOneField("darius.BotOrder", related_name="config_bot")
+    api = fields.OneToOneField("darius.Api", related_name="config_api")
     test = fields.BooleanField(null=False, default=False)
     duplicate = fields.BooleanField(null=True, default=False)
     target = fields.CharEnumField(TargetType, null=False, max_length=16)
     quantity = fields.FloatField(null=False)
     leverage = fields.FloatField(null=False, default=1.0)
-    margin = fields.FloatField(null=True)
+    margin = fields.FloatField(null=False, default=0.0)
     minimum_volume = fields.FloatField(null=True)
     stop_loss = fields.FloatField(null=True)
     take_profit = fields.FloatField(null=True)
