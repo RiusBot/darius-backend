@@ -8,6 +8,7 @@ tags:
 - name: fee
 - name: bot
 - name: general
+- name: api
 paths:
   /health_liveness:
     get:
@@ -63,12 +64,12 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
   
-  /bot_signal:
+  /execute_bot_signal:
     post:
       tags:
       - bot
       summary: recieve signal info and make orders
-      operationId: main.src.controllers.v1.bot.bot_signal
+      operationId: main.src.controllers.v1.bot.execute_bot_signal
       requestBody:
         required: true
         content:
@@ -103,7 +104,264 @@ paths:
           description: received
         default:
           $ref: '#/components/responses/Unexpected'
+
+  /get_user_bots:
+    post:
+      tags:
+      - bot
+      summary: get user running bot
+      operationId: main.src.controllers.v1.bot.get_user_bots
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+              required:
+              - user_id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    bot_id:
+                      type: integer
+                    config:
+                      type: object
+                    channel:
+                      $ref: '#/components/schemas/Channel'
+                    status:
+                      $ref: '#/components/schemas/BotStatus'
+                  required:
+                  - channel
+                  - status
+                  - config
+                  - bot_id
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_bot_trades:
+    post:
+      tags:
+      - bot
+      summary: get bot trade history
+      operationId: main.src.controllers.v1.bot.get_bot_trades
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bot_id:
+                  type: integer
+              required:
+              - bot_id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    message:
+                      $ref: '#/components/schemas/Message'
+                    status:
+                      $ref: '#/components/schemas/TradeStatus'
+                    error:
+                      type: string
+                      nullable: True
+                  required:
+                  - message
+                  - status
+                  - error
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /create_user_bot:
+    post:
+      tags:
+      - bot
+      summary: create new bot
+      operationId: main.src.controllers.v1.bot.create_user_bot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                api_id:
+                  type: integer
+                config:
+                  $ref: '#/components/schemas/BotConfig'
+                channel:
+                  type: string
+              required:
+              - user_id
+              - api_id
+              - config
+              - channel
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bot_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /delete_user_bot:
+    post:
+      tags:
+      - bot
+      summary: delete bot
+      operationId: main.src.controllers.v1.bot.delete_user_bot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                bot_id:
+                  type: integer
+              required:
+              - user_id
+              - bot_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
   
+  /create_user_api:
+    post:
+      tags:
+      - api
+      summary: create new api
+      operationId: main.src.controllers.v1.api.create_user_api
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                api_key:
+                  type: string
+                api_secret:
+                  type: string
+                exchange:
+                  $ref: '#/components/schemas/Exchange'
+              required:
+              - user_id
+              - api_key
+              - api_secret
+              - exchange
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /get_user_api:
+    post:
+      tags:
+      - api
+      summary: get user api
+      operationId: main.src.controllers.v1.api.get_user_api
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+              required:
+              - user_id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    api_id:
+                      type: integer
+                    api_key:
+                      type: string
+                    api_secret:
+                      type: string
+                    exchange:
+                      $ref: '#/components/schemas/Exchange'
+                  required:
+                  - api_id
+                  - api_key
+                  - api_secret
+                  - exchange
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_user_api:
+    post:
+      tags:
+      - api
+      summary: delete api
+      operationId: main.src.controllers.v1.api.delete_user_api
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                api_id:
+                  type: integer
+              required:
+              - user_id
+              - api_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /user_confirm_payment:
     post:
       tags:
@@ -146,8 +404,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         default:
           $ref: '#/components/responses/Unexpected'
-
-
+  
   /get_user_due_date:
     post:
       tags:
@@ -173,7 +430,7 @@ paths:
           description: Get user due date.
           content:
             application/json:
-              schema: 
+              schema:
                 type: object
                 properties:
                   timestamp:
@@ -227,6 +484,7 @@ components:
           type: integer
           minimum: 100
           maximum: 600
+
     ExtendedError:
       allOf:
       - $ref: '#/components/schemas/Error'
@@ -236,10 +494,141 @@ components:
         properties:
           rootCause:
             type: string
+
     Action:
       type: string
       nullable: true
+      maxLength: 16
       enum:
         - BUY
         - SELL
         - null
+
+    BotStatus:
+      type: string
+      enum:
+        - PENDING
+        - RUNNING
+        - SUSPEND
+        - STOPPED
+
+    Channel:
+      type: string
+      enum:
+        - ROSE
+        - PERPETUAL
+        - WHALE
+        - DAILYSCALP
+        - test
+        - test2
+    
+    Exchange:
+      type: string
+      enum:
+        - binance
+        - ftx
+
+    TradeStatus:
+      type: string
+      enum:
+        - open
+        - closed
+        - canceled
+        - expired
+        - error
+
+    API:
+      type: object
+      properties:
+        api_key:
+          type: string
+          maxLength: 50
+        api_secret:
+          type: string
+          maxLength: 50
+        exchange:
+          type: string
+          maxLength: 16
+          enum: [binance, ftx]
+      required:
+      - api_key
+      - api_secret
+      - exchange
+
+    BotConfig:
+      type: object
+      properties:
+        api:
+          $ref: '#/components/schemas/API'
+        test:
+          type: boolean
+        duplicate:
+          type: boolean
+        target:
+          type: string
+          enum: [SPOT, MARGIN, FUTURE]
+        quantity:
+          type: number
+          minimum: 100
+        leverage:
+          type: number
+          minimum: 0
+          maximum: 1
+        margin:
+          type: number
+          minimum: 0
+          maximum: 1000
+        minimum_volume:
+          type: number
+          minimum: 0
+        stop_loss:
+          type: number
+          minimum: 0
+          maximum: 1
+        take_profit:
+          type: number
+          minimum: 0
+          maximum: 1
+        order_type:
+          type: string
+          enum: [MARKET, LIMIT]
+        stop_loss_type:
+          type: string
+          enum: [MARKET, LIMIT]
+        take_profit_type:
+          type: string
+          enum: [MARKET, LIMIT]
+
+    Message:
+      type: object
+      properties:
+        channel:
+          type: string
+          maxLength: 32
+        content:
+          type: string
+          nullable: true
+          maxLength: 1024
+        message_timestamp:
+          oneOf:
+            - type: string
+            - type: number
+          minimum: 0
+        recieve_timestamp:
+          oneOf:
+            - type: string
+            - type: number
+          minimum: 100
+        symbol:
+          type: string
+          nullable: true
+          maxLength: 16
+        action:
+          $ref: '#/components/schemas/Action'
+      required:
+      - channel
+      - content
+      - message_timestamp
+      - recieve_timestamp
+      - symbol
+      - action

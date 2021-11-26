@@ -40,6 +40,11 @@ CREATE TABLE `plan` (
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `price` decimal(19, 4) NOT NULL,
   `day` decimal(10, 0) NOT NULL -- should modify the term, available_day
+  `name` varchar(50) UNIQUE NOT NULL,
+  `channel` varchar(50) NOT NULL,
+  KEY (`name`),
+  KEY (`created_at`),
+  KEY (`channel`),
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- subscription
@@ -47,7 +52,7 @@ CREATE TABLE `subscription` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `user_id` int(11) NOT NULL,
-  `expire_date` datetime NOT NULL,
+  `expire_date` datetime,
   `plan_id` int(11) NOT NULL,
   KEY (`user_id`),
   KEY (`expire_date`),

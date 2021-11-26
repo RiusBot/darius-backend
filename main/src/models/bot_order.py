@@ -12,11 +12,20 @@ class BotStatusType(str, Enum):
     STOPPED = "STOPPED"
 
 
+class ChannelType(str, Enum):
+    ROSE = "ROSE"
+    PERPETUAL = "PERPETUAL"
+    WHALE = "WHALE"
+    DAILYSCALP = "DAILYSCALP"
+    TEST2 = "test2"
+    TEST = "test"
+
+
 class BotOrder(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="bot_user")
     config = fields.OneToOneField("darius.BotConfig", related_name="bot_config")
-    channel = fields.CharField(32, null=False)
+    channel = fields.CharEnumField(ChannelType, max_length=32, null=False)
     status = fields.CharEnumField(BotStatusType, max_length=16, null=False, default=BotStatusType.PENDING)
 
     class Meta:
@@ -25,7 +34,7 @@ class BotOrder(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id"]
+        exclude = ["created_at", "is_del"]
 
     def __str__(self):
         return f"Bot [{self.id}] {self.channel} {self.status}"

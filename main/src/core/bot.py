@@ -1,25 +1,24 @@
 import enum
-import time
+import json
 import asyncio
 import logging
 import requests
 import traceback
 import concurrent.futures
 from concurrent.futures import Future
-from datetime import datetime, timedelta
-from tortoise.transactions import in_transaction, atomic
+from datetime import datetime
+from tortoise.transactions import atomic
 from tortoise.queryset import QuerySet
-from tortoise.query_utils import Prefetch
 from tortoise.models import Model
+from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List, Dict, Tuple
-from main.src.models import BotOrder, BotConfig, Trade, Message, Api
-from main.src.config import app_config
+from main.src.models import BotOrder, BotConfig, Trade, Message, User
 
 
-def execute_bot_signal(loop, **kwargs):
-    task = loop.create_task(_execute_bot_signal(**kwargs))
+def _execute_bot_signal(loop, **kwargs):
+    loop.create_task(execute(**kwargs))
     logging.info("execute bot signal complete.")
-    
+
 
 @atomic()
 async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
@@ -67,7 +66,7 @@ def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
     return config_list
 
 
-def _execute(config: dict):
+def send_to_execute(config: dict):
     try:
         url = "http://localhost:8000/"  # app_config["BOT_EXECUTOR_ENDPOINT"]
         with requests.Session() as s:
@@ -76,7 +75,7 @@ def _execute(config: dict):
                 response = response.json()
                 if "error_message" in response:
                     response = response["error_message"]
-            except:
+            except Exception:
                 response = response.text
             return response
     except Exception as e:
@@ -90,7 +89,7 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=No
         task_dict = dict()
         for config in config_list:
             config.update(data_dict)
-            task = executor.submit(_execute, config)
+            task = executor.submit(send_to_execute, config)
             task_dict[task] = config["bot_id"]
             asyncio.sleep(0.2)
         logging.info(f"All {len(config_list)} submitted.")
@@ -146,24 +145,21 @@ async def write_message(channel: str, content: str, symbol: str, action: str, me
         )
         return message
     except Exception as e:
-        logging.error("write message error")
+        logging.error(f"write message error. {e}")
         logging.exception("")
 
 
-async def _execute_bot_signal(channel: str, content: str, symbol: str, action: str, message_timestamp: float, recieve_timestamp: float, price: float = 0):
+async def execute(channel: str, content: str, symbol: str, action: str, message_timestamp: float, recieve_timestamp: float, price: float = 0):
     logging.info("Execute bot signal")
     try:
-        
+
         bot_dict, message = await asyncio.gather(
             get_all_bot(channel),
             write_message(channel, content, symbol, action, message_timestamp, recieve_timestamp)
         )
-        
-        # read bot_config with match channel
-        # bot_dict = await get_all_bot(channel)
+
         config_list = get_all_bot_config(bot_dict)
 
-        # sequential send to bot executor
         data_dict = {
             "symbol": symbol,
             "action": action,
@@ -171,9 +167,103 @@ async def _execute_bot_signal(channel: str, content: str, symbol: str, action: s
         }
         task_dict = await send_bot_executor(config_list, data_dict)
         result_dict = await recieve_execute_result(task_dict)
-        
+
         await write_trade_result(message, result_dict, bot_dict)
-        
+
     except Exception as e:
-        logging.error("execute bot signal error")
+        logging.error(f"execute bot signal error. {e}")
         logging.exception("")
+
+
+@atomic()
+async def _get_user_bots(user_id: int) -> List[BotOrder]:
+    logging.info(f"Get bots for user {user_id}")
+    Bot_Pydantic_List = pydantic_queryset_creator(
+        BotOrder,
+        include=["id", "config", "status", "channel"]
+    )
+    user = await User.filter(id=user_id).first()
+    bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False).all())
+    bot_list = json.loads(bot_list.json())
+    for bot in bot_list:
+        bot["bot_id"] = bot.pop("id")
+    logging.info(f"Get user [{user_id}] {len(bot_list)} bots")
+    return bot_list
+
+
+@atomic()
+async def _get_bot_trades(bot_id: int) -> List[Trade]:
+    logging.info(f"Get trades for bot {bot_id}")
+    Trade_Pydantic_List = pydantic_queryset_creator(
+        Trade,
+        exclude=["bot"]
+    )
+    bot = await BotOrder.filter(id=bot_id).first()
+    trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).all())
+    trade_list = json.loads(trade_list.json())
+    logging.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
+    return trade_list
+
+
+@atomic()
+async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict) -> int:
+    logging.info(f"Create new bot for user [{user_id}]")
+
+    user = await User.filter(id=user_id).filter(is_del=False).first()
+    if user is None:
+        raise Exception("Invalid user_id")
+
+    # validate api
+    api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
+    if api is None:
+        raise Exception("Invalid api_id")
+
+    # validate channel subscription
+    plans = await user.subscription_user.filter(is_del=False).all().prefetch_related("plan")
+    channels = set([i.plan.channel.value for i in plans])
+    if channel not in channels:
+        raise Exception("Invalid channel")
+
+    # validate bot number
+    bot_list = await user.bot_user.filter(is_del=False).all()
+    if bot_list and len(bot_list) > 5:
+        raise Exception("Maximum 5 bot per user")
+
+    # create bot
+    config["api"] = api
+    bot_config = await BotConfig.create(
+        **config
+    )
+
+    bot_order = await BotOrder.create(
+        channel=channel,
+        user=user,
+        config=bot_config
+    )
+
+    bot_config.bot = bot_order
+    await bot_config.save()
+
+    bot_id = bot_order.id
+    logging.info(f"Create bot [{bot_id}]")
+    return bot_id
+
+
+@atomic()
+async def _delete_user_bot(user_id: int, bot_id: int) -> int:
+    logging.info(f"Delete bot[{bot_id}] for user {user_id}")
+
+    user = await User.filter(id=user_id).filter(is_del=False).first()
+    if user is None:
+        raise Exception("Invalid user_id")
+
+    # validate bot
+    bot = await user.bot_user.filter(id=bot_id).filter(is_del=False).prefetch_related("config").first()
+    if bot is None:
+        raise Exception("Invalid bot_id")
+
+    # delete bot
+    bot.is_del = True
+    bot.config.is_del = True
+    await bot.config.save()
+    await bot.save()

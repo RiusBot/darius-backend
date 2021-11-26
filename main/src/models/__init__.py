@@ -7,6 +7,8 @@ from .trade import Trade
 from .role import Role
 from .permission import Permission
 from .api import Api
+from .plan import Plan
+from .subscription import Subscription
 
 
 __all__ = [
@@ -19,4 +21,6 @@ __all__ = [
     "Role",
     "Permission",
     "Api",
+    "Plan",
+    "Subscription",
 ]

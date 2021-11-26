@@ -1,11 +1,23 @@
+from enum import Enum
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models import BaseModel
 
 
+class ChannelType(str, Enum):
+    ROSE = "ROSE"
+    PERPETUAL = "PERPETUAL"
+    WHALE = "WHALE"
+    DAILYSCALP = "DAILYSCALP"
+    TEST2 = "test2"
+    TEST = "test"
+
+
 class Plan(BaseModel):
 
+    name = fields.CharField(50, null=False, unique=True)
+    channel = fields.CharEnumField(ChannelType, max_length=32, null=False)
     price = fields.FloatField()
     day = fields.IntField()
 
@@ -15,7 +27,7 @@ class Plan(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id"]
+        exclude = ["created_at", "id", "is_del"]
 
     def __str__(self):
         return f"Plan [{self.id}]"

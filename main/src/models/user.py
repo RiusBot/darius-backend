@@ -17,7 +17,7 @@ class User(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id"]
+        exclude = ["created_at", "id", "is_del"]
 
     def __str__(self):
         return f"User [{self.id}] {self.user_name} {self.email}"
