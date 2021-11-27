@@ -1,6 +1,7 @@
 import logging
 
 from connexion import AioHttpApp
+import aiohttp_cors
 from tortoise.contrib.aiohttp import register_tortoise
 
 from main.src.config import app_config, db_config, configure_logging
@@ -13,6 +14,9 @@ def main():
     configure_logging()
 
     app = AioHttpApp(__name__, port=app_config['PORT'], specification_dir='openapi/')
+    cors_allow_origin_dict = {domain: aiohttp_cors.ResourceOptions(allow_headers='*', allow_methods='*')
+                              for domain in app_config['CORS_ALLOW_ORIGIN']}
+    cors = aiohttp_cors.setup(app.app, defaults=cors_allow_origin_dict)
 
     app.add_api(
         'specification.yaml',
@@ -21,6 +25,8 @@ def main():
         validate_responses=True,
         auth_all_paths=False,
     )
+    for route in list(app.app.router.routes()):
+        cors.add(route)
 
     register_tortoise(
         app.app,
