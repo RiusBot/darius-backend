@@ -22,6 +22,7 @@ class BaseConfig:
     DARIUSDB_DB = 'dariusdb'
     DARIUSDB_PORT = 3306
     PORT = 8080
+    CORS_ALLOW_ORIGIN = ['*']
 
 
 ENV = os.environ.get('ENV', 'development')
