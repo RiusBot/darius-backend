@@ -22,11 +22,10 @@ def main():
         auth_all_paths=False,
     )
 
-    register_tortoise(
-        app.app,
-        db_config,
-
-    )
+    # register_tortoise(
+    #     app.app,
+    #     db_config,
+    # )
 
     app.run()
 

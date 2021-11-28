@@ -221,7 +221,7 @@ async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict
     # validate channel subscription
     plans = await user.subscription_user.filter(is_del=False).all().prefetch_related("plan")
     channels = set([i.plan.channel.value for i in plans])
-    if channel not in channels:
+    if channel not in channels and "darius" not in channels:
         raise Exception("Invalid channel")
 
     # validate bot number
