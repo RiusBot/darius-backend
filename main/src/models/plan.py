@@ -3,15 +3,7 @@ from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models import BaseModel
-
-
-class ChannelType(str, Enum):
-    ROSE = "ROSE"
-    PERPETUAL = "PERPETUAL"
-    WHALE = "WHALE"
-    DAILYSCALP = "DAILYSCALP"
-    TEST2 = "test2"
-    TEST = "test"
+from .channel import ChannelType
 
 
 class Plan(BaseModel):
@@ -27,7 +19,7 @@ class Plan(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id", "is_del"]
+        exclude = ["created_at", "is_del"]
 
     def __str__(self):
         return f"Plan [{self.id}]"
