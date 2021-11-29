@@ -136,22 +136,17 @@ paths:
           $ref: '#/components/responses/Unexpected'
 
   /get_user_bots:
-    post:
+    get:
       tags:
       - bot
       summary: get user running bot
       operationId: main.src.controllers.v1.bot.get_user_bots
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_id:
-                  type: integer
-              required:
-              - user_id
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+          description: user ID
       responses:
         '200':
           description: success
@@ -179,22 +174,17 @@ paths:
           $ref: '#/components/responses/Unexpected'
 
   /get_bot_trades:
-    post:
+    get:
       tags:
       - bot
       summary: get bot trade history
       operationId: main.src.controllers.v1.bot.get_bot_trades
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                bot_id:
-                  type: integer
-              required:
-              - bot_id
+      parameters:
+        - in: query
+          name: bot_id
+          schema:
+            type: integer
+          description: bot ID
       responses:
         '200':
           description: success
@@ -259,7 +249,7 @@ paths:
           $ref: '#/components/responses/Unexpected'
           
   /delete_user_bot:
-    post:
+    delete:
       tags:
       - bot
       summary: delete bot
@@ -324,22 +314,17 @@ paths:
           $ref: '#/components/responses/Unexpected'
           
   /get_user_api:
-    post:
+    get:
       tags:
       - api
       summary: get user api
       operationId: main.src.controllers.v1.api.get_user_api
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_id:
-                  type: integer
-              required:
-              - user_id
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+          description: user ID
       responses:
         '200':
           description: success
@@ -367,7 +352,7 @@ paths:
           $ref: '#/components/responses/Unexpected'
 
   /delete_user_api:
-    post:
+    delete:
       tags:
       - api
       summary: delete api
@@ -436,25 +421,17 @@ paths:
           $ref: '#/components/responses/Unexpected'
   
   /get_user_due_date:
-    post:
+    get:
       tags:
       - fee
       summary: get user due date
       operationId: main.src.controllers.v1.fee.get_user_due_date
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                user_id:
-                  type: integer
-                # add
-              required:
-              - user_id
-            example:
-              user_id: 0
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+          description: user ID
       responses:
         '200':
           description: Get user due date.

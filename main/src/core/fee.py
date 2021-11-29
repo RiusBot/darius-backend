@@ -1,5 +1,9 @@
+import logging
 from datetime import datetime, timedelta
 from main.src.core.exchange import exchange
+
+
+logger = logging.getLogger(__name__)
 
 
 def confirm_user_payment(uid: str, address: str, txid: str, referal: str, plan: str):

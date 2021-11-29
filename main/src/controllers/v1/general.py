@@ -69,8 +69,8 @@ async def create_test_data(request):
             data={},
         )
     except Exception as e:
-        logging.error("bot singal error.")
-        logging.exception("")
+        logger.error("bot singal error.")
+        logger.exception("")
         return json_response(
             status=500,
             data={

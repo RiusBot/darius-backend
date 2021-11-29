@@ -7,6 +7,7 @@ from firebase_admin import auth, initialize_app
 
 initialize_app()
 usingProjectId = os.getenv('project_id', 'darius')
+logger = logging.getLogger(__name__)
 
 
 def authenticate(json_payload):
@@ -25,7 +26,7 @@ def check_server_access(json_payload):
             return False
         return Token == requestToken
     except Exception:
-        logging.error("exception when dealing with check_server_access token")
+        logger.error("exception when dealing with check_server_access token")
         return False
 
 
@@ -48,7 +49,7 @@ def check_client_access(json_payload):
         uid = decoded_token.get('uid')
         return (uid is not None)
     except Exception:
-        logging.error("exception when dealing with check_client_access token")
+        logger.error("exception when dealing with check_client_access token")
         return False
 
 

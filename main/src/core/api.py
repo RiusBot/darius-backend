@@ -7,9 +7,12 @@ from typing import List
 from main.src.models import Api, User
 
 
+logger = logging.getLogger(__name__)
+
+
 @atomic()
 async def _get_user_api(user_id: int) -> List[Api]:
-    logging.info(f"Get api for user {user_id}")
+    logger.info(f"Get api for user {user_id}")
     Api_Pydantic_List = pydantic_queryset_creator(
         Api,
         include=["api_key", "api_secret", "exchange", "id"]
@@ -19,7 +22,7 @@ async def _get_user_api(user_id: int) -> List[Api]:
     api_list = json.loads(api_list.json())
     for api in api_list:
         api["api_id"] = api.pop("id")
-    logging.info(f"Get user [{user_id}] {len(api_list)} api")
+    logger.info(f"Get user [{user_id}] {len(api_list)} api")
     return api_list
 
 
@@ -39,7 +42,7 @@ def validate_api(api_key: str, api_secret: str, exchange: str):
 
 @atomic()
 async def _create_user_api(user_id: int, api_key: str, api_secret: str, exchange: str) -> int:
-    logging.info(f"Create new api for user [{user_id}]")
+    logger.info(f"Create new api for user [{user_id}]")
 
     user = await User.filter(id=user_id).filter(is_del=False).first()
     if user is None:
@@ -62,13 +65,13 @@ async def _create_user_api(user_id: int, api_key: str, api_secret: str, exchange
     )
     api_id = api.id
 
-    logging.info(f"Create api [{api_id}]")
+    logger.info(f"Create api [{api_id}]")
     return api_id
 
 
 @atomic()
 async def _delete_user_api(user_id: int, api_id: int) -> int:
-    logging.info(f"Delete api [{api_id}] for user {user_id}")
+    logger.info(f"Delete api [{api_id}] for user {user_id}")
 
     user = await User.filter(id=user_id).filter(is_del=False).first()
     if user is None:

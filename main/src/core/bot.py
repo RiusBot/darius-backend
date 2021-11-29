@@ -15,14 +15,17 @@ from typing import List, Dict, Tuple
 from main.src.models import BotOrder, BotConfig, Trade, Message, User
 
 
+logger = logging.getLogger(__name__)
+
+
 def _execute_bot_signal(loop, **kwargs):
     loop.create_task(execute(**kwargs))
-    logging.info("execute bot signal complete.")
+    logger.info("execute bot signal complete.")
 
 
 @atomic()
 async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
-    logging.info("Get all bot")
+    logger.info("Get all bot")
 
     bot_dict = {}
     async for bot in BotOrder.filter(is_del=False).filter(channel=channel).all().prefetch_related(
@@ -31,12 +34,12 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     ).order_by("config__order_type"):
         bot_dict[bot.id] = bot
 
-    logging.info(f"{len(bot_dict)} bots")
+    logger.info(f"{len(bot_dict)} bots")
     return bot_dict
 
 
 def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
-    logging.info("Get all bot config")
+    logger.info("Get all bot config")
 
     def type_casting(value):
         if isinstance(value, enum.Enum):
@@ -62,7 +65,7 @@ def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
         config_dict = parse(bot.config)
         config_list.append(config_dict)
 
-    logging.info(f"{len(config_list)} bot configs")
+    logger.info(f"{len(config_list)} bot configs")
     return config_list
 
 
@@ -84,7 +87,7 @@ def send_to_execute(config: dict):
 
 
 async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=None) -> Dict[Future, int]:
-    logging.info("Start activate bot executor")
+    logger.info("Start activate bot executor")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         task_dict = dict()
         for config in config_list:
@@ -92,24 +95,24 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=No
             task = executor.submit(send_to_execute, config)
             task_dict[task] = config["bot_id"]
             asyncio.sleep(0.2)
-        logging.info(f"All {len(config_list)} submitted.")
+        logger.info(f"All {len(config_list)} submitted.")
     return task_dict
 
 
 async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, list]:
-    logging.info("Receive execute result")
+    logger.info("Receive execute result")
     result_dict = dict()
     for task in concurrent.futures.as_completed(task_dict, timeout=600):
         bot_id = task_dict[task]
         result = task.result()
         result_dict[bot_id] = result
-    logging.info(f"Recieve {len(result_dict)} results")
+    logger.info(f"Recieve {len(result_dict)} results")
     return result_dict
 
 
 @atomic()
 async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict[int, BotOrder]):
-    logging.info("Write trade results")
+    logger.info("Write trade results")
 
     trade_list = []
     for bot_id, result in result_dict.items():
@@ -125,7 +128,7 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
         )
         trade_list.append(trade)
 
-    logging.info(f"write {len(trade_list)} trade results")
+    logger.info(f"write {len(trade_list)} trade results")
     await Trade.bulk_create(
         trade_list
     )
@@ -133,7 +136,7 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
 
 @atomic()
 async def write_message(channel: str, content: str, symbol: str, action: str, message_timestamp: float, recieve_timestamp: float):
-    logging.info("Write message")
+    logger.info("Write message")
     try:
         message = await Message.create(
             channel=channel,
@@ -145,12 +148,12 @@ async def write_message(channel: str, content: str, symbol: str, action: str, me
         )
         return message
     except Exception as e:
-        logging.error(f"write message error. {e}")
-        logging.exception("")
+        logger.error(f"write message error. {e}")
+        logger.exception("")
 
 
 async def execute(channel: str, content: str, symbol: str, action: str, message_timestamp: float, recieve_timestamp: float, price: float = 0):
-    logging.info("Execute bot signal")
+    logger.info("Execute bot signal")
     try:
 
         bot_dict, message = await asyncio.gather(
@@ -171,13 +174,13 @@ async def execute(channel: str, content: str, symbol: str, action: str, message_
         await write_trade_result(message, result_dict, bot_dict)
 
     except Exception as e:
-        logging.error(f"execute bot signal error. {e}")
-        logging.exception("")
+        logger.error(f"execute bot signal error. {e}")
+        logger.exception("")
 
 
 @atomic()
 async def _get_user_bots(user_id: int) -> List[BotOrder]:
-    logging.info(f"Get bots for user {user_id}")
+    logger.info(f"Get bots for user {user_id}")
     Bot_Pydantic_List = pydantic_queryset_creator(
         BotOrder,
         include=["id", "config", "status", "channel"]
@@ -187,13 +190,13 @@ async def _get_user_bots(user_id: int) -> List[BotOrder]:
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot["bot_id"] = bot.pop("id")
-    logging.info(f"Get user [{user_id}] {len(bot_list)} bots")
+    logger.info(f"Get user [{user_id}] {len(bot_list)} bots")
     return bot_list
 
 
 @atomic()
 async def _get_bot_trades(bot_id: int) -> List[Trade]:
-    logging.info(f"Get trades for bot {bot_id}")
+    logger.info(f"Get trades for bot {bot_id}")
     Trade_Pydantic_List = pydantic_queryset_creator(
         Trade,
         exclude=["bot"]
@@ -201,13 +204,13 @@ async def _get_bot_trades(bot_id: int) -> List[Trade]:
     bot = await BotOrder.filter(id=bot_id).first()
     trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).all())
     trade_list = json.loads(trade_list.json())
-    logging.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
+    logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
     return trade_list
 
 
 @atomic()
 async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict) -> int:
-    logging.info(f"Create new bot for user [{user_id}]")
+    logger.info(f"Create new bot for user [{user_id}]")
 
     user = await User.filter(id=user_id).filter(is_del=False).first()
     if user is None:
@@ -245,13 +248,13 @@ async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict
     await bot_config.save()
 
     bot_id = bot_order.id
-    logging.info(f"Create bot [{bot_id}]")
+    logger.info(f"Create bot [{bot_id}]")
     return bot_id
 
 
 @atomic()
 async def _delete_user_bot(user_id: int, bot_id: int) -> int:
-    logging.info(f"Delete bot[{bot_id}] for user {user_id}")
+    logger.info(f"Delete bot[{bot_id}] for user {user_id}")
 
     user = await User.filter(id=user_id).filter(is_del=False).first()
     if user is None:
