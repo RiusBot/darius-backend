@@ -3,6 +3,7 @@ from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models import BaseModel
+from .channel import ChannelType
 
 
 class BotStatusType(str, Enum):
@@ -10,15 +11,6 @@ class BotStatusType(str, Enum):
     RUNNING = "RUNNING"
     SUSPEND = "SUSPEND"
     STOPPED = "STOPPED"
-
-
-class ChannelType(str, Enum):
-    ROSE = "ROSE"
-    PERPETUAL = "PERPETUAL"
-    WHALE = "WHALE"
-    DAILYSCALP = "DAILYSCALP"
-    TEST2 = "test2"
-    TEST = "test"
 
 
 class BotOrder(BaseModel):

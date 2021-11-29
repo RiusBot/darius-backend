@@ -3,6 +3,7 @@ from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models.base import BaseModel
+from .channel import ChannelType
 
 
 class ActionType(str, Enum):
@@ -12,7 +13,7 @@ class ActionType(str, Enum):
 
 class Message(BaseModel):
 
-    channel = fields.CharField(32, null=False)
+    channel = fields.CharEnumField(ChannelType, max_length=32, null=False)
     content = fields.CharField(1024, null=False)
     symbol = fields.CharField(16, null=True)
     action = fields.CharEnumField(ActionType, "action", 16, null=True)

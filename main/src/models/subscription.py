@@ -9,6 +9,7 @@ class Subscription(BaseModel):
     user = fields.ForeignKeyField("darius.User", related_name="subscription_user")
     plan = fields.ForeignKeyField("darius.Plan", related_name="subscription_plan")
     expire_date = fields.DatetimeField(null=True)
+    comfirm = fields.BooleanField(null=False, default=False)
 
     class Meta:
         table = "subscription"
@@ -16,7 +17,7 @@ class Subscription(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id", "is_del"]
+        exclude = ["created_at", "is_del"]
 
     def __str__(self):
         return f"Subscription [{self.id}]"
