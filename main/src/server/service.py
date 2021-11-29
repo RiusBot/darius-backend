@@ -28,10 +28,10 @@ def main():
     for route in list(app.app.router.routes()):
         cors.add(route)
 
-    # register_tortoise(
-    #     app.app,
-    #     db_config,
-    # )
+    register_tortoise(
+        app.app,
+        db_config,
+    )
 
     app.run()
 

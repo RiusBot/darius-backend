@@ -10,6 +10,7 @@ tags:
 - name: general
 - name: api
 - name: account
+- name: plan
 paths:
   /health_liveness:
     get:
@@ -213,7 +214,7 @@ paths:
     post:
       tags:
       - bot
-      summary: create new bot
+      summary: create new bot. 5 for each user.
       operationId: main.src.controllers.v1.bot.create_user_bot
       requestBody:
         required: true
@@ -278,28 +279,21 @@ paths:
     post:
       tags:
       - api
-      summary: create new api
+      summary: create new api. 3 for each user.
       operationId: main.src.controllers.v1.api.create_user_api
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                user_id:
-                  type: integer
-                api_key:
-                  type: string
-                api_secret:
-                  type: string
-                exchange:
-                  $ref: '#/components/schemas/Exchange'
-              required:
-              - user_id
-              - api_key
-              - api_secret
-              - exchange
+              allOf:
+                - $ref: '#/components/schemas/API'
+                - type: object
+                  properties:
+                    user_id:
+                      type: integer
+                  required:
+                  - user_id
       responses:
         '200':
           description: success
@@ -312,12 +306,40 @@ paths:
                     type: integer
         default:
           $ref: '#/components/responses/Unexpected'
+
+  /update_user_api:
+    patch:
+      tags:
+      - api
+      summary: update user api.
+      operationId: main.src.controllers.v1.api.update_user_api
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/API'
+                - type: object
+                  properties:
+                    user_id:
+                      type: integer
+                    api_id:
+                      type: integer
+                  required:
+                  - user_id
+                  - api_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
           
   /get_user_api:
     get:
       tags:
       - api
-      summary: get user api
+      summary: get user api.
       operationId: main.src.controllers.v1.api.get_user_api
       parameters:
         - in: query
@@ -333,21 +355,14 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    api_id:
-                      type: integer
-                    api_key:
-                      type: string
-                    api_secret:
-                      type: string
-                    exchange:
-                      $ref: '#/components/schemas/Exchange'
-                  required:
-                  - api_id
-                  - api_key
-                  - api_secret
-                  - exchange
+                  allOf:
+                    - $ref: '#/components/schemas/API'
+                    - type: object
+                      properties:
+                        api_id:
+                          type: integer
+                      required:
+                      - api_id
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -371,6 +386,126 @@ paths:
               required:
               - user_id
               - api_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /create_plan:
+    post:
+      tags:
+      - plan
+      summary: create plan
+      operationId: main.src.controllers.v1.plan.create_plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Plan'
+                - type: object
+                  properties:
+                    user_id:
+                      type: integer
+                  required:
+                  - user_id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /update_plan:
+    patch:
+      tags:
+      - plan
+      summary: update plan
+      operationId: main.src.controllers.v1.plan.update_plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Plan'
+                - type: object
+                  properties:
+                    user_id:
+                      type: integer
+                    plan_id:
+                      type: integer
+                  required:
+                  - user_id
+                  - plan_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /get_plan:
+    get:
+      tags:
+      - plan
+      summary: get plan
+      operationId: main.src.controllers.v1.plan.get_plan
+      parameters:
+        - in: query
+          name: plan_id
+          schema:
+            type: integer
+          description: plan ID
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+          description: user ID
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/Plan'
+                - type: object
+                  properties:
+                    plan_id:
+                      type: integer
+                  required:
+                  - plan_id
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_plan:
+    delete:
+      tags:
+      - plan
+      summary: delete plan
+      operationId: main.src.controllers.v1.plan.delete_plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id:
+                  type: integer
+                user_id:
+                  type: integer
+              required:
+              - plan_id
+              - user_id
       responses:
         '200':
           description: success
@@ -639,3 +774,25 @@ components:
       - recieve_timestamp
       - symbol
       - action
+      
+      
+    Plan:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 32
+        channel:
+          type: string
+          maxLength: 32
+        price:
+          type: number
+          minimum: 0
+        day:
+          type: integer
+          minimum: 0
+      required:
+      - name
+      - channel
+      - price
+      - day
