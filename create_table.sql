@@ -54,11 +54,11 @@ CREATE TABLE `subscription` (
   `user_id` int(11) NOT NULL,
   `expire_date` datetime,
   `plan_id` int(11) NOT NULL,
-  `confirm` BOOLEAN  DEFAULT FALSE,
+  `status` varchar(16) NOT NULL,
   KEY (`user_id`),
   KEY (`expire_date`),
   KEY (`plan_id`),
-  KEY (`confirm`),
+  KEY (`status`),
   CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`),
   CONSTRAINT FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

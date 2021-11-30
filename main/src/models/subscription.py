@@ -1,7 +1,14 @@
+from enum import Enum
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models import BaseModel
+
+
+class SubscriptionStatus(str, Enum):
+    PENDING = "PENDING"
+    CONFIRM = "CONFIRM"
+    FAILED = "FAILED"
 
 
 class Subscription(BaseModel):
@@ -9,7 +16,7 @@ class Subscription(BaseModel):
     user = fields.ForeignKeyField("darius.User", related_name="subscription_user")
     plan = fields.ForeignKeyField("darius.Plan", related_name="subscription_plan")
     expire_date = fields.DatetimeField(null=True)
-    comfirm = fields.BooleanField(null=False, default=False)
+    status = fields.CharEnumField(SubscriptionStatus, max_length=16, null=False, default=SubscriptionStatus.PENDING)
 
     class Meta:
         table = "subscription"

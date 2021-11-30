@@ -61,7 +61,7 @@ async def _create_user_api(user_id: int, api_key: str, api_secret: str, exchange
     validate_api_permission(api_key, api_secret, exchange)
 
     # create api
-    api = Api.create(
+    api = await Api.create(
         user=user,
         api_key=api_key,
         api_secret=api_secret,

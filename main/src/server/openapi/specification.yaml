@@ -11,6 +11,7 @@ tags:
 - name: api
 - name: account
 - name: plan
+- name: subscription
 paths:
   /health_liveness:
     get:
@@ -512,6 +513,127 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /create_user_subscription:
+    post:
+      tags:
+      - subscription
+      summary: create new subscription.
+      operationId: main.src.controllers.v1.subscription.create_user_subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                plan_id:
+                  type: integer
+              required:
+              - user_id
+              - plan_id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /update_user_subscription:
+    patch:
+      tags:
+      - subscription
+      summary: update user subscription.
+      operationId: main.src.controllers.v1.subscription.update_user_subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Subscription'
+                - type: object
+                  properties:
+                    user_id:
+                      type: integer
+                    subscription_id:
+                      type: integer
+                  required:
+                  - user_id
+                  - subscription_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /get_user_subscription:
+    get:
+      tags:
+      - subscription
+      summary: get user subscription.
+      operationId: main.src.controllers.v1.subscription.get_user_subscription
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+          description: user ID
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Subscription'
+                    - type: object
+                      properties:
+                        subscription_id:
+                          type: integer
+                        plan:
+                          $ref: '#/components/schemas/Plan'
+                      required:
+                      - subscription_id
+                      - plan
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_user_subscription:
+    delete:
+      tags:
+      - subscription
+      summary: delete subscription
+      operationId: main.src.controllers.v1.subscription.delete_user_subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                subscription_id:
+                  type: integer
+              required:
+              - user_id
+              - subscription_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+  
   /user_confirm_payment:
     post:
       tags:
@@ -796,3 +918,16 @@ components:
       - channel
       - price
       - day
+      
+    Subscription:
+      type: object
+      properties:
+        expire_date:
+          type: string
+          maxLength: 32
+        status:
+          type: string
+          maxLength: 16
+      required:
+      - expire_date
+      - status
