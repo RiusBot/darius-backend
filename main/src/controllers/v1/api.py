@@ -70,8 +70,8 @@ async def create_user_api(request):
                 'message': str(e)
             }
         )
-    
-    
+
+
 async def update_user_api(request):
 
     json_payload = await request.json()

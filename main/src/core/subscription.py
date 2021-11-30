@@ -1,4 +1,3 @@
-import ccxt
 import json
 import logging
 from datetime import datetime, timedelta
@@ -17,13 +16,13 @@ async def _get_user_subscription(user_id: int) -> List[Subscription]:
     logger.info(f"Get subscription for user {user_id}")
     user = await User.filter(id=user_id).first()
     if user is None:
-        raise Excetion("Invalid user_id")
+        raise Exception("Invalid user_id")
 
     subscription_Pydantic_List = pydantic_queryset_creator(
         Subscription,
         include=["expire_date", "status", "id", "plan", "plan_id"]
     )
-    
+
     subscription_list = await subscription_Pydantic_List.from_queryset(user.subscription_user.filter(is_del=False).prefetch_related("plan").all())
     subscription_list = json.loads(subscription_list.json())
     for subscription in subscription_list:
@@ -45,13 +44,13 @@ async def _create_user_subscription(user_id: int, plan_id: int) -> int:
     plan = await Plan.filter(id=plan_id).filter(is_del=False).first()
     if user is None:
         raise Exception("Invalid plan")
-        
+
     # validate duplicate channel
     subscription_list = await user.subscription_user.filter(is_del=False).prefetch_related("plan").all()
     all_subscribe_channel = set([i.plna.channel for i in subscription_list])
     if plan.channel in all_subscribe_channel:
         raise Exception("channel already subscribed")
-    
+
     # create subscription
     subscription = await Subscription.create(
         user=user,
@@ -66,7 +65,7 @@ async def _create_user_subscription(user_id: int, plan_id: int) -> int:
 @atomic()
 async def _update_user_subscription(user_id: int, subscription_id: int, expire_date: str, status: str) -> int:
     logger.info(f"Update subscription [{subscription_id}] for user [{user_id}]")
-    
+
     # validate user
     user = await User.filter(id=user_id).filter(is_del=False).first()
     if user is None:
@@ -76,7 +75,7 @@ async def _update_user_subscription(user_id: int, subscription_id: int, expire_d
     subscription = await user.subscription_user.filter(is_del=False).filter(id=subscription_id).first()
     if subscription is None:
         raise Exception("Invalid subscription.")
-        
+
     # validate date
     expire_date = parse_date(expire_date)
     if expire_date < datetime.now():

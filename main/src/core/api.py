@@ -15,7 +15,7 @@ async def _get_user_api(user_id: int) -> List[Api]:
     logger.info(f"Get api for user {user_id}")
     user = await User.filter(id=user_id).first()
     if user is None:
-        raise Excetion("Invalid user_id")
+        raise Exception("Invalid user_id")
 
     Api_Pydantic_List = pydantic_queryset_creator(
         Api,
@@ -76,7 +76,7 @@ async def _create_user_api(user_id: int, api_key: str, api_secret: str, exchange
 @atomic()
 async def _update_user_api(user_id: int, api_id: int, api_key: str, api_secret: str, exchange: str) -> int:
     logger.info(f"Update api [{api_id}] for user [{user_id}]")
-    
+
     # validate user
     user = await User.filter(id=user_id).filter(is_del=False).first()
     if user is None:
@@ -86,7 +86,7 @@ async def _update_user_api(user_id: int, api_id: int, api_key: str, api_secret: 
     api = await user.api_user.filter(is_del=False).filter(id=api_id).first()
     if api is None:
         raise Exception("Invalid api.")
-        
+
     # validate api permission
     validate_api_permission(api_key, api_secret, exchange)
 

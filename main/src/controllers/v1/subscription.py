@@ -68,8 +68,8 @@ async def create_user_subscription(request):
                 'message': str(e)
             }
         )
-    
-    
+
+
 async def update_user_subscription(request):
 
     json_payload = await request.json()

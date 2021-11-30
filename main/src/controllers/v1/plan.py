@@ -72,8 +72,8 @@ async def create_plan(request):
                 'message': str(e)
             }
         )
-    
-    
+
+
 async def update_plan(request):
 
     json_payload = await request.json()
