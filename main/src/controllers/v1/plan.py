@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 async def get_plan(request):
-    
+
     json_payload = await request.json()
 
     try:
@@ -35,8 +35,6 @@ async def get_plan(request):
 async def create_plan(request):
 
     json_payload = await request.json()
-    import pdb
-    pdb.set_trace()
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {

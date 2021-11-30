@@ -15,7 +15,7 @@ async def update_user_profile(request):
             "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
-    
+
     try:
         logger.info("Update user profile %s", json_payload)
         user_id = json_payload["user_id"]

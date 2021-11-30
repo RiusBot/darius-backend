@@ -1,6 +1,7 @@
 import logging
 from aiohttp.web import json_response
 from tortoise.transactions import atomic
+from main.src.core.auth import authenticate
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ async def get_health_readiness(request):
 
 
 async def create_test_data(request):
-    
+
     json_payload = await request.json()
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")

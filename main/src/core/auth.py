@@ -47,7 +47,6 @@ def fetch_secret_token_manager():
     return Token
 
 
-    
 @functools.lru_cache(maxsize=None)
 def fetch_secret_token_firestore():
     from firebase_admin import firestore
