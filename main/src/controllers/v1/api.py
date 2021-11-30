@@ -13,7 +13,7 @@ async def get_user_api(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -43,7 +43,7 @@ async def create_user_api(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -78,7 +78,7 @@ async def update_user_api(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -112,7 +112,7 @@ async def delete_user_api(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 

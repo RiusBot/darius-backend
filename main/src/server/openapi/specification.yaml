@@ -716,6 +716,11 @@ paths:
           
 components:
 
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
   responses:
     NotFound:
       description: The specified resource was not found

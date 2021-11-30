@@ -15,7 +15,7 @@ async def execute_bot_signal(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -51,7 +51,7 @@ async def get_user_bots(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -81,7 +81,7 @@ async def get_bot_trades(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -111,7 +111,7 @@ async def create_user_bot(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -146,7 +146,7 @@ async def delete_user_bot(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 

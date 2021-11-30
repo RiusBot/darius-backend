@@ -1,5 +1,6 @@
 import json
 import logging
+from functools import wraps
 from datetime import datetime, timedelta
 from dateutil.parser import parse as parse_date
 from tortoise.transactions import atomic
@@ -9,6 +10,24 @@ from main.src.models import Subscription, User, Plan
 
 
 logger = logging.getLogger(__name__)
+
+
+def user_permission_validator(f):
+    @wraps(f)
+    async def wrapper(user_id, *args, **kwargs):
+        # validate user permission
+        user = await User.filter(is_del=False).filter(id=user_id).prefetch_related("role").first()
+        if user is None:
+            raise Exception("Invalid user")
+
+        # validate permission
+        service = ["subscription", "all", "test"]
+        permission_list = await user.role.permission.filter(is_del=False).filter(service__in=service).all()
+        if not permission_list:
+            raise Exception("Invalid permission")
+        return await f(user_id, *args, **kwargs)
+
+    return wrapper
 
 
 @atomic()
@@ -63,6 +82,7 @@ async def _create_user_subscription(user_id: int, plan_id: int) -> int:
 
 
 @atomic()
+@user_permission_validator
 async def _update_user_subscription(user_id: int, subscription_id: int, expire_date: str, status: str) -> int:
     logger.info(f"Update subscription [{subscription_id}] for user [{user_id}]")
 
@@ -88,6 +108,7 @@ async def _update_user_subscription(user_id: int, subscription_id: int, expire_d
 
 
 @atomic()
+@user_permission_validator
 async def _delete_user_subscription(user_id: int, subscription_id: int) -> int:
     logger.info(f"Delete subscription [{subscription_id}] for user {user_id}")
 

@@ -8,14 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 async def get_plan(request):
-
+    
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "error_message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Get plan")
@@ -41,10 +35,12 @@ async def get_plan(request):
 async def create_plan(request):
 
     json_payload = await request.json()
+    import pdb
+    pdb.set_trace()
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -80,7 +76,7 @@ async def update_plan(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -115,7 +111,7 @@ async def delete_plan(request):
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 

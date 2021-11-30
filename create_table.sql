@@ -12,7 +12,9 @@ CREATE TABLE `role` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `permission_id` int(11) NOT NULL,
+    `name` varchar(50) NOT NULL,
     KEY (`permission_id`),
+    KEY (`name`),
     CONSTRAINT FOREIGN KEY(`permission_id`) REFERENCES `permission`(id) ON DELETE CASCADE
 ) CHARACTER SET utf8;
 

@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 import logging
 import functools
@@ -6,12 +7,12 @@ from firebase_admin import auth, initialize_app
 
 
 initialize_app()
-usingProjectId = os.getenv('project_id', 'darius')
+usingProjectId = os.getenv('project_id', 'darius-332003')
 logger = logging.getLogger(__name__)
 
 
 def authenticate(json_payload):
-    if usingProjectId != "darius":
+    if usingProjectId != "darius-332003":
         if check_client_access(json_payload) is False:
             if check_server_access(json_payload) is False:
                 return False
@@ -20,20 +21,40 @@ def authenticate(json_payload):
 
 def check_server_access(json_payload):
     try:
-        Token = fetch_secret_token()
+        Token = fetch_secret_token_manager()
         requestToken = json_payload.get('token')
         if not Token or not requestToken:
             return False
         return Token == requestToken
     except Exception:
         logger.error("exception when dealing with check_server_access token")
+        logger.exception("")
         return False
 
 
 @functools.lru_cache(maxsize=None)
-def fetch_secret_token():
-    token = fetch_token()
-    return token
+def fetch_secret_token_manager():
+    from google.cloud import secretmanager
+    secretsManagerClient = secretmanager.SecretManagerServiceClient()
+    payload = secretsManagerClient.access_secret_version(
+        f"projects/{usingProjectId}/secrets/backend/versions/latest"
+    ).payload.data.decode('UTF-8')
+    try:
+        Secret = json.loads(payload)
+        Token = Secret['token']
+    except json.decoder.JSONDecodeError:
+        Token = payload
+    return Token
+
+
+    
+@functools.lru_cache(maxsize=None)
+def fetch_secret_token_firestore():
+    from firebase_admin import firestore
+    db = firestore.Client()
+    Secret = db.collection("secrets").document("backend").get().to_dict()
+    Token = Secret['token']
+    return Token
 
 
 def check_client_access(json_payload):
@@ -50,6 +71,7 @@ def check_client_access(json_payload):
         return (uid is not None)
     except Exception:
         logger.error("exception when dealing with check_client_access token")
+        logger.exception("")
         return False
 
 

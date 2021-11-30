@@ -8,7 +8,7 @@ async def user_confirm_payment(request):
     json_payload = await request.json()
     if authenticate(json_payload) is False:
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
@@ -35,7 +35,7 @@ async def get_user_due_date(request):
     json_payload = await request.json()
     if authenticate(json_payload) is False:
         response_data = {
-            "error_message": "access token is not valid"
+            "message": "access token is not valid"
         }
         return json_response(data=response_data, status=401)
 
