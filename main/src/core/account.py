@@ -1,4 +1,5 @@
 import logging
+from email_validator import validate_email
 from tortoise.transactions import atomic
 from main.src.models import User, Role
 from main.src.models.user import UserSchemaModel
@@ -7,10 +8,20 @@ from main.src.models.user import UserSchemaModel
 logger = logging.getLogger(__name__)
 
 
-def validate_email(email: str):
-    # email normalized
-    # check email exist
-    return True
+def my_validate_email(email: str):
+    try:
+        # email normalized
+        prefix, postfix = email.rsplit('@', 1)
+        prefix = re.compile('[^a-zA-Z0-9]').sub('', prefix)
+        norm_email = f"{prefix}@{postfix}"
+        # check email format
+        email = validate_email(email).email
+        # check email exist
+        return True
+    except Exception:
+        logger.error("Validate email error")
+        logger.exception("")
+        raise Exception("Invalid email")
 
 
 @atomic()
@@ -37,7 +48,7 @@ async def _get_user_profile(user_id: int):
 @atomic()
 async def _create_user_profile(user_name: str, email: str, password: str):
 
-    validate_email(email)
+    my_validate_email(email)
 
     role = await Role.filter(is_del=False).filter(name="user").first()
     user = await User.create(
