@@ -7,6 +7,7 @@ from main.src.models import BaseModel
 class Role(BaseModel):
 
     permission = fields.ForeignKeyField("darius.Permission", related_name="role_permission", through="role_permission")
+    name = fields.CharField(50, null=False)
 
     class Meta:
         table = "role"
@@ -14,7 +15,7 @@ class Role(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id", "is_del"]
+        exclude = ["created_at", "is_del"]
 
     def __str__(self):
         return f"Role [{self.id}]"

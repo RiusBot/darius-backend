@@ -94,7 +94,99 @@ paths:
         '200':
           description: success
         default:
-          $ref: '#/components/responses/Unexpected'   
+          $ref: '#/components/responses/Unexpected'
+          
+  /create_user_profile:
+    post:
+      tags:
+      - account
+      summary: create user profile
+      operationId: main.src.controllers.v1.account.create_user_profile
+      requestBody:
+        required: True
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_name:
+                  type: string
+                email: 
+                  type: string
+                password:
+                  type: string
+                  nullable: True
+              required:
+                - user_name
+                - email
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /delete_user_profile:
+    delete:
+      tags:
+      - account
+      summary: create user profile
+      operationId: main.src.controllers.v1.account.delete_user_profile
+      requestBody:
+        required: True
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: number
+              required:
+                - user_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_user_profile:
+    get:
+      tags:
+      - account
+      summary: get user profile
+      operationId: main.src.controllers.v1.account.get_user_profile
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: integer
+          description: user ID
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: number
+                  user_name:
+                    type: string
+                  email: 
+                    type: string
+                required:
+                  - user_id
+                  - user_name
+                  - email
+        default:
+          $ref: '#/components/responses/Unexpected'
   
   /execute_bot_signal:
     post:
@@ -215,7 +307,7 @@ paths:
     post:
       tags:
       - bot
-      summary: create new bot. 5 for each user.
+      summary: create new bot. 3 for each user.
       operationId: main.src.controllers.v1.bot.create_user_bot
       requestBody:
         required: true
@@ -838,7 +930,7 @@ components:
           enum: [SPOT, MARGIN, FUTURE]
         quantity:
           type: number
-          minimum: 100
+          minimum: 50
         leverage:
           type: number
           minimum: 0
@@ -857,7 +949,6 @@ components:
         take_profit:
           type: number
           minimum: 0
-          maximum: 1
         order_type:
           type: string
           enum: [MARKET, LIMIT]
@@ -901,8 +992,7 @@ components:
       - recieve_timestamp
       - symbol
       - action
-      
-      
+
     Plan:
       type: object
       properties:

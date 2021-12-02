@@ -28,7 +28,7 @@ CREATE TABLE `user` (
   `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   `user_name` varchar(50) NOT NULL,
   `email` varchar(50) UNIQUE NOT NULL,
-  `password` varchar(50) NOT NULL,
+  `password` varchar(50),
   `role_id` int(11) NOT NULL,
    KEY (`user_name`),
    KEY (`email`),
@@ -47,6 +47,8 @@ CREATE TABLE `plan` (
   KEY (`name`),
   KEY (`created_at`),
   KEY (`channel`),
+  CHECK(day >= 0),
+  CHECK(price >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- subscription
@@ -114,6 +116,12 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
     `duplicate` BOOLEAN DEFAULT FALSE,
     `minimum_volume` DOUBLE,
     KEY (`bot_id`),
+    CHECK(quantity >= 50),
+    CHECK(leverage > 0),
+    CHECK(margin > 0),
+    CHECK(minimum_volume > 0),
+    CHECK(take_profit > 0),
+    CHECK(stop_loss > 0 AND stop_loss < 1),
     FOREIGN KEY(bot_id) REFERENCES bot_order(id),
     FOREIGN KEY(api_id) REFERENCES api(id)
 ) CHARACTER SET utf8;

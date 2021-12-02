@@ -216,7 +216,7 @@ async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict
     if user is None:
         raise Exception("Invalid user_id")
 
-    # validate api
+    # validate api belongs to user
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
     if api is None:
         raise Exception("Invalid api_id")
@@ -229,8 +229,12 @@ async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict
 
     # validate bot number
     bot_list = await user.bot_user.filter(is_del=False).all()
-    if bot_list and len(bot_list) > 5:
-        raise Exception("Maximum 5 bot per user")
+    if bot_list and len(bot_list) > 3:
+        raise Exception("Maximum 3 bot per user")
+
+    # validate channel no duplicate
+    # if channel in set([bot.channel for bot in bot_list]):
+    #     raise Exception("Channel duplicate")
 
     # create bot
     config["api"] = api

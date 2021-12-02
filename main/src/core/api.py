@@ -65,7 +65,7 @@ async def _create_user_api(user_id: int, api_key: str, api_secret: str, exchange
         user=user,
         api_key=api_key,
         api_secret=api_secret,
-        exhcange=exchange
+        exchange=exchange
     )
     api_id = api.id
 
@@ -82,7 +82,7 @@ async def _update_user_api(user_id: int, api_id: int, api_key: str, api_secret: 
     if user is None:
         raise Exception("Invalid user_id")
 
-    # validate api
+    # validate api belongs to user
     api = await user.api_user.filter(is_del=False).filter(id=api_id).first()
     if api is None:
         raise Exception("Invalid api.")
@@ -105,7 +105,7 @@ async def _delete_user_api(user_id: int, api_id: int) -> int:
     if user is None:
         raise Exception("Invalid user_id")
 
-    # validate api
+    # validate api belongs to user
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
     if api is None:
         raise Exception("Invalid api_id")
