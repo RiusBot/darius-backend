@@ -71,7 +71,7 @@ def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
 
 def send_to_execute(config: dict):
     try:
-        url = "http://localhost:8000/"  # app_config["BOT_EXECUTOR_ENDPOINT"]
+        url = app_config["BOT_EXECUTOR_ENDPOINT"]
         with requests.Session() as s:
             response = s.post(url, json=config, timeout=3600)
             try:
@@ -117,15 +117,26 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
     trade_list = []
     for bot_id, result in result_dict.items():
         bot = bot_dict[bot_id]
-        error = None if isinstance(result, dict) else result
-        status = result["status"] if isinstance(result, dict) else "error"
-        trade = Trade(
-            user=bot.user,
-            bot=bot,
-            message=message,
-            status=status,
-            error=error,
-        )
+
+        if isinstance(result, str):  # error
+            trade = Trade(
+                user=bot.user,
+                bot=bot,
+                message=message,
+                status="error",
+                error=result,
+            )
+        else:
+            trade = Trade(
+                user=bot.user,
+                bot=bot,
+                message=message,
+                status=result.get("status"),
+                open_order=result.get("open_order"),
+                sl_order=result.get("sl_order"),
+                tp_order=result.get("tp_order"),
+            )
+        
         trade_list.append(trade)
 
     logger.info(f"write {len(trade_list)} trade results")
@@ -135,7 +146,17 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
 
 
 @atomic()
-async def write_message(channel: str, content: str, symbol: str, action: str, message_timestamp: float, recieve_timestamp: float):
+async def write_message(
+    channel: str,
+    content: str,
+    symbol: str,
+    action: str,
+    message_timestamp: float,
+    recieve_timestamp: float,
+    entry: float,
+    stop_loss: float,
+    take_profit: float
+):
     logger.info("Write message")
     try:
         message = await Message.create(
@@ -145,6 +166,9 @@ async def write_message(channel: str, content: str, symbol: str, action: str, me
             action=action,
             message_timestamp=message_timestamp,
             recieve_timestamp=recieve_timestamp,
+            entry=entry,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
         )
         return message
     except Exception as e:
@@ -152,13 +176,24 @@ async def write_message(channel: str, content: str, symbol: str, action: str, me
         logger.exception("")
 
 
-async def execute(channel: str, content: str, symbol: str, action: str, message_timestamp: float, recieve_timestamp: float, price: float = 0):
+async def execute(
+    channel: str,
+    content: str,
+    symbol: str,
+    action: str,
+    message_timestamp: float,
+    recieve_timestamp: float,
+    entry: float = None,
+    stop_loss: float = None,
+    take_profit: float = None,
+    price: float = None,
+):
     logger.info("Execute bot signal")
     try:
 
         bot_dict, message = await asyncio.gather(
             get_all_bot(channel),
-            write_message(channel, content, symbol, action, message_timestamp, recieve_timestamp)
+            write_message(channel, content, symbol, action, message_timestamp, recieve_timestamp, entry, stop_loss, take_profit)
         )
 
         config_list = get_all_bot_config(bot_dict)
@@ -166,7 +201,10 @@ async def execute(channel: str, content: str, symbol: str, action: str, message_
         data_dict = {
             "symbol": symbol,
             "action": action,
-            "price": price
+            "scalp_entry": entry,
+            "scalp_stop_loss": stop_loss,
+            "scalp_take_profit": take_profit,
+            "price": price,
         }
         task_dict = await send_bot_executor(config_list, data_dict)
         result_dict = await recieve_execute_result(task_dict)
@@ -229,8 +267,8 @@ async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict
 
     # validate bot number
     bot_list = await user.bot_user.filter(is_del=False).all()
-    if bot_list and len(bot_list) > 3:
-        raise Exception("Maximum 3 bot per user")
+    if bot_list and len(bot_list) > 5:
+        raise Exception("Maximum 5 bot per user")
 
     # validate channel no duplicate
     # if channel in set([bot.channel for bot in bot_list]):

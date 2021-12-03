@@ -199,30 +199,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                channel:
-                  type: string
-                content:
-                  type: string
-                  nullable: true
-                message_timestamp:
-                  type: number
-                recieve_timestamp:
-                  type: number
-                symbol:
-                  type: string
-                  nullable: true
-                  maxLength: 16
-                action:
-                  $ref: '#/components/schemas/Action'
-              required:
-              - channel
-              - content
-              - message_timestamp
-              - recieve_timestamp
-              - symbol
-              - action
+              $ref: '#/components/schemas/Message'
       responses:
         '200':
           description: received
@@ -287,19 +264,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    message:
-                      $ref: '#/components/schemas/Message'
-                    status:
-                      $ref: '#/components/schemas/TradeStatus'
-                    error:
-                      type: string
-                      nullable: True
-                  required:
-                  - message
-                  - status
-                  - error
+                  $ref: '#/components/schemas/Trade'
         default:
           $ref: '#/components/responses/Unexpected'
           
@@ -307,7 +272,7 @@ paths:
     post:
       tags:
       - bot
-      summary: create new bot. 3 for each user.
+      summary: create new bot. 5 for each user.
       operationId: main.src.controllers.v1.bot.create_user_bot
       requestBody:
         required: true
@@ -939,16 +904,20 @@ components:
           type: number
           minimum: 0
           maximum: 1000
+          nullable: true
         minimum_volume:
           type: number
           minimum: 0
+          nullable: true
         stop_loss:
           type: number
           minimum: 0
           maximum: 1
+          nullable: true
         take_profit:
           type: number
           minimum: 0
+          nullable: true
         order_type:
           type: string
           enum: [MARKET, LIMIT]
@@ -958,6 +927,16 @@ components:
         take_profit_type:
           type: string
           enum: [MARKET, LIMIT]
+      required:
+        - api
+        - test
+        - duplicate
+        - target
+        - quantity
+        - leverage
+        - order_type
+        - stop_loss_type
+        - take_profit_type
 
     Message:
       type: object
@@ -985,6 +964,18 @@ components:
           maxLength: 16
         action:
           $ref: '#/components/schemas/Action'
+        price:
+          type: number
+          nullable: True
+        entry:
+          type: number
+          nullable: True
+        stop_loss:
+          type: number
+          nullable: True
+        take_profit:
+          type: number
+          nullable: True
       required:
       - channel
       - content
@@ -1025,4 +1016,27 @@ components:
           maxLength: 16
       required:
       - expire_date
+      - status
+      
+    Trade:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/Message'
+        status:
+          $ref: '#/components/schemas/TradeStatus'
+        error:
+          type: string
+          nullable: True
+        open_order:
+          type: string
+          nullable: True
+        sl_order:
+          type: string
+          nullable: True
+        tp_order:
+          type: string
+          nullable: True
+      required:
+      - message
       - status

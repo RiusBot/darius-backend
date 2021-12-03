@@ -20,6 +20,9 @@ class Trade(BaseModel):
     message = fields.ForeignKeyField("darius.Message", related_name="trade_message")
     status = fields.CharEnumField(TradeStatusType, "trade", 16, null=False)
     error = fields.CharField(1024, null=True)
+    open_order = fields.CharField(50, null=True)
+    tp_order = fields.CharField(50, null=True)
+    sl_order = fields.CharField(50, null=True)
 
     class Meta:
         table = "trade_history"
