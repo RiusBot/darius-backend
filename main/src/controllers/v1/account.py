@@ -1,6 +1,6 @@
 import logging
 from aiohttp.web import json_response
-from main.src.core.account import _update_user_profile, _get_user_profile, _create_user_profile, _delete_user_profile
+from main.src.core.account import _update_user_profile, _get_user_profile, _create_user, _delete_user
 from main.src.core.auth import authenticate
 
 
@@ -65,16 +65,14 @@ async def get_user_profile(request):
         )
 
 
-async def create_user_profile(request):
+async def create_user(request):
 
     json_payload = await request.json()
 
     try:
         logger.info("Create user profile")
-        user_name = json_payload["user_name"]
-        email = json_payload["email"]
-        password = json_payload["password"]
-        user_id = await _create_user_profile(user_name, email, password)
+        uid = json_payload["uid"]
+        user_id = await _create_user(uid)
         return json_response(
             status=200,
             data={
@@ -93,7 +91,7 @@ async def create_user_profile(request):
         )
 
 
-async def delete_user_profile(request):
+async def delete_user(request):
 
     json_payload = await request.json()
 
@@ -106,8 +104,8 @@ async def delete_user_profile(request):
 
     try:
         logger.info("Delete user profile %s", json_payload)
-        user_id = json_payload["user_id"]
-        await _delete_user_profile(user_id)
+        uid = json_payload["uid"]
+        await _delete_user(uid)
         return json_response(
             status=200,
             data={}

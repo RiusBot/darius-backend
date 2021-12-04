@@ -46,15 +46,16 @@ async def _get_user_profile(user_id: int):
 
 
 @atomic()
-async def _create_user_profile(user_name: str, email: str, password: str):
-
-    my_validate_email(email)
+async def _create_user(uid: str):
 
     role = await Role.filter(is_del=False).filter(name="user").first()
+    user = await User.filter(uid=uid).first()
+    if user:
+        logger.info("User %s was created before, will activate user", user)
+        user.is_del = False
+        return user
     user = await User.create(
-        user_name=user_name,
-        email=email,
-        password=password,
+        uid=uid,
         role=role,
     )
     logger.info(f"Create user [{user.id}]")
@@ -62,8 +63,8 @@ async def _create_user_profile(user_name: str, email: str, password: str):
 
 
 @atomic()
-async def _delete_user_profile(user_id: int):
-    user = await User.filter(id=user_id).first()
+async def _delete_user(uid: str):
+    user = await User.filter(uid=uid).first()
     if user is None:
         raise Exception("Invalid user_id")
     user.is_del = True
