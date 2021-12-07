@@ -3,9 +3,9 @@ steps:
 - name: "gcr.io/cloud-builders/docker"
   args:
   - build
-  - "--tag=gcr.io/darius/darius-backend"
+  - "--tag=gcr.io/darius-332003/darius-backend"
   - "--file=./Dockerfile"
-  - "--cache-from=gcr.io/darius/darius-backend:latest"
+  - "--cache-from=gcr.io/darius-332003/darius-backend:latest"
   - .
 images:
-- "gcr.io/darius/darius-backend"
+- "gcr.io/darius-332003/darius-backend"

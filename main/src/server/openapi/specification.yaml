@@ -80,16 +80,16 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: number
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
                 user_name:
                   type: string
-                email: 
-                  type: string
+                  maxLength: 50
               required:
-                - user_id
+                - uid
                 - user_name
-                - email
       responses:
         '200':
           description: success
@@ -107,18 +107,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                user_name:
-                  type: string
-                email: 
-                  type: string
-                password:
-                  type: string
-                  nullable: True
-              required:
-                - user_name
-                - email
+              $ref: '#/components/schemas/User'
       responses:
         '200':
           description: success
@@ -145,10 +134,12 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: number
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
               required:
-                - user_id
+                - uid
       responses:
         '200':
           description: success
@@ -163,9 +154,11 @@ paths:
       operationId: main.src.controllers.v1.account.get_user_profile
       parameters:
         - in: query
-          name: user_id
+          name: uid
           schema:
-            type: integer
+            type: string
+            maxLength: 28
+            minLength: 28
           description: user ID
       responses:
         '200':
@@ -173,18 +166,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user_id:
-                    type: number
-                  user_name:
-                    type: string
-                  email: 
-                    type: string
-                required:
-                  - user_id
-                  - user_name
-                  - email
+                $ref: '#/components/schemas/User'
         default:
           $ref: '#/components/responses/Unexpected'
   
@@ -214,9 +196,11 @@ paths:
       operationId: main.src.controllers.v1.bot.get_user_bots
       parameters:
         - in: query
-          name: user_id
+          name: uid
           schema:
-            type: integer
+            type: string
+            maxLength: 28
+            minLength: 28
           description: user ID
       responses:
         '200':
@@ -256,6 +240,13 @@ paths:
           schema:
             type: integer
           description: bot ID
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
       responses:
         '200':
           description: success
@@ -281,8 +272,10 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: integer
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
                 api_id:
                   type: integer
                 config:
@@ -290,7 +283,7 @@ paths:
                 channel:
                   type: string
               required:
-              - user_id
+              - uid
               - api_id
               - config
               - channel
@@ -320,12 +313,14 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: integer
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
                 bot_id:
                   type: integer
               required:
-              - user_id
+              - uid
               - bot_id
       responses:
         '200':
@@ -348,10 +343,12 @@ paths:
                 - $ref: '#/components/schemas/API'
                 - type: object
                   properties:
-                    user_id:
-                      type: integer
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
                   required:
-                  - user_id
+                  - uid
       responses:
         '200':
           description: success
@@ -380,12 +377,14 @@ paths:
                 - $ref: '#/components/schemas/API'
                 - type: object
                   properties:
-                    user_id:
-                      type: integer
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
                     api_id:
                       type: integer
                   required:
-                  - user_id
+                  - uid
                   - api_id
       responses:
         '200':
@@ -401,9 +400,11 @@ paths:
       operationId: main.src.controllers.v1.api.get_user_api
       parameters:
         - in: query
-          name: user_id
+          name: uid
           schema:
-            type: integer
+            type: string
+            maxLength: 28
+            minLength: 28
           description: user ID
       responses:
         '200':
@@ -437,12 +438,14 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: integer
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
                 api_id:
                   type: integer
               required:
-              - user_id
+              - uid
               - api_id
       responses:
         '200':
@@ -465,10 +468,12 @@ paths:
                 - $ref: '#/components/schemas/Plan'
                 - type: object
                   properties:
-                    user_id:
-                      type: integer
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
                   required:
-                  - user_id
+                  - uid
       responses:
         '200':
           description: success
@@ -497,12 +502,14 @@ paths:
                 - $ref: '#/components/schemas/Plan'
                 - type: object
                   properties:
-                    user_id:
-                      type: integer
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
                     plan_id:
                       type: integer
                   required:
-                  - user_id
+                  - uid
                   - plan_id
       responses:
         '200':
@@ -523,9 +530,11 @@ paths:
             type: integer
           description: plan ID
         - in: query
-          name: user_id
+          name: uid
           schema:
-            type: integer
+            type: string
+            maxLength: 28
+            minLength: 28
           description: user ID
       responses:
         '200':
@@ -560,10 +569,12 @@ paths:
                 plan_id:
                   type: integer
                 user_id:
-                  type: integer
+                  type: string
+                  maxLength: 28
+                  minLength: 28
               required:
               - plan_id
-              - user_id
+              - uid
       responses:
         '200':
           description: success
@@ -583,12 +594,14 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: integer
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
                 plan_id:
                   type: integer
               required:
-              - user_id
+              - uid
               - plan_id
       responses:
         '200':
@@ -618,12 +631,19 @@ paths:
                 - $ref: '#/components/schemas/Subscription'
                 - type: object
                   properties:
-                    user_id:
-                      type: integer
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                    update_uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
                     subscription_id:
                       type: integer
                   required:
-                  - user_id
+                  - uid
+                  - update_uid
                   - subscription_id
       responses:
         '200':
@@ -639,9 +659,11 @@ paths:
       operationId: main.src.controllers.v1.subscription.get_user_subscription
       parameters:
         - in: query
-          name: user_id
+          name: uid
           schema:
-            type: integer
+            type: string
+            maxLength: 28
+            minLength: 28
           description: user ID
       responses:
         '200':
@@ -678,12 +700,19 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: integer
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                delete_uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
                 subscription_id:
                   type: integer
               required:
-              - user_id
+              - uid
+              - delete_uid
               - subscription_id
       responses:
         '200':
@@ -863,6 +892,24 @@ components:
         - expired
         - error
 
+    User:
+      type: object
+      properties:
+        uid:
+          type: string
+          maxLength: 28
+          minLength: 28
+        user_name:
+          type: string
+          maxLength: 50
+        email: 
+          type: string
+          maxLength: 50
+      required:
+        - uid
+        - user_name
+        - email
+    
     API:
       type: object
       properties:
@@ -957,7 +1004,7 @@ components:
           oneOf:
             - type: string
             - type: number
-          minimum: 100
+          minimum: 0
         symbol:
           type: string
           nullable: true

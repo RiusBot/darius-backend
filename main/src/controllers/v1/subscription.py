@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 async def get_user_subscription(request):
 
-    json_payload = await request.json()
+    json_payload = dict(request.rel_url.query)
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
@@ -19,8 +19,8 @@ async def get_user_subscription(request):
 
     try:
         logger.info("Get subscription")
-        user_id = json_payload["user_id"]
-        subscribe_list = await _get_user_subscription(user_id)
+        uid = json_payload["uid"]
+        subscribe_list = await _get_user_subscription(uid)
         return json_response(
             status=200,
             data=subscribe_list
@@ -49,9 +49,9 @@ async def create_user_subscription(request):
 
     try:
         logger.info("Create subscription")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         plan_id = json_payload["plan_id"]
-        subscription_id = await _create_user_subscription(user_id, plan_id)
+        subscription_id = await _create_user_subscription(uid, plan_id)
         return json_response(
             status=200,
             data={
@@ -82,11 +82,12 @@ async def update_user_subscription(request):
 
     try:
         logger.info("Update subscription")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
+        update_uid = json_payload["update_uid"]
         subscription_id = json_payload["subscription_id"]
         expire_date = json_payload["expire_date"]
         status = json_payload["status"]
-        await _update_user_subscription(user_id, subscription_id, expire_date, status)
+        await _update_user_subscription(uid, update_uid, subscription_id, expire_date, status)
         return json_response(
             status=200,
             data={}
@@ -115,9 +116,9 @@ async def delete_user_subscription(request):
 
     try:
         logger.info("Delete subscription")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         subscription_id = json_payload["subscription_id"]
-        await _delete_user_subscription(user_id, subscription_id)
+        await _delete_user_subscription(uid, subscription_id)
         return json_response(
             status=200,
             data={}

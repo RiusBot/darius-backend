@@ -217,13 +217,15 @@ async def execute(
 
 
 @atomic()
-async def _get_user_bots(user_id: int) -> List[BotOrder]:
-    logger.info(f"Get bots for user {user_id}")
+async def _get_user_bots(uid: str) -> List[BotOrder]:
+    logger.info(f"Get bots for user {uid}")
     Bot_Pydantic_List = pydantic_queryset_creator(
         BotOrder,
-        include=["id", "config", "status", "channel"]
+        include=["id", "config", "status", "channel", "config_id"]
     )
-    user = await User.filter(id=user_id).first()
+    user = await User.filter(uid=uid).first()
+    if user is None:
+        raise Exception("Invalid user_id")
     bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False).all())
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
@@ -233,24 +235,37 @@ async def _get_user_bots(user_id: int) -> List[BotOrder]:
 
 
 @atomic()
-async def _get_bot_trades(bot_id: int) -> List[Trade]:
-    logger.info(f"Get trades for bot {bot_id}")
+async def _get_bot_trades(uid: int, bot_id: int) -> List[Trade]:
+    logger.info(f"Get trades from bot {bot_id} for user {uid}")
     Trade_Pydantic_List = pydantic_queryset_creator(
         Trade,
         exclude=["bot"]
     )
-    bot = await BotOrder.filter(id=bot_id).first()
+
+    user = await User.filter(uid=uid).filter(is_del=False).first()
+    if user is None:
+        raise Exception("Invalid uid")
+
+    bot = await user.bot_user.filter(id=bot_id).first()
+    if bot is None:
+        raise Exception("Invalid bot_id")
+
     trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).all())
-    trade_list = json.loads(trade_list.json())
+    trade_list = trade_list.dict()['__root__']
+    for trade in trade_list:
+        trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
+        trade["message"]["recieve_timestamp"] = trade["message"]["recieve_timestamp"].timestamp()
+
+    # trade_list = json.loads(trade_list.json())
     logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
     return trade_list
 
 
 @atomic()
-async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict) -> int:
-    logger.info(f"Create new bot for user [{user_id}]")
+async def _create_user_bot(uid: str, channel: str, api_id: int, config: dict) -> int:
+    logger.info(f"Create new bot for user [{uid}]")
 
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
         raise Exception("Invalid user_id")
 
@@ -295,10 +310,10 @@ async def _create_user_bot(user_id: int, channel: str, api_id: int, config: dict
 
 
 @atomic()
-async def _delete_user_bot(user_id: int, bot_id: int) -> int:
-    logger.info(f"Delete bot[{bot_id}] for user {user_id}")
+async def _delete_user_bot(uid: str, bot_id: int) -> int:
+    logger.info(f"Delete bot[{bot_id}] for user {uid}")
 
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
         raise Exception("Invalid user_id")
 

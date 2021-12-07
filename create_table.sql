@@ -28,11 +28,12 @@ CREATE TABLE `user` (
   `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   `user_name` varchar(50) NOT NULL,
   `email` varchar(50) UNIQUE NOT NULL,
-  `password` varchar(50),
+  `uid` varchar(28) UNIQUE NOT NULL,
   `role_id` int(11) NOT NULL,
    KEY (`user_name`),
    KEY (`email`),
    KEY (`created_at`),
+   KEY (`uid`),
    CONSTRAINT FOREIGN KEY (`role_id`) REFERENCES `role`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

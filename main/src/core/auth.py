@@ -64,9 +64,9 @@ def check_client_access(json_payload):
         if clientUserIdToken is None or clientUserIdToken == '':
             return False
         decoded_token = auth.verify_id_token(clientUserIdToken)
-        if json_payload.get('user_id') != decoded_token.get('user_id'):
+        if json_payload.get('uid') != decoded_token.get('uid'):
             return False
-        uid = decoded_token.get('user_id')
+        uid = decoded_token.get('uid')
         return (uid is not None)
     except Exception:
         logger.error("exception when dealing with check_client_access token")

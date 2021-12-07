@@ -8,7 +8,7 @@ class User(BaseModel):
 
     user_name = fields.CharField(50, null=False)
     email = fields.CharField(50, null=False, unique=True)
-    password = fields.CharField(50, null=True)
+    uid = fields.CharField(33, null=False, unique=True)
     role = fields.ForeignKeyField("darius.Role", related_name="user_role")
 
     class Meta:
@@ -17,7 +17,7 @@ class User(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del", "role", "password"]
+        exclude = ["created_at", "is_del", "role", "id"]
 
     def __str__(self):
         return f"User [{self.id}] {self.user_name} {self.email}"

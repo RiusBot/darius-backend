@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 @atomic()
-async def _get_user_api(user_id: int) -> List[Api]:
-    logger.info(f"Get api for user {user_id}")
-    user = await User.filter(id=user_id).first()
+async def _get_user_api(uid: str) -> List[Api]:
+    logger.info(f"Get api for user {uid}")
+    user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     Api_Pydantic_List = pydantic_queryset_creator(
         Api,
@@ -25,7 +25,7 @@ async def _get_user_api(user_id: int) -> List[Api]:
     api_list = json.loads(api_list.json())
     for api in api_list:
         api["api_id"] = api.pop("id")
-    logger.info(f"Get user [{user_id}] {len(api_list)} api")
+    logger.info(f"Get user [{uid}] {len(api_list)} api")
     return api_list
 
 
@@ -44,13 +44,13 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str):
 
 
 @atomic()
-async def _create_user_api(user_id: int, api_key: str, api_secret: str, exchange: str) -> int:
-    logger.info(f"Create new api for user [{user_id}]")
+async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: str) -> int:
+    logger.info(f"Create new api for user [{uid}]")
 
     # validate user
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate api number
     api_list = await user.api_user.filter(is_del=False).all()
@@ -74,13 +74,13 @@ async def _create_user_api(user_id: int, api_key: str, api_secret: str, exchange
 
 
 @atomic()
-async def _update_user_api(user_id: int, api_id: int, api_key: str, api_secret: str, exchange: str) -> int:
-    logger.info(f"Update api [{api_id}] for user [{user_id}]")
+async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str, exchange: str) -> int:
+    logger.info(f"Update api [{api_id}] for user [{uid}]")
 
     # validate user
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate api belongs to user
     api = await user.api_user.filter(is_del=False).filter(id=api_id).first()
@@ -98,12 +98,12 @@ async def _update_user_api(user_id: int, api_id: int, api_key: str, api_secret: 
 
 
 @atomic()
-async def _delete_user_api(user_id: int, api_id: int) -> int:
-    logger.info(f"Delete api [{api_id}] for user {user_id}")
+async def _delete_user_api(uid: str, api_id: int) -> int:
+    logger.info(f"Delete api [{api_id}] for user {uid}")
 
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate api belongs to user
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()

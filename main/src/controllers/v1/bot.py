@@ -47,7 +47,8 @@ async def execute_bot_signal(request):
 
 async def get_user_bots(request):
 
-    json_payload = await request.json()
+    json_payload = json_payload = dict(request.rel_url.query)
+
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
@@ -57,8 +58,8 @@ async def get_user_bots(request):
 
     try:
         logger.info("Start get user bots")
-        user_id = json_payload["user_id"]
-        bot_list = await _get_user_bots(user_id)
+        uid = json_payload["uid"]
+        bot_list = await _get_user_bots(uid)
         return json_response(
             status=200,
             data=bot_list
@@ -77,7 +78,8 @@ async def get_user_bots(request):
 
 async def get_bot_trades(request):
 
-    json_payload = await request.json()
+    json_payload = json_payload = dict(request.rel_url.query)
+
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
@@ -87,8 +89,9 @@ async def get_bot_trades(request):
 
     try:
         logger.info("Get bot trades")
+        uid = json_payload["uid"]
         bot_id = json_payload["bot_id"]
-        trade_list = await _get_bot_trades(bot_id)
+        trade_list = await _get_bot_trades(uid, bot_id)
         return json_response(
             status=200,
             data=trade_list
@@ -117,11 +120,11 @@ async def create_user_bot(request):
 
     try:
         logger.info("Create bot")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         channel = json_payload["channel"]
         api_id = json_payload["api_id"]
         config = json_payload["config"]
-        bot_id = await _create_user_bot(user_id, channel, api_id, config)
+        bot_id = await _create_user_bot(uid, channel, api_id, config)
         return json_response(
             status=200,
             data={

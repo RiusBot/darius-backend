@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 def user_permission_validator(f):
     @wraps(f)
-    async def wrapper(user_id, *args, **kwargs):
+    async def wrapper(uid, *args, **kwargs):
         # validate user permission
-        user = await User.filter(is_del=False).filter(id=user_id).prefetch_related("role").first()
+        user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role").first()
         if user is None:
             raise Exception("Invalid user")
 
@@ -25,17 +25,17 @@ def user_permission_validator(f):
         permission_list = await user.role.permission.filter(is_del=False).filter(service__in=service).all()
         if not permission_list:
             raise Exception("Invalid permission")
-        return await f(user_id, *args, **kwargs)
+        return await f(*args, **kwargs)
 
     return wrapper
 
 
 @atomic()
-async def _get_user_subscription(user_id: int) -> List[Subscription]:
-    logger.info(f"Get subscription for user {user_id}")
-    user = await User.filter(id=user_id).first()
+async def _get_user_subscription(uid: str) -> List[Subscription]:
+    logger.info(f"Get subscription for user {uid}")
+    user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     subscription_Pydantic_List = pydantic_queryset_creator(
         Subscription,
@@ -46,18 +46,18 @@ async def _get_user_subscription(user_id: int) -> List[Subscription]:
     subscription_list = json.loads(subscription_list.json())
     for subscription in subscription_list:
         subscription["subscription_id"] = subscription.pop("id")
-    logger.info(f"Get user [{user_id}] {len(subscription_list)} subscription")
+    logger.info(f"Get user [{uid}] {len(subscription_list)} subscription")
     return subscription_list
 
 
 @atomic()
-async def _create_user_subscription(user_id: int, plan_id: int) -> int:
-    logger.info(f"Create new subscription for user [{user_id}] with plan [{plan_id}]")
+async def _create_user_subscription(uid: str, plan_id: int) -> int:
+    logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
 
     # validate user
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate plan
     plan = await Plan.filter(id=plan_id).filter(is_del=False).first()
@@ -65,10 +65,10 @@ async def _create_user_subscription(user_id: int, plan_id: int) -> int:
         raise Exception("Invalid plan")
 
     # validate duplicate channel
-    subscription_list = await user.subscription_user.filter(is_del=False).prefetch_related("plan").all()
-    all_subscribe_channel = set([i.plna.channel for i in subscription_list])
-    if plan.channel in all_subscribe_channel:
-        raise Exception("channel already subscribed")
+    # subscription_list = await user.subscription_user.filter(is_del=False).prefetch_related("plan").all()
+    # all_subscribe_channel = set([i.plna.channel for i in subscription_list])
+    # if plan.channel in all_subscribe_channel:
+    #     raise Exception("channel already subscribed")
 
     # create subscription
     subscription = await Subscription.create(
@@ -83,13 +83,13 @@ async def _create_user_subscription(user_id: int, plan_id: int) -> int:
 
 @atomic()
 @user_permission_validator
-async def _update_user_subscription(user_id: int, subscription_id: int, expire_date: str, status: str) -> int:
-    logger.info(f"Update subscription [{subscription_id}] for user [{user_id}]")
+async def _update_user_subscription(uid: str, subscription_id: int, expire_date: str, status: str) -> int:
+    logger.info(f"Update subscription [{subscription_id}] for user [{uid}]")
 
     # validate user
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate subscription
     subscription = await user.subscription_user.filter(is_del=False).filter(id=subscription_id).first()
@@ -109,12 +109,12 @@ async def _update_user_subscription(user_id: int, subscription_id: int, expire_d
 
 @atomic()
 @user_permission_validator
-async def _delete_user_subscription(user_id: int, subscription_id: int) -> int:
-    logger.info(f"Delete subscription [{subscription_id}] for user {user_id}")
+async def _delete_user_subscription(uid: str, subscription_id: int) -> int:
+    logger.info(f"Delete subscription [{subscription_id}] for user {uid}")
 
-    user = await User.filter(id=user_id).filter(is_del=False).first()
+    user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate subscription
     subscription = await user.subscription_user.filter(id=subscription_id).filter(is_del=False).first()

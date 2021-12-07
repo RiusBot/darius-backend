@@ -1,3 +1,4 @@
+import re
 import logging
 from email_validator import validate_email
 from tortoise.transactions import atomic
@@ -8,7 +9,7 @@ from main.src.models.user import UserSchemaModel
 logger = logging.getLogger(__name__)
 
 
-def my_validate_email(email: str):
+def email_normalize_and_validate(email: str):
     try:
         # email normalized
         prefix, postfix = email.rsplit('@', 1)
@@ -17,7 +18,8 @@ def my_validate_email(email: str):
         # check email format
         email = validate_email(email).email
         # check email exist
-        return True
+        # TODO
+        return email
     except Exception:
         logger.error("Validate email error")
         logger.exception("")
@@ -25,36 +27,34 @@ def my_validate_email(email: str):
 
 
 @atomic()
-async def _update_user_profile(user_id: int, user_name: str, email: str):
-    user = await User.filter(id=user_id).first()
+async def _update_user_profile(uid: str, user_name: str):
+    user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
     user.user_name = user_name
-    user.email = email
     await user.save()
 
 
 @atomic()
-async def _get_user_profile(user_id: int):
-    user = await User.filter(id=user_id).first()
+async def _get_user_profile(uid: str):
+    user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
-    user["user_id"] = user.pop("id")
     return user
 
 
 @atomic()
-async def _create_user_profile(user_name: str, email: str, password: str):
+async def _create_user_profile(uid: str, user_name: str, email: str):
 
-    my_validate_email(email)
+    email = email_normalize_and_validate(email)
 
     role = await Role.filter(is_del=False).filter(name="user").first()
     user = await User.create(
+        uid=uid,
         user_name=user_name,
         email=email,
-        password=password,
         role=role,
     )
     logger.info(f"Create user [{user.id}]")
@@ -62,9 +62,16 @@ async def _create_user_profile(user_name: str, email: str, password: str):
 
 
 @atomic()
-async def _delete_user_profile(user_id: int):
-    user = await User.filter(id=user_id).first()
+async def _delete_user_profile(uid: str, delete_uid: str):
+    user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
+    
+    # validate user permission
+    # TODO
+    
+    user = await User.filter(uid=delete_uid).first()
+    if delete_uid is None:
+        raise Exception("Invalid delete_uid")
     user.is_del = True
     await user.save()

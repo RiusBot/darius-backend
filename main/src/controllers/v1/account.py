@@ -19,10 +19,9 @@ async def update_user_profile(request):
 
     try:
         logger.info("Update user profile %s", json_payload)
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         user_name = json_payload["user_name"]
-        email = json_payload["email"]
-        await _update_user_profile(user_id, user_name, email)
+        await _update_user_profile(uid, user_name)
         return json_response(status=200, data={})
     except Exception as ex:
         logger.exception("Unexpected error when updating user profile, due to: %s", ex)
@@ -37,7 +36,8 @@ async def update_user_profile(request):
 
 async def get_user_profile(request):
 
-    json_payload = await request.json()
+    json_payload = dict(request.rel_url.query)
+
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
@@ -47,8 +47,8 @@ async def get_user_profile(request):
 
     try:
         logger.info("Get user profile %s", json_payload)
-        user_id = json_payload["user_id"]
-        user_profile = await _get_user_profile(user_id)
+        uid = json_payload["uid"]
+        user_profile = await _get_user_profile(uid)
         return json_response(
             status=200,
             data=user_profile
@@ -69,17 +69,22 @@ async def create_user_profile(request):
 
     json_payload = await request.json()
 
+    if authenticate(json_payload) is False:
+        logger.error("access token is not valid")
+        response_data = {
+            "message": "access token is not valid"
+        }
+        return json_response(data=response_data, status=401)
+
     try:
         logger.info("Create user profile")
+        uid = json_payload["uid"]
         user_name = json_payload["user_name"]
         email = json_payload["email"]
-        password = json_payload["password"]
-        user_id = await _create_user_profile(user_name, email, password)
+        await _create_user_profile(uid, user_name, email)
         return json_response(
             status=200,
-            data={
-                "user_id": user_id
-            }
+            data={}
         )
     except Exception as e:
         logger.error("Create user profile error.")
@@ -106,8 +111,9 @@ async def delete_user_profile(request):
 
     try:
         logger.info("Delete user profile %s", json_payload)
-        user_id = json_payload["user_id"]
-        await _delete_user_profile(user_id)
+        uid = json_payload["uid"]
+        delete_uid = json_payload["delete_uid"]
+        await _delete_user_profile(uid, delete_uid)
         return json_response(
             status=200,
             data={}

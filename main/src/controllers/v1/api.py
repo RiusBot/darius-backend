@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 async def get_user_api(request):
 
-    json_payload = await request.json()
+    json_payload = dict(request.rel_url.query)
     if authenticate(json_payload) is False:
         logger.error("access token is not valid")
         response_data = {
@@ -19,8 +19,8 @@ async def get_user_api(request):
 
     try:
         logger.info("Get user api")
-        user_id = json_payload["user_id"]
-        api_list = await _get_user_api(user_id)
+        uid = json_payload["uid"]
+        api_list = await _get_user_api(uid)
         return json_response(
             status=200,
             data=api_list
@@ -49,11 +49,11 @@ async def create_user_api(request):
 
     try:
         logger.info("Create user api")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         api_key = json_payload["api_key"]
         api_secret = json_payload["api_secret"]
         exchange = json_payload["exchange"]
-        api_id = await _create_user_api(user_id, api_key, api_secret, exchange)
+        api_id = await _create_user_api(uid, api_key, api_secret, exchange)
         return json_response(
             status=200,
             data={
@@ -84,12 +84,12 @@ async def update_user_api(request):
 
     try:
         logger.info("Update user api")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         api_id = json_payload["api_id"]
         api_key = json_payload["api_key"]
         api_secret = json_payload["api_secret"]
         exchange = json_payload["exchange"]
-        api_id = await _update_user_api(user_id, api_id, api_key, api_secret, exchange)
+        api_id = await _update_user_api(uid, api_id, api_key, api_secret, exchange)
         return json_response(
             status=200,
             data={}
@@ -118,9 +118,9 @@ async def delete_user_api(request):
 
     try:
         logger.info("Delete api")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         api_id = json_payload["api_id"]
-        await _delete_user_api(user_id, api_id)
+        await _delete_user_api(uid, api_id)
         return json_response(
             status=200,
             data={}

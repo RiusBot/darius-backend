@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 async def get_plan(request):
 
-    json_payload = await request.json()
+    json_payload = dict(request.rel_url.query)
 
     try:
         logger.info("Get plan")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         plan_id = json_payload["plan_id"]
-        plan = await _get_plan(user_id, plan_id)
+        plan = await _get_plan(uid, plan_id)
         return json_response(
             status=200,
             data=plan
@@ -44,12 +44,12 @@ async def create_plan(request):
 
     try:
         logger.info("Create plan")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         name = json_payload["name"]
         channel = json_payload["channel"]
         price = json_payload["price"]
         day = json_payload["day"]
-        plan_id = await _create_plan(user_id, name, channel, price, day)
+        plan_id = await _create_plan(uid, name, channel, price, day)
         return json_response(
             status=200,
             data={
@@ -80,13 +80,13 @@ async def update_plan(request):
 
     try:
         logger.info("Update plan")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         plan_id = json_payload["plan_id"]
         name = json_payload["name"]
         channel = json_payload["channel"]
         price = json_payload["price"]
         day = json_payload["day"]
-        await _update_plan(user_id, plan_id, name, channel, price, day)
+        await _update_plan(uid, plan_id, name, channel, price, day)
         return json_response(
             status=200,
             data={}
@@ -115,9 +115,9 @@ async def delete_plan(request):
 
     try:
         logger.info("Delete plan")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         plan_id = json_payload["plan_id"]
-        await _delete_plan(user_id, plan_id)
+        await _delete_plan(uid, plan_id)
         return json_response(
             status=200,
             data={}

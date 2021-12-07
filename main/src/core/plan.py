@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 def user_permission_validator(f):
     @wraps(f)
-    async def wrapper(user_id, *args, **kwargs):
+    async def wrapper(uid, *args, **kwargs):
         # validate user permission
-        user = await User.filter(is_del=False).filter(id=user_id).prefetch_related("role").first()
+        user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role").first()
         if user is None:
-            raise Exception("Invalid user")
+            raise Exception("Invalid uid")
 
         # validate permission
         service = ["plan", "all", "test"]
