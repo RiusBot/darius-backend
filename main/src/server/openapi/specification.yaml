@@ -96,18 +96,23 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
           
-  /create_user_profile:
+  /create_user:
     post:
       tags:
       - account
       summary: create user profile
-      operationId: main.src.controllers.v1.account.create_user_profile
+      operationId: main.src.controllers.v1.account.create_user
       requestBody:
         required: True
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              type: object
+              properties:
+                uid:
+                  type: string
+              required:
+                - uid
       responses:
         '200':
           description: success
@@ -121,12 +126,12 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
           
-  /delete_user_profile:
+  /delete_user:
     delete:
       tags:
       - account
       summary: create user profile
-      operationId: main.src.controllers.v1.account.delete_user_profile
+      operationId: main.src.controllers.v1.account.delete_user
       requestBody:
         required: True
         content:

@@ -1,6 +1,6 @@
 import logging
 from aiohttp.web import json_response
-from main.src.core.account import _update_user_profile, _get_user_profile, _create_user_profile, _delete_user_profile
+from main.src.core.account import _update_user_profile, _get_user_profile, _create_user, _delete_user
 from main.src.core.auth import authenticate
 
 
@@ -65,7 +65,7 @@ async def get_user_profile(request):
         )
 
 
-async def create_user_profile(request):
+async def create_user(request):
 
     json_payload = await request.json()
 
@@ -79,12 +79,12 @@ async def create_user_profile(request):
     try:
         logger.info("Create user profile")
         uid = json_payload["uid"]
-        user_name = json_payload["user_name"]
-        email = json_payload["email"]
-        await _create_user_profile(uid, user_name, email)
+        user_id = await _create_user(uid)
         return json_response(
             status=200,
-            data={}
+            data={
+              "user_id": user_id
+            }
         )
     except Exception as e:
         logger.error("Create user profile error.")
@@ -98,7 +98,7 @@ async def create_user_profile(request):
         )
 
 
-async def delete_user_profile(request):
+async def delete_user(request):
 
     json_payload = await request.json()
 
@@ -113,7 +113,7 @@ async def delete_user_profile(request):
         logger.info("Delete user profile %s", json_payload)
         uid = json_payload["uid"]
         delete_uid = json_payload["delete_uid"]
-        await _delete_user_profile(uid, delete_uid)
+        await _delete_user(uid, delete_uid)
         return json_response(
             status=200,
             data={}

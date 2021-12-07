@@ -6,10 +6,11 @@ from main.src.models import BaseModel
 
 class User(BaseModel):
 
-    user_name = fields.CharField(50, null=False)
-    email = fields.CharField(50, null=False, unique=True)
-    uid = fields.CharField(33, null=False, unique=True)
+    user_name = fields.CharField(50, null=True)
+    email = fields.CharField(50, null=True, unique=True)
+    password = fields.CharField(50, null=True)
     role = fields.ForeignKeyField("darius.Role", related_name="user_role")
+    uid = fields.CharField(28, null=False);
 
     class Meta:
         table = "user"
