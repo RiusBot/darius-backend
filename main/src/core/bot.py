@@ -14,6 +14,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List, Dict, Tuple
 from main.src.models import BotOrder, BotConfig, Trade, Message, User
 from main.src.config import app_config
+from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
@@ -226,7 +227,7 @@ async def _get_user_bots(uid: str) -> List[BotOrder]:
     )
     user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
     bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False).all())
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
@@ -245,11 +246,11 @@ async def _get_bot_trades(uid: int, bot_id: int) -> List[Trade]:
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     bot = await user.bot_user.filter(id=bot_id).first()
     if bot is None:
-        raise Exception("Invalid bot_id")
+        raise BackendException("Invalid bot_id")
 
     trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).all())
     trade_list = trade_list.dict()['__root__']
@@ -268,27 +269,27 @@ async def _create_user_bot(uid: str, channel: str, api_id: int, config: dict) ->
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     # validate api belongs to user
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
     if api is None:
-        raise Exception("Invalid api_id")
+        raise BackendException("Invalid api_id")
 
     # validate channel subscription
     plans = await user.subscription_user.filter(is_del=False).all().prefetch_related("plan")
     channels = set([i.plan.channel.value for i in plans])
     if channel not in channels and "darius" not in channels:
-        raise Exception("Invalid channel")
+        raise BackendException("Invalid channel")
 
     # validate bot number
     bot_list = await user.bot_user.filter(is_del=False).all()
     if bot_list and len(bot_list) > 5:
-        raise Exception("Maximum 5 bot per user")
+        raise BackendException("Maximum 5 bot per user")
 
     # validate channel no duplicate
     # if channel in set([bot.channel for bot in bot_list]):
-    #     raise Exception("Channel duplicate")
+    #     raise BackendException("Channel duplicate")
 
     # create bot
     config["api"] = api
@@ -316,12 +317,12 @@ async def _delete_user_bot(uid: str, bot_id: int) -> int:
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     # validate bot
     bot = await user.bot_user.filter(id=bot_id).filter(is_del=False).prefetch_related("config").first()
     if bot is None:
-        raise Exception("Invalid bot_id")
+        raise BackendException("Invalid bot_id")
 
     # delete bot
     bot.is_del = True

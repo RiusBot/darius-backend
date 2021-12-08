@@ -4,6 +4,7 @@ from email_validator import validate_email
 from tortoise.transactions import atomic
 from main.src.models import User, Role
 from main.src.models.user import UserSchemaModel
+from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
@@ -23,14 +24,14 @@ def email_normalize_and_validate(email: str):
     except Exception:
         logger.error("Validate email error")
         logger.exception("")
-        raise Exception("Invalid email")
+        raise BackendException("Invalid email")
 
 
 @atomic()
 async def _update_user_profile(uid: str, user_name: str):
     user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
     user.user_name = user_name
     await user.save()
 
@@ -39,7 +40,7 @@ async def _update_user_profile(uid: str, user_name: str):
 async def _get_user_profile(uid: str):
     user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
     return user
@@ -66,14 +67,14 @@ async def _create_user(uid: str):
 async def _delete_user(uid: str, delete_uid: str):
     user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     # validate user permission
     # TODO: only admin
-    raise Exception("Invalid permission")
+    raise BackendException("Invalid permission")
 
     user = await User.filter(uid=delete_uid).first()
     if delete_uid is None:
-        raise Exception("Invalid delete_uid")
+        raise BackendException("Invalid delete_uid")
     user.is_del = True
     await user.save()

@@ -2,6 +2,7 @@ import logging
 from aiohttp.web import json_response
 from main.src.core.plan import _get_plan, _create_plan, _delete_plan, _update_plan
 from main.src.core.auth import authenticate
+from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,12 @@ async def get_plan(request):
     except Exception as e:
         logger.error("Get plan error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )
 
@@ -59,11 +61,12 @@ async def create_plan(request):
     except Exception as e:
         logger.error("Create plan error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )
 
@@ -94,11 +97,12 @@ async def update_plan(request):
     except Exception as e:
         logger.error("Update plan error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )
 
@@ -125,10 +129,11 @@ async def delete_plan(request):
     except Exception as e:
         logger.error("Delete plan error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )

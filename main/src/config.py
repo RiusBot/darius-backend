@@ -2,7 +2,7 @@ from typing import Type
 import os
 import yaml
 import logging
-from firebase_admin import firestore
+# from firebase_admin import firestore
 
 
 ENVIRON_KEYS = [
@@ -78,8 +78,8 @@ def get_app_config() -> dict:
         if not key.startswith("_"):
             dict_conf[key] = getattr(obj_conf, key)
 
-    firestore_conf = get_config_from_firestore()
-    dict_conf.update(firestore_conf)
+    # firestore_conf = get_config_from_firestore()
+    # dict_conf.update(firestore_conf)
     return dict_conf
 
 

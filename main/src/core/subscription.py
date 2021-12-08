@@ -7,6 +7,7 @@ from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
 from main.src.models import Subscription, User, Plan
+from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
@@ -18,13 +19,13 @@ def user_permission_validator(f):
         # validate user permission
         user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role").first()
         if user is None:
-            raise Exception("Invalid user")
+            raise BackendException("Invalid user")
 
         # validate permission
         service = ["subscription", "all", "test"]
         permission_list = await user.role.permission.filter(is_del=False).filter(service__in=service).all()
         if not permission_list:
-            raise Exception("Invalid permission")
+            raise BackendException("Invalid permission")
         return await f(*args, **kwargs)
 
     return wrapper
@@ -35,7 +36,7 @@ async def _get_user_subscription(uid: str) -> List[Subscription]:
     logger.info(f"Get subscription for user {uid}")
     user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     subscription_Pydantic_List = pydantic_queryset_creator(
         Subscription,
@@ -57,18 +58,18 @@ async def _create_user_subscription(uid: str, plan_id: int) -> int:
     # validate user
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     # validate plan
     plan = await Plan.filter(id=plan_id).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid plan")
+        raise BackendException("Invalid plan")
 
     # validate duplicate channel
     # subscription_list = await user.subscription_user.filter(is_del=False).prefetch_related("plan").all()
     # all_subscribe_channel = set([i.plna.channel for i in subscription_list])
     # if plan.channel in all_subscribe_channel:
-    #     raise Exception("channel already subscribed")
+    #     raise BackendException("channel already subscribed")
 
     # create subscription
     subscription = await Subscription.create(
@@ -89,17 +90,17 @@ async def _update_user_subscription(uid: str, subscription_id: int, expire_date:
     # validate user
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     # validate subscription
     subscription = await user.subscription_user.filter(is_del=False).filter(id=subscription_id).first()
     if subscription is None:
-        raise Exception("Invalid subscription.")
+        raise BackendException("Invalid subscription.")
 
     # validate date
     expire_date = parse_date(expire_date)
     if expire_date < datetime.now():
-        raise Exception("Invalid expire date")
+        raise BackendException("Invalid expire date")
 
     # update subscription
     subscription.expire_date = expire_date
@@ -114,12 +115,12 @@ async def _delete_user_subscription(uid: str, subscription_id: int) -> int:
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid uid")
+        raise BackendException("Invalid uid")
 
     # validate subscription
     subscription = await user.subscription_user.filter(id=subscription_id).filter(is_del=False).first()
     if subscription is None:
-        raise Exception("Invalid subscription_id")
+        raise BackendException("Invalid subscription_id")
 
     # delete subscription
     subscription.is_del = True

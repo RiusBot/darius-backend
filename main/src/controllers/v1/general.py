@@ -2,6 +2,7 @@ import logging
 from aiohttp.web import json_response
 from tortoise.transactions import atomic
 from main.src.core.auth import authenticate
+from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
@@ -84,10 +85,11 @@ async def create_test_data(request):
     except Exception as e:
         logger.error("bot singal error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )

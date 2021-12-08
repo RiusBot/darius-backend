@@ -4,6 +4,7 @@ import threading
 from aiohttp.web import json_response
 from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot
 from main.src.core.auth import authenticate
+from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
@@ -36,11 +37,12 @@ async def execute_bot_signal(request):
     except Exception as e:
         logger.error("bot singal error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )
 
@@ -67,11 +69,12 @@ async def get_user_bots(request):
     except Exception as e:
         logger.error("Get user bots error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )
 
@@ -99,11 +102,12 @@ async def get_bot_trades(request):
     except Exception as e:
         logger.error("Get bot trades error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )
 
@@ -134,11 +138,12 @@ async def create_user_bot(request):
     except Exception as e:
         logger.error("Create bot error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )
 
@@ -165,10 +170,11 @@ async def delete_user_bot(request):
     except Exception as e:
         logger.error("Delete bot error.")
         logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
                 'code': 500,
-                'message': str(e)
+                'message': error_message
             }
         )

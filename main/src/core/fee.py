@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from main.src.core.exchange import exchange
+from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,7 @@ def confirm_user_payment(uid: str, address: str, txid: str, referal: str, plan: 
         },
     }
     if plan not in plan_fee_mapping:
-        raise Exception("purchase plan malformed.")
+        raise BackendException("purchase plan malformed.")
 
     last_payment_timestamp = get_user_last_payment_timestamp(uid)
     deposit_history = exchange.fetchDeposits(
