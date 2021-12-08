@@ -10,7 +10,7 @@ class User(BaseModel):
     email = fields.CharField(50, null=True, unique=True)
     password = fields.CharField(50, null=True)
     role = fields.ForeignKeyField("darius.Role", related_name="user_role")
-    uid = fields.CharField(28, null=False);
+    uid = fields.CharField(28, null=False)
 
     class Meta:
         table = "user"

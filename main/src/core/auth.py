@@ -36,9 +36,9 @@ def check_server_access(json_payload):
 def fetch_secret_token_manager():
     from google.cloud import secretmanager
     secretsManagerClient = secretmanager.SecretManagerServiceClient()
-    payload = secretsManagerClient.access_secret_version(
-        f"projects/{usingProjectId}/secrets/backend/versions/latest"
-    ).payload.data.decode('UTF-8')
+    name = secretsManagerClient.secret_version_path(usingProjectId, "backend", "latest")
+    response = secretsManagerClient.access_secret_version(request={"name": name})
+    payload = response.payload.data.decode("UTF-8")
     try:
         Secret = json.loads(payload)
         Token = Secret['token']
@@ -51,8 +51,8 @@ def fetch_secret_token_manager():
 def fetch_secret_token_firestore():
     from firebase_admin import firestore
     db = firestore.Client()
-    Secret = db.collection("secrets").document("backend").get().to_dict()
-    Token = Secret['token']
+    Secret = db.collection("config").document("backend").get().to_dict()
+    Token = Secret['auth_token']
     return Token
 
 

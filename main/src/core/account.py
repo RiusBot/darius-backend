@@ -16,7 +16,7 @@ def email_normalize_and_validate(email: str):
         prefix = re.compile('[^a-zA-Z0-9]').sub('', prefix)
         norm_email = f"{prefix}@{postfix}"
         # check email format
-        email = validate_email(email).email
+        email = validate_email(norm_email).email
         # check email exist
         # TODO
         return email
@@ -63,15 +63,15 @@ async def _create_user(uid: str):
 
 
 @atomic()
-async def _delete_user_profile(uid: str, delete_uid: str):
+async def _delete_user(uid: str, delete_uid: str):
     user = await User.filter(uid=uid).first()
     if user is None:
         raise Exception("Invalid uid")
-    
+
     # validate user permission
     # TODO: only admin
     raise Exception("Invalid permission")
-    
+
     user = await User.filter(uid=delete_uid).first()
     if delete_uid is None:
         raise Exception("Invalid delete_uid")

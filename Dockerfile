@@ -18,5 +18,5 @@ RUN pip3 install -U pip && pip3 install -r requirements.txt
 COPY ./main main
 
 # Run Service
-EXPOSE 80
+EXPOSE 8080
 CMD python -m main.src.server.service

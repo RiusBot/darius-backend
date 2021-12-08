@@ -2,6 +2,7 @@ from typing import Type
 import os
 import yaml
 import logging
+from firebase_admin import firestore
 
 
 ENVIRON_KEYS = [
@@ -19,8 +20,11 @@ class BaseConfig:
     LOG_LEVEL = 'DEBUG'
     LOG_FILENAME = 'darius_backend.log'
     EVENT_LOG_FILENAME = 'darius_backend.event.log'
+    DARIUSDB_HOST = ""
+    DARIUSDB_USER = 'root'
     DARIUSDB_DB = 'dariusdb'
     DARIUSDB_PORT = 3306
+    DARIUSDB_PASSWD = ''
     PORT = 8080
     CORS_ALLOW_ORIGIN = ['*']
 
@@ -45,7 +49,7 @@ def get_config_from_environ(env=None) -> Type[BaseConfig]:
 
 def overwrite_config_from_yaml(env_config: Type[BaseConfig]) -> Type[BaseConfig]:
     new_config = env_config
-    yaml_file_path = 'main/config/config.yaml'
+    yaml_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config/config.yaml')
     try:
         new_config = _read_yaml(new_config, yaml_file_path)
     except (IOError, OSError):
@@ -73,7 +77,16 @@ def get_app_config() -> dict:
     for key in dir(obj_conf):
         if not key.startswith("_"):
             dict_conf[key] = getattr(obj_conf, key)
+
+    firestore_conf = get_config_from_firestore()
+    dict_conf.update(firestore_conf)
     return dict_conf
+
+
+def get_config_from_firestore():
+    db = firestore.Client()
+    sql_config = db.collection("config").document("sql").get().to_dict()
+    return sql_config
 
 
 app_config = get_app_config()

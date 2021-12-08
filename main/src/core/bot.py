@@ -13,6 +13,7 @@ from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List, Dict, Tuple
 from main.src.models import BotOrder, BotConfig, Trade, Message, User
+from main.src.config import app_config
 
 
 logger = logging.getLogger(__name__)
@@ -136,7 +137,7 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
                 sl_order=result.get("sl_order"),
                 tp_order=result.get("tp_order"),
             )
-        
+
         trade_list.append(trade)
 
     logger.info(f"write {len(trade_list)} trade results")
@@ -225,12 +226,12 @@ async def _get_user_bots(uid: str) -> List[BotOrder]:
     )
     user = await User.filter(uid=uid).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
     bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False).all())
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot["bot_id"] = bot.pop("id")
-    logger.info(f"Get user [{user_id}] {len(bot_list)} bots")
+    logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
 
 
@@ -267,7 +268,7 @@ async def _create_user_bot(uid: str, channel: str, api_id: int, config: dict) ->
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate api belongs to user
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
@@ -315,7 +316,7 @@ async def _delete_user_bot(uid: str, bot_id: int) -> int:
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
     if user is None:
-        raise Exception("Invalid user_id")
+        raise Exception("Invalid uid")
 
     # validate bot
     bot = await user.bot_user.filter(id=bot_id).filter(is_del=False).prefetch_related("config").first()

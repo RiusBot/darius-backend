@@ -131,8 +131,11 @@ mysql-proxy:
 # Build & Deploy
 ###########################
 
-build:
+build-docker:
 	gcloud builds submit --config cloudbuild.yaml  --timeout=60m
 
 deploy:
-	gcloud app deploy --image-url=gcr.io/$(PROJECT_ID)/darius-backend:latest ./app.yaml
+	gcloud app deploy
+    
+deploy-docker:
+	gcloud app deploy --image-url=gcr.io/$(PROJECT_ID)/darius-backend:latest
