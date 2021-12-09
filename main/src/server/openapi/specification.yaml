@@ -416,26 +416,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    api_id:
-                      type: integer
-                    api_key:
-                      type: string
-                      maxLength: 50
-                    exchange:
-                      type: string
-                      maxLength: 16
-                      enum: [binance, ftx]
-                    subaccount:
-                      type: string
-                      maxLength: 32
-                      nullable: True
-                  required:
-                  - api_id
-                  - api_key
-                  - exchange
-                  - subaccount
+                  $ref: '#/components/schemas/API_READ'
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -973,8 +954,8 @@ components:
     BotConfig:
       type: object
       properties:
-        api:
-          $ref: '#/components/schemas/API_READ'
+        api_id:
+          type: integer
         test:
           type: boolean
         duplicate:
@@ -1017,7 +998,7 @@ components:
           type: string
           enum: [MARKET, LIMIT]
       required:
-        - api
+        - api_id
         - test
         - duplicate
         - target

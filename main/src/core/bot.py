@@ -239,7 +239,9 @@ async def _get_user_bots(uid: str) -> List[BotOrder]:
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot["bot_id"] = bot.pop("id")
-        bot["config"]["api"]["api_id"] = bot["config"]["api"].pop("id")
+        bot["config"]["api_id"] = bot["config"]["api"]["id"]
+        bot["config"].pop("api")
+
     logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
 
@@ -280,7 +282,7 @@ async def _create_user_bot(uid: str, channel: str, config: dict) -> int:
         raise BackendException("Invalid uid")
 
     # validate api belongs to user
-    api_id = config["api"]["api_id"]
+    api_id = config["api_id"]
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
     if api is None:
         raise BackendException("Invalid api_id")

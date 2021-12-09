@@ -159,9 +159,9 @@ async def delete_user_bot(request):
 
     try:
         logger.info("Delete bot")
-        user_id = json_payload["user_id"]
+        uid = json_payload["uid"]
         bot_id = json_payload["bot_id"]
-        await _delete_user_bot(user_id, bot_id)
+        await _delete_user_bot(uid, bot_id)
         return json_response(
             status=200,
             data={}

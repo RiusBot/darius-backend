@@ -39,7 +39,7 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
                 'FTX-SUBACCOUNT': subaccount
             }
         else:
-            raise BackendException(f"{exchange} does not support subnaccount")
+            raise BackendException(f"{exchange} does not support subaccount")
 
     exchange = getattr(ccxt, exchange)({
         'enableRateLimit': True,

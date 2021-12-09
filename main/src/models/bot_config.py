@@ -25,7 +25,7 @@ class BotConfig(BaseModel):
     target = fields.CharEnumField(TargetType, null=False, max_length=16)
     quantity = fields.FloatField(null=False)
     leverage = fields.FloatField(null=False, default=1.0)
-    margin = fields.FloatField(null=False, default=0.0)
+    margin = fields.FloatField(null=True)
     minimum_volume = fields.FloatField(null=True)
     stop_loss = fields.FloatField(null=True)
     take_profit = fields.FloatField(null=True)
