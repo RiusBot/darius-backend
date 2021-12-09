@@ -20,7 +20,7 @@ async def _get_user_api(uid: str) -> List[Api]:
 
     Api_Pydantic_List = pydantic_queryset_creator(
         Api,
-        include=["api_key", "api_secret", "exchange", "id"]
+        include=["api_key", "exchange", "id"]
     )
     api_list = await Api_Pydantic_List.from_queryset(user.api_user.filter(is_del=False).all())
     api_list = json.loads(api_list.json())
@@ -30,11 +30,22 @@ async def _get_user_api(uid: str) -> List[Api]:
     return api_list
 
 
-def validate_api_permission(api_key: str, api_secret: str, exchange: str):
+def validate_api_permission(api_key: str, api_secret: str, exchange: str, subaccount: str):
+
+    headers = {}
+    if subaccount:
+        if exchange == "ftx":
+            headers = {
+                'FTX-SUBACCOUNT': subaccount
+            }
+        else:
+            raise BackendException(f"{exchange} does not support subnaccount")
+
     exchange = getattr(ccxt, exchange)({
         'enableRateLimit': True,
         'apiKey': api_key,
         "secret": api_secret,
+        "headers": headers
     })
     if not exchange.checkRequiredCredentials():
         raise BackendException("Invalid exchange credentials.")
@@ -45,7 +56,7 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str):
 
 
 @atomic()
-async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: str) -> int:
+async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
     logger.info(f"Create new api for user [{uid}]")
 
     # validate user
@@ -58,15 +69,20 @@ async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: st
     if api_list and len(api_list) > 3:
         raise BackendException("Maximum 3 api per user")
 
+    # validate api duplicate
+    if api_key in set([api["api_key"] for api in api_list]) or api_secret in set([api["api_secret"] for api in api_list]):
+        raise BackendException("Duplicate api")
+
     # validate api permission
-    validate_api_permission(api_key, api_secret, exchange)
+    validate_api_permission(api_key, api_secret, exchange, subaccount)
 
     # create api
     api = await Api.create(
         user=user,
         api_key=api_key,
         api_secret=api_secret,
-        exchange=exchange
+        exchange=exchange,
+        subaccount=subaccount
     )
     api_id = api.id
 
@@ -75,7 +91,7 @@ async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: st
 
 
 @atomic()
-async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str, exchange: str) -> int:
+async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
     logger.info(f"Update api [{api_id}] for user [{uid}]")
 
     # validate user
@@ -89,12 +105,13 @@ async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str,
         raise BackendException("Invalid api.")
 
     # validate api permission
-    validate_api_permission(api_key, api_secret, exchange)
+    validate_api_permission(api_key, api_secret, exchange, subaccount)
 
     # update api
     api.api_key = api_key
     api.api_secret = api_secret
     api.exchange = exchange
+    api.subaccount = subaccount
     await api.save()
 
 

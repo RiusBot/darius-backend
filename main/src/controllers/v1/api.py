@@ -55,7 +55,8 @@ async def create_user_api(request):
         api_key = json_payload["api_key"]
         api_secret = json_payload["api_secret"]
         exchange = json_payload["exchange"]
-        api_id = await _create_user_api(uid, api_key, api_secret, exchange)
+        subaccount = json_payload.get("subaccount")
+        api_id = await _create_user_api(uid, api_key, api_secret, exchange, subaccount)
         return json_response(
             status=200,
             data={
@@ -92,7 +93,8 @@ async def update_user_api(request):
         api_key = json_payload["api_key"]
         api_secret = json_payload["api_secret"]
         exchange = json_payload["exchange"]
-        api_id = await _update_user_api(uid, api_id, api_key, api_secret, exchange)
+        subaccount = json_payload.get("subaccount")
+        api_id = await _update_user_api(uid, api_id, api_key, api_secret, exchange, subaccount)
         return json_response(
             status=200,
             data={}

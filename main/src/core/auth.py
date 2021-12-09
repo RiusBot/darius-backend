@@ -7,12 +7,12 @@ from firebase_admin import auth, initialize_app
 
 
 initialize_app()
-usingProjectId = os.getenv('project_id', 'darius-332003')
+usingProjectId = os.getenv('project_id', 'local')
 logger = logging.getLogger(__name__)
 
 
 def authenticate(json_payload):
-    if usingProjectId != "darius-332003":
+    if usingProjectId != "local":
         if check_client_access(json_payload) is False:
             if check_server_access(json_payload) is False:
                 return False
@@ -21,7 +21,7 @@ def authenticate(json_payload):
 
 def check_server_access(json_payload):
     try:
-        Token = fetch_secret_token_manager()
+        Token = fetch_secret_token_firestore()
         requestToken = json_payload.get('token')
         if not Token or not requestToken:
             return False

@@ -73,9 +73,10 @@ CREATE TABLE `api` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `user_id` int(11) NOT NULL,
-    `api_key` varchar(50) UNIQUE NOT NULL,
-    `api_secret` varchar(50) UNIQUE NOT NULL,
+    `api_key` varchar(64) NOT NULL,
+    `api_secret` varchar(64) NOT NULL,
     `exchange` varchar(16) NOT NULL,
+    `subaccount` varchar(32),
     KEY (`user_id`),
     KEY (`exchange`),
     CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id)

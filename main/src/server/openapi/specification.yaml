@@ -220,7 +220,7 @@ paths:
                     bot_id:
                       type: integer
                     config:
-                      type: object
+                      $ref: '#/components/schemas/BotConfig'
                     channel:
                       $ref: '#/components/schemas/Channel'
                     status:
@@ -281,15 +281,12 @@ paths:
                   type: string
                   maxLength: 28
                   minLength: 28
-                api_id:
-                  type: integer
                 config:
                   $ref: '#/components/schemas/BotConfig'
                 channel:
                   type: string
               required:
               - uid
-              - api_id
               - config
               - channel
       responses:
@@ -345,7 +342,7 @@ paths:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/API'
+                - $ref: '#/components/schemas/API_WRITE'
                 - type: object
                   properties:
                     uid:
@@ -379,7 +376,7 @@ paths:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/API'
+                - $ref: '#/components/schemas/API_WRITE'
                 - type: object
                   properties:
                     uid:
@@ -419,14 +416,26 @@ paths:
               schema:
                 type: array
                 items:
-                  allOf:
-                    - $ref: '#/components/schemas/API'
-                    - type: object
-                      properties:
-                        api_id:
-                          type: integer
-                      required:
-                      - api_id
+                  type: object
+                  properties:
+                    api_id:
+                      type: integer
+                    api_key:
+                      type: string
+                      maxLength: 50
+                    exchange:
+                      type: string
+                      maxLength: 16
+                      enum: [binance, ftx]
+                    subaccount:
+                      type: string
+                      maxLength: 32
+                      nullable: True
+                  required:
+                  - api_id
+                  - api_key
+                  - exchange
+                  - subaccount
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -915,29 +924,57 @@ components:
         - user_name
         - email
     
-    API:
+    API_READ:
       type: object
       properties:
+        api_id:
+          type: integer
         api_key:
           type: string
-          maxLength: 50
+          maxLength: 64
         api_secret:
           type: string
-          maxLength: 50
+          maxLength: 64
         exchange:
           type: string
           maxLength: 16
           enum: [binance, ftx]
+        subaccount:
+          type: string
+          maxLength: 32
+          nullable: True
       required:
       - api_key
-      - api_secret
       - exchange
+      - subaccount
+      
+    API_WRITE:
+      type: object
+      properties:
+        api_key:
+          type: string
+          maxLength: 64
+        api_secret:
+          type: string
+          maxLength: 64
+        exchange:
+          type: string
+          maxLength: 16
+          enum: [binance, ftx]
+        subaccount:
+          type: string
+          maxLength: 32
+          nullable: True
+      required:
+      - api_key
+      - exchange
+      - api_secret
 
     BotConfig:
       type: object
       properties:
         api:
-          $ref: '#/components/schemas/API'
+          $ref: '#/components/schemas/API_READ'
         test:
           type: boolean
         duplicate:
@@ -947,7 +984,7 @@ components:
           enum: [SPOT, MARGIN, FUTURE]
         quantity:
           type: number
-          minimum: 50
+          minimum: 30
         leverage:
           type: number
           minimum: 0

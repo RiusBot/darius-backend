@@ -21,7 +21,8 @@ entrypoint: python -m main.src.server.service
 #   success_threshold: 2
 
 
-
+env_variables:
+  project_id: darius-332003
 
 
 # entrypoint: gunicorn -b :$PORT main:app

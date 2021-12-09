@@ -126,9 +126,8 @@ async def create_user_bot(request):
         logger.info("Create bot")
         uid = json_payload["uid"]
         channel = json_payload["channel"]
-        api_id = json_payload["api_id"]
         config = json_payload["config"]
-        bot_id = await _create_user_bot(uid, channel, api_id, config)
+        bot_id = await _create_user_bot(uid, channel, config)
         return json_response(
             status=200,
             data={

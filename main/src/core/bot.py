@@ -1,3 +1,4 @@
+import os
 import enum
 import json
 import asyncio
@@ -15,9 +16,11 @@ from typing import List, Dict, Tuple
 from main.src.models import BotOrder, BotConfig, Trade, Message, User
 from main.src.config import app_config
 from main.src.exception import BackendException
+from main.src.core.auth import fetch_secret_token_firestore
 
 
 logger = logging.getLogger(__name__)
+usingProjectId = os.getenv('project_id', 'local')
 
 
 def _execute_bot_signal(loop, **kwargs):
@@ -30,7 +33,7 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     logger.info("Get all bot")
 
     bot_dict = {}
-    async for bot in BotOrder.filter(is_del=False).filter(channel=channel).all().prefetch_related(
+    async for bot in BotOrder.filter(is_del=False).filter(status="RUNNING").filter(channel=channel).all().prefetch_related(
         "config__api",
         "user",
     ).order_by("config__order_type"):
@@ -74,12 +77,16 @@ def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
 def send_to_execute(config: dict):
     try:
         url = app_config["BOT_EXECUTOR_ENDPOINT"]
+        logger.info(f"Send config to execute: {url}")
+        if usingProjectId != "local":
+            config["token"] = fetch_secret_token_firestore()
+
         with requests.Session() as s:
             response = s.post(url, json=config, timeout=3600)
             try:
                 response = response.json()
                 if "error_message" in response:
-                    response = response["error_message"]
+                    response = str(response["error_message"])
             except Exception:
                 response = response.text
             return response
@@ -108,6 +115,7 @@ async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, li
         bot_id = task_dict[task]
         result = task.result()
         result_dict[bot_id] = result
+        print(result)
     logger.info(f"Recieve {len(result_dict)} results")
     return result_dict
 
@@ -133,7 +141,7 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
                 user=bot.user,
                 bot=bot,
                 message=message,
-                status=result.get("status"),
+                status=result.get("status", "error"),
                 open_order=result.get("open_order"),
                 sl_order=result.get("sl_order"),
                 tp_order=result.get("tp_order"),
@@ -210,7 +218,6 @@ async def execute(
         }
         task_dict = await send_bot_executor(config_list, data_dict)
         result_dict = await recieve_execute_result(task_dict)
-
         await write_trade_result(message, result_dict, bot_dict)
 
     except Exception as e:
@@ -232,6 +239,7 @@ async def _get_user_bots(uid: str) -> List[BotOrder]:
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot["bot_id"] = bot.pop("id")
+        bot["config"]["api"]["api_id"] = bot["config"]["api"].pop("id")
     logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
 
@@ -264,7 +272,7 @@ async def _get_bot_trades(uid: int, bot_id: int) -> List[Trade]:
 
 
 @atomic()
-async def _create_user_bot(uid: str, channel: str, api_id: int, config: dict) -> int:
+async def _create_user_bot(uid: str, channel: str, config: dict) -> int:
     logger.info(f"Create new bot for user [{uid}]")
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
@@ -272,6 +280,7 @@ async def _create_user_bot(uid: str, channel: str, api_id: int, config: dict) ->
         raise BackendException("Invalid uid")
 
     # validate api belongs to user
+    api_id = config["api"]["api_id"]
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
     if api is None:
         raise BackendException("Invalid api_id")
@@ -300,7 +309,8 @@ async def _create_user_bot(uid: str, channel: str, api_id: int, config: dict) ->
     bot_order = await BotOrder.create(
         channel=channel,
         user=user,
-        config=bot_config
+        config=bot_config,
+        status="RUNNING"
     )
 
     bot_config.bot = bot_order

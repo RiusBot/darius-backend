@@ -115,7 +115,7 @@ version:
 ###########################
 
 start-local:
-	GOOGLE_APPLICATION_CREDENTIALS=$(CREDENTIAL) project_id=$(PROJECT_ID) python -m main.src.server.service
+	GOOGLE_APPLICATION_CREDENTIALS=$(CREDENTIAL) project_id=local python -m main.src.server.service
 
 mysql-proxy:
 	wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
