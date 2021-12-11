@@ -21,6 +21,7 @@ class Api(BaseModel):
     class Meta:
         table = "api"
         table_description = "Api"
+        unique_together=("api_key", "api_secret")
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:

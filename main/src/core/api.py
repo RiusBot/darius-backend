@@ -65,16 +65,24 @@ async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: st
         raise BackendException("Invalid uid")
 
     # validate api number
-    api_list = await user.api_user.filter(is_del=False).all()
-    if api_list and len(api_list) > 3:
+    api_list = await user.api_user.all()
+    valid_api_list = [api for api in api_list if not api.is_del]
+    if valid_api_list and len(valid_api_list) > 3:
         raise BackendException("Maximum 3 api per user")
-
-    # validate api duplicate
-    if api_key in set([api["api_key"] for api in api_list]) or api_secret in set([api["api_secret"] for api in api_list]):
-        raise BackendException("Duplicate api")
 
     # validate api permission
     validate_api_permission(api_key, api_secret, exchange, subaccount)
+
+    # validate api duplicate
+    for api in api_list:
+        if (api.api_key, api.api_secret) == (api_key, api_secret):
+            if api.is_del is False:
+                raise BackendException("Duplicate api")
+            else:
+                api.is_del = False
+                await api.save()
+                logger.info(f"Restore api [{api.id}]")
+                return api.id
 
     # create api
     api = await Api.create(

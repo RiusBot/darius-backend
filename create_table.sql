@@ -79,6 +79,7 @@ CREATE TABLE `api` (
     `subaccount` varchar(32),
     KEY (`user_id`),
     KEY (`exchange`),
+    UNIQUE KEY `api_cred` (`api_key`,`api_secret`),
     CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id)
 ) CHARACTER SET utf8;
 
