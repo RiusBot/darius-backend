@@ -2,12 +2,12 @@
 
 runtime: python37
 entrypoint: python -m main.src.server.service
+service: darius-backend
 
 
 # if use docker:
 # runtime: custom
 # env: flex
-# service: darius-backend
 
 # resources:
 #   cpu: 1
