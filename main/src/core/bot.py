@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
-def _execute_bot_signal(loop, **kwargs):
-    loop.create_task(execute(**kwargs))
+def _execute_bot_signal(loop, *args, **kwargs):
+    loop.create_task(execute(*args, **kwargs))
     logger.info("execute bot signal complete.")
 
 
@@ -91,8 +91,10 @@ def send_to_execute(config: dict):
                 response = response.text
             return response
     except Exception as e:
-        return traceback.format_exc()
-        return str(e)
+        # logger.exception("")
+        # return str(e)
+        logger.error(str(e))
+        return "EXECUTE ERROR"
 
 
 async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=None) -> Dict[Future, int]:
@@ -115,7 +117,6 @@ async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, li
         bot_id = task_dict[task]
         result = task.result()
         result_dict[bot_id] = result
-        print(result)
     logger.info(f"Recieve {len(result_dict)} results")
     return result_dict
 
@@ -187,6 +188,8 @@ async def write_message(
 
 
 async def execute(
+    thread_id: int,
+    BotStatus: dict,
     channel: str,
     content: str,
     symbol: str,
@@ -198,31 +201,91 @@ async def execute(
     take_profit: float = None,
     price: float = None,
 ):
-    logger.info("Execute bot signal")
     try:
+        status_logger = ThreadStatusLogger(thread_id, BotStatus)
+        status_logger.log("Starting execute bot signal")
+        get_all_bot_success = False
 
-        bot_dict, message = await asyncio.gather(
-            get_all_bot(channel),
-            write_message(channel, content, symbol, action, message_timestamp, recieve_timestamp, entry, stop_loss, take_profit)
-        )
+        try:
+            status_logger.log("Get all bot and write message.")
+            bot_dict, message = await asyncio.gather(
+                get_all_bot(channel),
+                write_message(channel, content, symbol, action, message_timestamp, recieve_timestamp, entry, stop_loss, take_profit)
+            )
+            get_all_bot_success = True
+        except Exception as e:
+            error_msg = f"get all bot and write message error. {e}"
+            status_logger.log(
+                json.dumps(
+                    {
+                        "error": error_msg,
+                        "traceback": traceback.format_exc()
+                    },
+                    indent=4
+                ),
+                "error"
+            )
 
-        config_list = get_all_bot_config(bot_dict)
+        if get_all_bot_success:
+            try:
+                status_logger.log("Prepare data")
+                config_list = get_all_bot_config(bot_dict)
+                data_dict = {
+                    "symbol": symbol,
+                    "action": action,
+                    "scalp_entry": entry,
+                    "scalp_stop_loss": stop_loss,
+                    "scalp_take_profit": take_profit,
+                    "price": price,
+                }
+                status_logger.log_data(data_dict)
+                task_dict = await send_bot_executor(config_list, data_dict)
+                result_dict = await recieve_execute_result(task_dict)
+            except Exception as e:
+                error_msg = f"send and receive data error. {e}"
+                status_logger.log(
+                    json.dumps(
+                        {
+                            "error": error_msg,
+                            "traceback": traceback.format_exc()
+                        },
+                        indent=4
+                    ),
+                    "error"
+                )
+                result_dict = {bot_id: 'EXECUTE ERROR' for bot_id in bot_dict}
 
-        data_dict = {
-            "symbol": symbol,
-            "action": action,
-            "scalp_entry": entry,
-            "scalp_stop_loss": stop_loss,
-            "scalp_take_profit": take_profit,
-            "price": price,
-        }
-        task_dict = await send_bot_executor(config_list, data_dict)
-        result_dict = await recieve_execute_result(task_dict)
-        await write_trade_result(message, result_dict, bot_dict)
+            try:
+                status_logger.log("write trade result.")
+                await write_trade_result(message, result_dict, bot_dict)
+            except Exception as e:
+                error_msg = f"write trade result error. {e}"
+                status_logger.log(
+                    json.dumps(
+                        {
+                            "error": error_msg,
+                            "traceback": traceback.format_exc()
+                        },
+                        indent=4
+                    ),
+                    "error"
+                )
 
     except Exception as e:
-        logger.error(f"execute bot signal error. {e}")
-        logger.exception("")
+        error_msg = f"Unexpected error. {e}"
+        status_logger.log(
+            json.dumps(
+                {
+                    "error": error_msg,
+                    "traceback": traceback.format_exc()
+                },
+                indent=4
+            ),
+            "error"
+        )
+    finally:
+        status_logger.log("Complete")
+        BotStatus.pop(thread_id)
 
 
 @atomic()
@@ -341,3 +404,19 @@ async def _delete_user_bot(uid: str, bot_id: int) -> int:
     bot.config.is_del = True
     await bot.config.save()
     await bot.save()
+
+
+class ThreadStatusLogger():
+    def __init__(self, thread_id: int, BotStatus: dict):
+        self.id = thread_id
+        self.status_dict = BotStatus[thread_id]
+        self.status_dict["log"] = []
+        self.status_dict["data"] = {}
+
+    def log(self, msg: str, level: str = "info"):
+        log_func = getattr(logger, level)
+        log_func(msg)
+        self.status_dict["log"].append(msg)
+
+    def log_data(self, data: dict):
+        self.status_dict["data"] = data

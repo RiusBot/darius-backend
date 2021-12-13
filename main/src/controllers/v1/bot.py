@@ -1,27 +1,53 @@
 import logging
 import asyncio
 import threading
+from collections import defaultdict
 from aiohttp.web import json_response
 from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot
 from main.src.exception import BackendException
 
 
 logger = logging.getLogger(__name__)
+ThreadID = 0
+BotStatus = defaultdict(dict)
+
+
+async def get_executing_status(request):
+    try:
+        logger.info("Get execution thread status")
+        return json_response(
+            status=200,
+            data={
+                "bot_status": BotStatus
+            }
+        )
+    except Exception as e:
+        logger.error("Get bot status error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
 
 
 async def execute_bot_signal(request):
-
+    global ThreadID, BotStatus
     json_payload = await request.json()
 
     try:
         logger.info("Start bot signal thread")
         thread = threading.Thread(
             target=_execute_bot_signal,
-            args=(asyncio.get_event_loop(),),
+            args=(asyncio.get_event_loop(), ThreadID, BotStatus),
             kwargs=json_payload,
             daemon=True
         )
         thread.start()
+        ThreadID += 1
 
         return json_response(
             status=200,

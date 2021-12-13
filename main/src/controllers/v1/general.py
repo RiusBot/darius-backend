@@ -18,8 +18,6 @@ async def get_health_readiness(request):
 
 async def create_test_data(request):
 
-    json_payload = await request.json()
-
     @atomic()
     async def create():
         from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription
