@@ -12,8 +12,8 @@ tags:
 - name: account
 - name: plan
 - name: subscription
-security:
-  - bearerAuth: [] 
+# security:
+#   - bearerAuth: []
 paths:
   /health_liveness:
     get:
@@ -177,6 +177,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/Unexpected'
+  
+  /get_executing_status:
+    get:
+      tags:
+      - bot
+      summary: get bot executing status. Check if unexpected error and dangling threads
+      operationId: main.src.controllers.v1.bot.get_executing_status
+      responses:
+        '200':
+          description: received
         default:
           $ref: '#/components/responses/Unexpected'
   

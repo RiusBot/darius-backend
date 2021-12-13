@@ -136,6 +136,8 @@ async def _delete_user_api(uid: str, api_id: int) -> int:
     if api is None:
         raise BackendException("Invalid api_id")
 
+    # validate no bot using
+
     # delete api
     api.is_del = True
     await api.save()
