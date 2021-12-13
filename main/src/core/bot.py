@@ -93,6 +93,7 @@ def send_to_execute(config: dict):
     except Exception as e:
         # logger.exception("")
         # return str(e)
+        logger.error(str(e))
         return "EXECUTE ERROR"
 
 
@@ -185,7 +186,7 @@ async def write_message(
         logger.error(f"write message error. {e}")
         logger.exception("")
 
-        
+
 async def execute(
     thread_id: int,
     BotStatus: dict,
@@ -220,7 +221,8 @@ async def execute(
                         "error": error_msg,
                         "traceback": traceback.format_exc()
                     },
-                indent=4),
+                    indent=4
+                ),
                 "error"
             )
 

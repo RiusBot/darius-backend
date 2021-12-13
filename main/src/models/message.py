@@ -32,7 +32,16 @@ class Message(BaseModel):
         exclude = ["created_at", "id", "is_del"]
 
     def __str__(self):
-        return f"Message [{self.id}]\nchannel: {self.channel}\n{self.content}\n\nsymbol: {self.symbol}\naction: {self.action}\nentry: {self.entry}\nstop loss: {self.stop_loss}\ntake profit: {self.take_profit}"
+        return f"""Message [{self.id}]
+channel: {self.channel}
+content: {self.content}
+===============================================
+symbol: {self.symbol}
+action: {self.action}
+entry: {self.entry}
+stop loss: {self.stop_loss}
+take profit: {self.take_profit}
+"""
 
 
 MessageSchemaModel = pydantic_model_creator(Message, name="Message")

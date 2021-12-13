@@ -3,12 +3,11 @@ import json
 import requests
 import logging
 import functools
-from firebase_admin import auth, initialize_app
+from firebase_admin import auth
 from jose import JWTError
 from werkzeug.exceptions import Unauthorized
 
 
-initialize_app()
 usingProjectId = os.getenv('project_id', 'local')
 logger = logging.getLogger(__name__)
 

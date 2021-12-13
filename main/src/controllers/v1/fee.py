@@ -1,6 +1,6 @@
 from aiohttp.web import json_response
 from main.src.core import fee
-from main.src.exception import BackendException
+# from main.src.exception import BackendException
 
 
 async def user_confirm_payment(request):

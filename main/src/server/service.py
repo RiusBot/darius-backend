@@ -3,6 +3,7 @@ import logging
 from connexion import AioHttpApp
 import aiohttp_cors
 from tortoise.contrib.aiohttp import register_tortoise
+from firebase_admin import initialize_app
 
 from main.src.config import app_config, db_config, configure_logging
 
@@ -33,6 +34,7 @@ def main():
         db_config,
     )
 
+    initialize_app()
     app.run()
 
 

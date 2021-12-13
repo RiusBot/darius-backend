@@ -2,7 +2,6 @@ from typing import Type
 import os
 import yaml
 import logging
-# from firebase_admin import firestore
 
 
 ENVIRON_KEYS = [
@@ -30,6 +29,7 @@ class BaseConfig:
 
 
 ENV = os.environ.get('ENV', 'development')
+usingProjectId = os.getenv('project_id', 'local')
 
 ENV_CONFIGS = {
     'development': BaseConfig,
@@ -78,12 +78,14 @@ def get_app_config() -> dict:
         if not key.startswith("_"):
             dict_conf[key] = getattr(obj_conf, key)
 
-    # firestore_conf = get_config_from_firestore()
-    # dict_conf.update(firestore_conf)
+    if usingProjectId != "local":
+        firestore_conf = get_config_from_firestore()
+        dict_conf.update(firestore_conf)
     return dict_conf
 
 
 def get_config_from_firestore():
+    from firebase_admin import firestore
     db = firestore.Client()
     sql_config = db.collection("config").document("sql").get().to_dict()
     return sql_config
