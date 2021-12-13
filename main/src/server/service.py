@@ -1,3 +1,4 @@
+import os
 import logging
 
 from connexion import AioHttpApp
