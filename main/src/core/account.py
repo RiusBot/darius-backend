@@ -48,13 +48,12 @@ async def _get_user_profile(uid: str):
 
 @atomic()
 async def _create_user(uid: str):
-
     role = await Role.filter(is_del=False).filter(name="user").first()
     user = await User.filter(uid=uid).first()
     if user:
         logger.info("User %s was created before, will activate user", user)
         user.is_del = False
-        return user
+        return user.id
     user = await User.create(
         uid=uid,
         role=role,

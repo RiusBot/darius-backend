@@ -68,10 +68,9 @@ async def create_user(request):
               "user_id": user_id
             }
         )
-    except Exception as e:
-        logger.error("Create user profile error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+    except Exception as ex:
+        logger.exception("Create user profile error. due to: %s", ex)
+        error_message = str(ex) if isinstance(ex, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
             data={
