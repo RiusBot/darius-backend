@@ -12,8 +12,8 @@ tags:
 - name: account
 - name: plan
 - name: subscription
-# security:
-#   - bearerAuth: []
+security:
+  - bearerAuth: []
 paths:
   /health_liveness:
     get:

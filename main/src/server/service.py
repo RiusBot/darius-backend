@@ -9,6 +9,7 @@ from main.src.config import app_config, db_config, configure_logging
 
 
 logger = logging.getLogger(__name__)
+usingProjectId = os.getenv('project_id', 'local')
 
 
 def main():
