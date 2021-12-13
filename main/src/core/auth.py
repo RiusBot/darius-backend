@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 async def openapi_auth(bearer_token: str, request):
-    json_payload = await request.json()
+    if request._method == "GET":
+        json_payload = dict(request.rel_url.query)
+    else:
+        json_payload = await request.json()
     json_payload['idToken'] = bearer_token
     json_payload['token'] = bearer_token
     if usingProjectId != "local":
