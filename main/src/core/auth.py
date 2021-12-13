@@ -4,11 +4,24 @@ import requests
 import logging
 import functools
 from firebase_admin import auth, initialize_app
+from jose import JWTError
+from werkzeug.exceptions import Unauthorized
 
 
 initialize_app()
 usingProjectId = os.getenv('project_id', 'local')
 logger = logging.getLogger(__name__)
+
+
+async def openapi_auth(bearer_token: str, request):
+    json_payload = await request.json()
+    json_payload['idToken'] = bearer_token
+    json_payload['token'] = bearer_token
+    if usingProjectId != "local":
+        if check_client_access(json_payload) is False:
+            if check_server_access(json_payload) is False:
+                raise Unauthorized from JWTError
+    return {'sub': ''}
 
 
 def authenticate(json_payload):

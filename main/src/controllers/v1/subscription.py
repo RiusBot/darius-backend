@@ -1,7 +1,6 @@
 import logging
 from aiohttp.web import json_response
 from main.src.core.subscription import _get_user_subscription, _create_user_subscription, _delete_user_subscription, _update_user_subscription
-from main.src.core.auth import authenticate
 from main.src.exception import BackendException
 
 
@@ -11,12 +10,6 @@ logger = logging.getLogger(__name__)
 async def get_user_subscription(request):
 
     json_payload = dict(request.rel_url.query)
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Get subscription")
@@ -42,12 +35,6 @@ async def get_user_subscription(request):
 async def create_user_subscription(request):
 
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Create subscription")
@@ -76,12 +63,6 @@ async def create_user_subscription(request):
 async def update_user_subscription(request):
 
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Update subscription")
@@ -111,12 +92,6 @@ async def update_user_subscription(request):
 async def delete_user_subscription(request):
 
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Delete subscription")

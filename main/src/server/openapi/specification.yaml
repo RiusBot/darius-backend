@@ -12,6 +12,8 @@ tags:
 - name: account
 - name: plan
 - name: subscription
+security:
+  - bearerAuth: [] 
 paths:
   /health_liveness:
     get:
@@ -19,6 +21,7 @@ paths:
       - general
       summary: Return a 200 status if health check is successful
       operationId: main.src.controllers.v1.general.get_health_liveness
+      security: []
       responses:
         200:
           description: Liveness Health check is successful
@@ -40,6 +43,7 @@ paths:
       - general
       summary: Return a 200 status if health check is successful
       operationId: main.src.controllers.v1.general.get_health_readiness
+      security: []
       responses:
         200:
           description: Readiness Health check is successful
@@ -102,6 +106,7 @@ paths:
       - account
       summary: create user profile
       operationId: main.src.controllers.v1.account.create_user
+      security: []
       requestBody:
         required: True
         content:
@@ -518,6 +523,7 @@ paths:
       - plan
       summary: get plan
       operationId: main.src.controllers.v1.plan.get_plan
+      security: []
       parameters:
         - in: query
           name: plan_id
@@ -798,9 +804,11 @@ paths:
 components:
 
   securitySchemes:
-    basicAuth:
+    bearerAuth:
       type: http
-      scheme: basic
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: main.src.core.auth.openapi_auth
 
   responses:
     NotFound:

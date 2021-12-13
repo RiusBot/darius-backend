@@ -1,7 +1,6 @@
 import logging
 from aiohttp.web import json_response
 from main.src.core.account import _update_user_profile, _get_user_profile, _create_user, _delete_user
-from main.src.core.auth import authenticate
 from main.src.exception import BackendException
 
 
@@ -11,12 +10,6 @@ logger = logging.getLogger(__name__)
 async def update_user_profile(request):
 
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Update user profile %s", json_payload)
@@ -24,8 +17,8 @@ async def update_user_profile(request):
         user_name = json_payload["user_name"]
         await _update_user_profile(uid, user_name)
         return json_response(status=200, data={})
-    except Exception as ex:
-        logger.exception("Unexpected error when updating user profile, due to: %s", ex)
+    except Exception as e:
+        logger.exception("Unexpected error when updating user profile, due to: %s", e)
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
             status=500,
@@ -39,13 +32,6 @@ async def update_user_profile(request):
 async def get_user_profile(request):
 
     json_payload = dict(request.rel_url.query)
-
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Get user profile %s", json_payload)
@@ -71,13 +57,6 @@ async def get_user_profile(request):
 async def create_user(request):
 
     json_payload = await request.json()
-
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Create user profile")
@@ -105,13 +84,6 @@ async def create_user(request):
 async def delete_user(request):
 
     json_payload = await request.json()
-
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Delete user profile %s", json_payload)

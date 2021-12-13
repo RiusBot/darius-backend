@@ -1,7 +1,6 @@
 import logging
 from aiohttp.web import json_response
 from main.src.core.plan import _get_plan, _create_plan, _delete_plan, _update_plan
-from main.src.core.auth import authenticate
 from main.src.exception import BackendException
 
 
@@ -37,12 +36,6 @@ async def get_plan(request):
 async def create_plan(request):
 
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Create plan")
@@ -74,12 +67,6 @@ async def create_plan(request):
 async def update_plan(request):
 
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Update plan")
@@ -110,12 +97,6 @@ async def update_plan(request):
 async def delete_plan(request):
 
     json_payload = await request.json()
-    if authenticate(json_payload) is False:
-        logger.error("access token is not valid")
-        response_data = {
-            "message": "access token is not valid"
-        }
-        return json_response(data=response_data, status=401)
 
     try:
         logger.info("Delete plan")
