@@ -106,7 +106,6 @@ paths:
       - account
       summary: create user profile
       operationId: main.src.controllers.v1.account.create_user
-      security: []
       requestBody:
         required: True
         content:
