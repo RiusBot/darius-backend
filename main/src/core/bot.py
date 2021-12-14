@@ -13,7 +13,7 @@ from tortoise.queryset import QuerySet
 from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List, Dict, Tuple
-from main.src.models import BotOrder, BotConfig, Trade, Message, User
+from main.src.models import BotOrder, BotConfig, Trade, Message, User, Plan
 from main.src.config import app_config
 from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
@@ -351,8 +351,12 @@ async def _create_user_bot(uid: str, channel: str, config: dict) -> int:
         raise BackendException("Invalid api_id")
 
     # validate channel subscription
-    plans = await user.subscription_user.filter(is_del=False).all().prefetch_related("plan")
-    channels = set([i.plan.channel.value for i in plans])
+    # plans = await user.subscription_user.filter(is_del=False).all().prefetch_related("plan")
+    # channels = set([i.plan.channel.value for i in plans])
+
+    plans = await Plan.filter(is_del=False).all()
+    channels = set([i.channel.value for i in plans])
+
     if channel not in channels and "darius" not in channels:
         raise BackendException("Invalid channel")
 

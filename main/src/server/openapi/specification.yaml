@@ -946,7 +946,6 @@ components:
       required:
       - api_key
       - exchange
-      - subaccount
       
     API_WRITE:
       type: object
