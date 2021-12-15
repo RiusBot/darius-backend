@@ -1005,6 +1005,7 @@ components:
         take_profit:
           type: number
           minimum: 0
+          maximum: 5
           nullable: true
         order_type:
           type: string
