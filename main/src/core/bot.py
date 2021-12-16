@@ -204,15 +204,23 @@ async def execute(
     try:
         status_logger = ThreadStatusLogger(thread_id, BotStatus)
         status_logger.log("Starting execute bot signal")
-        get_all_bot_success = False
 
         try:
             status_logger.log("Get all bot and write message.")
             bot_dict, message = await asyncio.gather(
                 get_all_bot(channel),
-                write_message(channel, content, symbol, action, message_timestamp, recieve_timestamp, entry, stop_loss, take_profit)
+                write_message(
+                    channel,
+                    content,
+                    symbol,
+                    action,
+                    datetime.fromtimestamp(message_timestamp),
+                    datetime.fromtimestamp(recieve_timestamp),
+                    entry,
+                    stop_loss,
+                    take_profit
+                )
             )
-            get_all_bot_success = True
         except Exception as e:
             error_msg = f"get all bot and write message error. {e}"
             status_logger.log(
@@ -226,7 +234,7 @@ async def execute(
                 "error"
             )
 
-        if get_all_bot_success:
+        if bot_dict is not None and message is not None:
             try:
                 status_logger.log("Prepare data")
                 config_list = get_all_bot_config(bot_dict)

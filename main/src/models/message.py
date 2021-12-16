@@ -29,7 +29,7 @@ class Message(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id", "is_del"]
+        exclude = ["created_at", "is_del"]
 
     def __str__(self):
         return f"""Message [{self.id}]
