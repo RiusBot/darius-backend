@@ -2,6 +2,7 @@ import logging
 from aiohttp.web import json_response
 from main.src.core.plan import _get_plan, _create_plan, _delete_plan, _update_plan
 from main.src.exception import BackendException
+from main.src.core.validator import filter_illegal_char
 
 
 logger = logging.getLogger(__name__)
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 async def get_plan(request):
 
     json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Get plan")
@@ -36,6 +38,7 @@ async def get_plan(request):
 async def create_plan(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Create plan")
@@ -67,6 +70,7 @@ async def create_plan(request):
 async def update_plan(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Update plan")
@@ -97,6 +101,7 @@ async def update_plan(request):
 async def delete_plan(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Delete plan")

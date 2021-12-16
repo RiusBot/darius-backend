@@ -90,7 +90,7 @@ paths:
                   minLength: 28
                 user_name:
                   type: string
-                  maxLength: 50
+                  maxLength: 16
               required:
                 - uid
                 - user_name
@@ -915,10 +915,10 @@ components:
           minLength: 28
         user_name:
           type: string
-          maxLength: 50
+          maxLength: 16
         email: 
           type: string
-          maxLength: 50
+          maxLength: 32
       required:
         - uid
         - user_name

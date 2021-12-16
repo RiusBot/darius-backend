@@ -5,6 +5,7 @@ from collections import defaultdict
 from aiohttp.web import json_response
 from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot
 from main.src.exception import BackendException
+from main.src.core.validator import filter_illegal_char
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ async def get_executing_status(request):
 async def execute_bot_signal(request):
     global ThreadID, BotStatus
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Start bot signal thread")
@@ -69,6 +71,7 @@ async def execute_bot_signal(request):
 async def get_user_bots(request):
 
     json_payload = json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Start get user bots")
@@ -94,6 +97,7 @@ async def get_user_bots(request):
 async def get_bot_trades(request):
 
     json_payload = json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Get bot trades")
@@ -120,6 +124,7 @@ async def get_bot_trades(request):
 async def create_user_bot(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Create bot")
@@ -149,6 +154,7 @@ async def create_user_bot(request):
 async def delete_user_bot(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Delete bot")

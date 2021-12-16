@@ -2,6 +2,7 @@ import logging
 from aiohttp.web import json_response
 from main.src.core.api import _get_user_api, _create_user_api, _delete_user_api, _update_user_api
 from main.src.exception import BackendException
+from main.src.core.validator import filter_illegal_char
 
 
 logger = logging.getLogger(__name__)
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 async def get_user_api(request):
 
     json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Get user api")
@@ -35,6 +37,7 @@ async def get_user_api(request):
 async def create_user_api(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Create user api")
@@ -66,6 +69,7 @@ async def create_user_api(request):
 async def update_user_api(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Update user api")
@@ -96,6 +100,7 @@ async def update_user_api(request):
 async def delete_user_api(request):
 
     json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Delete api")
