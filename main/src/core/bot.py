@@ -31,16 +31,19 @@ def _execute_bot_signal(loop, *args, **kwargs):
 @atomic()
 async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     logger.info("Get all bot")
+    try:
+        bot_dict = {}
+        async for bot in BotOrder.filter(is_del=False).filter(status="RUNNING").filter(channel=channel).all().prefetch_related(
+            "config__api",
+            "user",
+        ).order_by("config__order_type"):
+            bot_dict[bot.id] = bot
 
-    bot_dict = {}
-    async for bot in BotOrder.filter(is_del=False).filter(status="RUNNING").filter(channel=channel).all().prefetch_related(
-        "config__api",
-        "user",
-    ).order_by("config__order_type"):
-        bot_dict[bot.id] = bot
-
-    logger.info(f"{len(bot_dict)} bots")
-    return bot_dict
+        logger.info(f"{len(bot_dict)} bots")
+        return bot_dict
+    except Exception as e:
+        logger.error(f"get all bot error. {e}")
+        logger.exception("")
 
 
 def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
