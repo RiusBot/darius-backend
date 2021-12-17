@@ -90,6 +90,8 @@ def send_to_execute(config: dict):
                 response = response.json()
                 if "error_message" in response:
                     response = str(response["error_message"])
+                elif "error_messages" in response:
+                    response = str(response["error_messages"])
             except Exception:
                 response = response.text
             return response
@@ -108,7 +110,7 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=No
             config.update(data_dict)
             task = executor.submit(send_to_execute, config)
             task_dict[task] = config["bot_id"]
-            asyncio.sleep(0.2)
+            await asyncio.sleep(0.2)
         logger.info(f"All {len(config_list)} submitted.")
     return task_dict
 
@@ -131,6 +133,7 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
     trade_list = []
     for bot_id, result in result_dict.items():
         bot = bot_dict[bot_id]
+        logger.info(json.dumps(result, indent=4))
 
         if isinstance(result, str):  # error
             trade = Trade(
@@ -172,6 +175,17 @@ async def write_message(
     take_profit: float
 ):
     logger.info("Write message")
+    logger.info(json.dumps({
+        "channel": channel,
+        "content": content,
+        "symbol": symbol,
+        "action": action,
+        "message_timestamp": message_timestamp.isoformat(),
+        "recieve_timestamp": recieve_timestamp.isoformat(),
+        "entry": entry,
+        "stop_loss": stop_loss,
+        "take_profit": take_profit
+    }, indent=4))
     try:
         message = await Message.create(
             channel=channel,
@@ -207,6 +221,7 @@ async def execute(
     try:
         status_logger = ThreadStatusLogger(thread_id, BotStatus)
         status_logger.log("Starting execute bot signal")
+        bot_dict, message = None, None
 
         try:
             status_logger.log("Get all bot and write message.")
@@ -237,7 +252,7 @@ async def execute(
                 "error"
             )
 
-        if bot_dict is not None and message is not None:
+        if bot_dict is not None and message is not None and action is not None:
             try:
                 status_logger.log("Prepare data")
                 config_list = get_all_bot_config(bot_dict)
