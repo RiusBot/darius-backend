@@ -987,7 +987,6 @@ components:
         leverage:
           type: number
           minimum: 0
-          maximum: 1
         margin:
           type: number
           minimum: 0
