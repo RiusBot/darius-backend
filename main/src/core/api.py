@@ -33,6 +33,13 @@ async def _get_user_api(uid: str) -> List[Api]:
 
 def validate_api_permission(api_key: str, api_secret: str, exchange: str, subaccount: str):
 
+    if exchange == "ftx":
+        if len(api_key) != 40 or len(api_secret) != 40:
+            raise BackendException(f"Invalid length")
+    elif exchange == "binance":
+        if len(api_key) != 64 or len(api_secret) != 64:
+            raise BackendException(f"Invalid length")
+
     headers = {}
     if subaccount:
         if exchange == "ftx":
