@@ -14,7 +14,7 @@ class Api(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="api_user")
     api_key = fields.CharField(64, null=False)
-    api_secret = fields.CharField(64, null=False)
+    api_secret = fields.CharField(400, null=False)
     exchange = fields.CharEnumField(Exchange, max_length=16, null=False)
     subaccount = fields.CharField(32, null=True)
 

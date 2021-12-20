@@ -17,6 +17,7 @@ from main.src.models import BotOrder, BotConfig, Trade, Message, User, Plan
 from main.src.config import app_config
 from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
+from main.src.core.cipher import decrypt
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,12 @@ def send_to_execute(config: dict):
         logger.info(f"Send config to execute: {url}")
         if usingProjectId != "local":
             config["token"] = fetch_secret_token_firestore()
+
+        try:
+            config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
+        except Exception:
+            logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
+            logger.exception("")
 
         with requests.Session() as s:
             response = s.post(url, json=config, timeout=3600)

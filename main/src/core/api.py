@@ -6,6 +6,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
 from main.src.models import Api, User
 from main.src.exception import BackendException
+from main.src.core.cipher import encrypt
 
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,9 @@ async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: st
 
     # validate api permission
     validate_api_permission(api_key, api_secret, exchange, subaccount)
+
+    # encrypt api_secret
+    api_secret = encrypt(api_key, api_secret)
 
     # validate api duplicate
     for api in api_list:
