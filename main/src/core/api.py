@@ -21,7 +21,7 @@ async def _get_user_api(uid: str) -> List[Api]:
 
     Api_Pydantic_List = pydantic_queryset_creator(
         Api,
-        include=["api_key", "exchange", "id"]
+        include=["api_key", "exchange", "id", "subaccount"]
     )
     api_list = await Api_Pydantic_List.from_queryset(user.api_user.filter(is_del=False).all())
     api_list = json.loads(api_list.json())
