@@ -22,7 +22,11 @@ service: darius-backend
 
 
 env_variables:
-  project_id: darius-332003
+  project_id: darius-332003\
+  
+automatic_scaling:
+  max_instances: 10
+  
 
 
 # entrypoint: gunicorn -b :$PORT main:app

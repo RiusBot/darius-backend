@@ -75,7 +75,7 @@ async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: st
     # validate api number
     api_list = await user.api_user.all()
     valid_api_list = [api for api in api_list if not api.is_del]
-    if valid_api_list and len(valid_api_list) > 3:
+    if valid_api_list and len(valid_api_list) >= 3:
         raise BackendException("Maximum 3 api per user")
 
     # validate api permission
