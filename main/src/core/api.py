@@ -35,10 +35,10 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
 
     if exchange == "ftx":
         if len(api_key) != 40 or len(api_secret) != 40:
-            raise BackendException(f"Invalid length")
+            raise BackendException("Invalid length")
     elif exchange == "binance":
         if len(api_key) != 64 or len(api_secret) != 64:
-            raise BackendException(f"Invalid length")
+            raise BackendException("Invalid length")
 
     headers = {}
     if subaccount:

@@ -1,6 +1,6 @@
 PROJECT_ID=darius-332003
 CREDENTIAL=darius-332003-6391a8358dec.json
-
+IMAGE_NAME = darius-backend
 
 ###########################
 # General
@@ -17,6 +17,9 @@ flake8-check:
 
 black-check:
 	python -m black --line-length 188 --target-version=py37 --check ./
+
+clean:
+	@find . -name ".ipynb*" -exec rm -rv {} +
 
 
 ###########################
@@ -96,7 +99,7 @@ uninstall:
 	pipenv clean
 	pipenv --rm
 
-clean:
+clear:
 	find . -name "*.py[co]" -delete
 	find . -name "*~" -delete
 	find . -name "__pycache__" -delete
@@ -139,3 +142,9 @@ deploy:
     
 deploy-docker:
 	gcloud app deploy --image-url=gcr.io/$(PROJECT_ID)/darius-backend:latest
+
+browse:
+	gcloud app browse --project=$(PROJECT_ID)
+
+log:
+	gcloud app logs tail -s $(IMAGE_NAME)
