@@ -111,13 +111,13 @@ def send_to_execute(config: dict):
 
 async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=None) -> Dict[Future, int]:
     logger.info("Start activate bot executor")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         task_dict = dict()
         for config in config_list:
             config.update(data_dict)
             task = executor.submit(send_to_execute, config)
             task_dict[task] = config["bot_id"]
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(1)
         logger.info(f"All {len(config_list)} submitted.")
     return task_dict
 
