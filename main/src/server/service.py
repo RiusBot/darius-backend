@@ -22,7 +22,7 @@ def main():
                               for domain in app_config['CORS_ALLOW_ORIGIN']}
     cors = aiohttp_cors.setup(app.app, defaults=cors_allow_origin_dict)
 
-    app.add_api(
+    api = app.add_api(
         'specification.yaml',
         pass_context_arg_name='request',
         strict_validation=True,

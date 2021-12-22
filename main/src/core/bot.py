@@ -91,16 +91,20 @@ def send_to_execute(config: dict):
             logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
             logger.exception("")
 
+        max_retry = 3
         with requests.Session() as s:
-            response = s.post(url, json=config, timeout=3600)
-            try:
-                response = response.json()
-                if "error_message" in response:
-                    response = str(response["error_message"])
-                elif "error_messages" in response:
-                    response = str(response["error_messages"])
-            except Exception:
-                response = response.text
+            for i in range(max_retry):
+                response = s.post(url, json=config, timeout=600)
+                try:
+                    response = response.json()
+                    if "error_message" in response:
+                        response = str(response["error_message"])
+                    elif "error_messages" in response:
+                        response = str(response["error_messages"])
+                except Exception:
+                    response = response.text
+                if not (isinstance(response, str) and "Rate exceeded" in response):
+                    break
             return response
     except Exception as e:
         # logger.exception("")
@@ -125,7 +129,7 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=No
 async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, list]:
     logger.info("Receive execute result")
     result_dict = dict()
-    for task in concurrent.futures.as_completed(task_dict, timeout=600):
+    for task in concurrent.futures.as_completed(task_dict, timeout=60):
         bot_id = task_dict[task]
         result = task.result()
         result_dict[bot_id] = result
@@ -155,7 +159,7 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
                 user=bot.user,
                 bot=bot,
                 message=message,
-                status=result.get("status", "error"),
+                status=result.get("status", "unknown"),
                 open_order=result.get("open_order"),
                 sl_order=result.get("sl_order"),
                 tp_order=result.get("tp_order"),

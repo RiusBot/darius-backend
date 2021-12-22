@@ -43,7 +43,6 @@ def check_server_access(json_payload):
         return Token == requestToken
     except Exception:
         logger.error("exception when dealing with check_server_access token")
-        logger.exception("")
         return False
 
 
@@ -85,7 +84,6 @@ def check_client_access(json_payload):
         return (uid is not None)
     except Exception:
         logger.error("exception when dealing with check_client_access token")
-        logger.exception("")
         return False
 
 

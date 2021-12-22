@@ -68,7 +68,7 @@ async def create_test_data(request):
         )
         assert subscription is not None
     try:
-        await create()
+        # await create()
         return json_response(
             status=200,
             data={},
