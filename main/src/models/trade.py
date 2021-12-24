@@ -11,6 +11,7 @@ class TradeStatusType(str, Enum):
     CANCEL = "canceled"
     EXPIRE = "expired"
     ERROR = "error"
+    SUCCESS = "success"
 
 
 class Trade(BaseModel):

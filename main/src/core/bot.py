@@ -81,7 +81,6 @@ def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
 def send_to_execute(config: dict):
     try:
         url = app_config["BOT_EXECUTOR_ENDPOINT"]
-        logger.info(f"Send config to execute: {url}")
         if usingProjectId != "local":
             config["token"] = fetch_secret_token_firestore()
 

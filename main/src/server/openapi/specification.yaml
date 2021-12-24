@@ -905,6 +905,7 @@ components:
         - canceled
         - expired
         - error
+        - success
 
     User:
       type: object
