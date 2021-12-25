@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @atomic()
 @permission_validator("get_plan")
-async def _get_plan(plan_id: int) -> Plan:
+async def _get_plan(user: User, plan_id: int) -> Plan:
     logger.info(f"Get plan {plan_id}")
     plan = await Plan.filter(is_del=False).filter(id=plan_id).first()
     if plan is None:
@@ -25,10 +25,8 @@ async def _get_plan(plan_id: int) -> Plan:
 
 @atomic()
 @permission_validator("create_plan")
-async def _create_plan(name: str, channel: str, price: float, day: int) -> int:
+async def _create_plan(user: User, name: str, channel: str, price: float, day: int) -> int:
     logger.info("Create new plan")
-    import pdb
-    pdb.set_trace()
     plan = await Plan.create(
         name=name,
         channel=channel,
@@ -41,7 +39,7 @@ async def _create_plan(name: str, channel: str, price: float, day: int) -> int:
 
 @atomic()
 @permission_validator("update_plan")
-async def _update_plan(plan_id: int, name: str, channel: str, price: float, day: int) -> int:
+async def _update_plan(user: User, plan_id: int, name: str, channel: str, price: float, day: int) -> int:
     logger.info(f"Update plan [{plan_id}]")
     plan = await Plan.filter(is_del=False).filter(id=plan_id).first()
     if plan is None:
@@ -56,10 +54,10 @@ async def _update_plan(plan_id: int, name: str, channel: str, price: float, day:
 
 @atomic()
 @permission_validator("delete_plan")
-async def _delete_plan(plan_id: int) -> int:
+async def _delete_plan(user: User, plan_id: int) -> int:
     logger.info(f"Delete plan {plan_id}")
     plan = await Plan.filter(id=plan_id).filter(is_del=False).first()
     if plan is None:
-        raise BackendException("Invalid api_id")
+        raise BackendException("Invalid plan_id")
     plan.is_del = True
     await plan.save()

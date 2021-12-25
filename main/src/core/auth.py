@@ -6,6 +6,8 @@ import functools
 from firebase_admin import auth
 from jose import JWTError
 from werkzeug.exceptions import Unauthorized
+from google.cloud import secretmanager
+from firebase_admin import firestore
 
 
 usingProjectId = os.getenv('project_id', 'local')
@@ -48,7 +50,6 @@ def check_server_access(json_payload):
 
 @functools.lru_cache(maxsize=None)
 def fetch_secret_token_manager():
-    from google.cloud import secretmanager
     secretsManagerClient = secretmanager.SecretManagerServiceClient()
     name = secretsManagerClient.secret_version_path(usingProjectId, "backend", "latest")
     response = secretsManagerClient.access_secret_version(request={"name": name})
@@ -63,7 +64,6 @@ def fetch_secret_token_manager():
 
 @functools.lru_cache(maxsize=None)
 def fetch_secret_token_firestore():
-    from firebase_admin import firestore
     db = firestore.Client()
     Secret = db.collection("config").document("backend").get().to_dict()
     Token = Secret['auth_token']

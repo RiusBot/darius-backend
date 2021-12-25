@@ -14,12 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 @atomic()
-@permission_validator("get_api_user")
-async def _get_user_api(uid: str) -> List[Api]:
+@permission_validator("get_user_api")
+async def _get_user_api(user: User) -> List[Api]:
+    uid = user.uid
     logger.info(f"Get api for user {uid}")
-    user = await User.filter(uid=uid).first()
-    if user is None:
-        raise BackendException("Invalid uid")
 
     Api_Pydantic_List = pydantic_queryset_creator(
         Api,
@@ -67,7 +65,8 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
 
 @atomic()
 @permission_validator("create_user_api")
-async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
+async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
+    uid = user.uid
     logger.info(f"Create new api for user [{uid}]")
 
     # validate user
@@ -114,7 +113,8 @@ async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: st
 
 @atomic()
 @permission_validator("update_user_api")
-async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
+async def _update_user_api(user: User, api_id: int, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
+    uid = user.uid
     logger.info(f"Update api [{api_id}] for user [{uid}]")
 
     # validate user
@@ -140,7 +140,8 @@ async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str,
 
 @atomic()
 @permission_validator("delete_user_api")
-async def _delete_user_api(uid: str, api_id: int) -> int:
+async def _delete_user_api(user: User, api_id: int) -> int:
+    uid = user.uid
     logger.info(f"Delete api [{api_id}] for user {uid}")
 
     user = await User.filter(uid=uid).filter(is_del=False).first()

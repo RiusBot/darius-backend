@@ -19,9 +19,10 @@ def permission_validator(service):
 
             # validate permission
             permission = await user.role.permission_role.filter(is_del=False).filter(service=service).first()
+            permission = await user.role.permission_role.filter(is_del=False).all()
             if permission is None:
                 raise BackendException("Invalid permission")
-            return await f(*args, **kwargs)
+            return await f(user, *args, **kwargs)
 
         return wrapper
     return _permission_validator

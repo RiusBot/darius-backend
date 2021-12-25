@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 @atomic()
 @permission_validator("get_user_subscription")
-async def _get_user_subscription(uid: str) -> List[Subscription]:
+async def _get_user_subscription(user: User) -> List[Subscription]:
+    uid = user.uid
     logger.info(f"Get subscription for user {uid}")
     user = await User.filter(uid=uid).first()
     if user is None:
@@ -37,7 +38,8 @@ async def _get_user_subscription(uid: str) -> List[Subscription]:
 
 @atomic()
 @permission_validator("create_user_subscription")
-async def _create_user_subscription(uid: str, plan_id: int) -> int:
+async def _create_user_subscription(user: User, plan_id: int) -> int:
+    uid = user.uid
     logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
 
     # validate user
@@ -69,7 +71,8 @@ async def _create_user_subscription(uid: str, plan_id: int) -> int:
 
 @atomic()
 @permission_validator("update_user_subscription")
-async def _update_user_subscription(uid: str, subscription_id: int, expire_date: str, status: str) -> int:
+async def _update_user_subscription(user: User, subscription_id: int, expire_date: str, status: str) -> int:
+    uid = user.uid
     logger.info(f"Update subscription [{subscription_id}] for user [{uid}]")
 
     # validate user
@@ -95,7 +98,8 @@ async def _update_user_subscription(uid: str, subscription_id: int, expire_date:
 
 @atomic()
 @permission_validator("delete_user_subscription")
-async def _delete_user_subscription(uid: str, subscription_id: int) -> int:
+async def _delete_user_subscription(user: User, subscription_id: int) -> int:
+    uid = user.uid
     logger.info(f"Delete subscription [{subscription_id}] for user {uid}")
 
     user = await User.filter(uid=uid).filter(is_del=False).first()

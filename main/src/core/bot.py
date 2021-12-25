@@ -327,15 +327,13 @@ async def execute(
 
 @atomic()
 @permission_validator("get_user_bots")
-async def _get_user_bots(uid: str) -> List[BotOrder]:
+async def _get_user_bots(user: User) -> List[BotOrder]:
+    uid = user.uid
     logger.info(f"Get bots for user {uid}")
     Bot_Pydantic_List = pydantic_queryset_creator(
         BotOrder,
         include=["id", "config", "status", "channel", "config_id"]
     )
-    user = await User.filter(uid=uid).first()
-    if user is None:
-        raise BackendException("Invalid uid")
     bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False).all())
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
@@ -349,16 +347,13 @@ async def _get_user_bots(uid: str) -> List[BotOrder]:
 
 @atomic()
 @permission_validator("get_bot_trades")
-async def _get_bot_trades(uid: int, bot_id: int) -> List[Trade]:
+async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
+    uid = user.uid
     logger.info(f"Get trades from bot {bot_id} for user {uid}")
     Trade_Pydantic_List = pydantic_queryset_creator(
         Trade,
         exclude=["bot"]
     )
-
-    user = await User.filter(uid=uid).filter(is_del=False).first()
-    if user is None:
-        raise BackendException("Invalid uid")
 
     bot = await user.bot_user.filter(id=bot_id).first()
     if bot is None:
@@ -377,12 +372,9 @@ async def _get_bot_trades(uid: int, bot_id: int) -> List[Trade]:
 
 @atomic()
 @permission_validator("create_user_bot")
-async def _create_user_bot(uid: str, channel: str, config: dict) -> int:
+async def _create_user_bot(user: User, channel: str, config: dict) -> int:
+    uid = user.uid
     logger.info(f"Create new bot for user [{uid}]")
-
-    user = await User.filter(uid=uid).filter(is_del=False).first()
-    if user is None:
-        raise BackendException("Invalid uid")
 
     # validate api belongs to user
     api_id = config["api_id"]
@@ -432,7 +424,8 @@ async def _create_user_bot(uid: str, channel: str, config: dict) -> int:
 
 @atomic()
 @permission_validator("delete_user_bot")
-async def _delete_user_bot(uid: str, bot_id: int) -> int:
+async def _delete_user_bot(user: User, bot_id: int) -> int:
+    uid = user.uid
     logger.info(f"Delete bot[{bot_id}] for user {uid}")
 
     user = await User.filter(uid=uid).filter(is_del=False).first()
