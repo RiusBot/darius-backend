@@ -5,6 +5,7 @@ from tortoise.transactions import atomic
 from main.src.models import User, Role
 from main.src.models.user import UserSchemaModel
 from main.src.exception import BackendException
+from main.src.core.permission import permission_validator
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ def email_normalize_and_validate(email: str):
 
 
 @atomic()
+@permission_validator("update_user_profile")
 async def _update_user_profile(uid: str, user_name: str):
     user = await User.filter(uid=uid).first()
     if user is None:
@@ -37,6 +39,7 @@ async def _update_user_profile(uid: str, user_name: str):
 
 
 @atomic()
+@permission_validator("get_user_profile")
 async def _get_user_profile(uid: str):
     user = await User.filter(uid=uid).first()
     if user is None:
@@ -63,6 +66,7 @@ async def _create_user(uid: str):
 
 
 @atomic()
+@permission_validator("delete_user")
 async def _delete_user(uid: str, delete_uid: str):
     user = await User.filter(uid=uid).first()
     if user is None:

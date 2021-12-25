@@ -77,7 +77,7 @@ def check_client_access(json_payload):
         clientUserIdToken = json_payload.get('idToken')
         if clientUserIdToken is None or clientUserIdToken == '':
             return False
-        decoded_token = auth.verify_id_token(clientUserIdToken)
+        decoded_token = auth.verify_id_token(clientUserIdToken, check_revoked=True)
         if json_payload.get('uid') != decoded_token.get('uid'):
             return False
         uid = decoded_token.get('uid')

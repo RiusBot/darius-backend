@@ -1,17 +1,30 @@
 import ccxt
+import functools
+from firebase_admin import firestore
+from main.src.core.cipher import decrypt
 
 
-def read_database():
-    return 1, 2
+@functools.lru_cache(maxsize=None)
+def fetch_api_firestore(exchange: str):
+    db = firestore.Client()
+    Secret = db.collection("config").document("backend").get().to_dict()
+    api_key = Secret[f'{exchange}_api_key']
+    api_secret = decrypt(Secret[f'{exchange}_api_secret'])
+    return (api_key, api_secret)
 
 
-# read only api keys
-api_key, api_secret = read_database()
-exchange = ccxt.binance({
-    "enableRateLimit": True,
-    "api_key": api_key,
-    "api_secret": api_secret,
-    "options": {
-        "defaultType": "spot"
-    }
-})
+def init_exchange(exchange: str):
+    # read only api keys
+    api_key, api_secret = fetch_api_firestore(exchange)
+    return get_attr(ccxt, exchange)({
+        "enableRateLimit": True,
+        "api_key": api_key,
+        "api_secret": api_secret,
+        "options": {
+            "defaultType": "spot"
+        }
+    })
+    return exchange
+
+
+Exchange = init_exchange('binance')

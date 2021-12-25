@@ -3,7 +3,7 @@ CREATE TABLE `permission` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `role_id` int(11),
-    `service` varchar(50) UNIQUE NOT NULL,
+    `service` varchar(50) NOT NULL,
     KEY (`role_id`)
 ) CHARACTER SET utf8;
 

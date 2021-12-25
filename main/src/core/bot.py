@@ -18,6 +18,7 @@ from main.src.config import app_config
 from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
 from main.src.core.cipher import decrypt
+from main.src.core.permission import permission_validator
 
 
 logger = logging.getLogger(__name__)
@@ -325,6 +326,7 @@ async def execute(
 
 
 @atomic()
+@permission_validator("get_user_bots")
 async def _get_user_bots(uid: str) -> List[BotOrder]:
     logger.info(f"Get bots for user {uid}")
     Bot_Pydantic_List = pydantic_queryset_creator(
@@ -346,6 +348,7 @@ async def _get_user_bots(uid: str) -> List[BotOrder]:
 
 
 @atomic()
+@permission_validator("get_bot_trades")
 async def _get_bot_trades(uid: int, bot_id: int) -> List[Trade]:
     logger.info(f"Get trades from bot {bot_id} for user {uid}")
     Trade_Pydantic_List = pydantic_queryset_creator(
@@ -373,6 +376,7 @@ async def _get_bot_trades(uid: int, bot_id: int) -> List[Trade]:
 
 
 @atomic()
+@permission_validator("create_user_bot")
 async def _create_user_bot(uid: str, channel: str, config: dict) -> int:
     logger.info(f"Create new bot for user [{uid}]")
 
@@ -427,6 +431,7 @@ async def _create_user_bot(uid: str, channel: str, config: dict) -> int:
 
 
 @atomic()
+@permission_validator("delete_user_bot")
 async def _delete_user_bot(uid: str, bot_id: int) -> int:
     logger.info(f"Delete bot[{bot_id}] for user {uid}")
 

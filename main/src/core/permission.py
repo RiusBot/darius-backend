@@ -1,4 +1,5 @@
 import logging
+from functools import wraps
 from tortoise.transactions import atomic
 from main.src.models import Permission, User, Role
 from main.src.exception import BackendException
@@ -7,22 +8,23 @@ from main.src.exception import BackendException
 logger = logging.getLogger(__name__)
 
 
-def permission_validator(f, service):
-    @wraps(f)
-    @atomic()
-    async def wrapper(uid, *args, **kwargs):
-        # validate user
-        user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role").first()
-        if user is None:
-            raise BackendException("Invalid uid")
+def permission_validator(service):
+    def _permission_validator(f):
+        @wraps(f)
+        async def wrapper(uid, *args, **kwargs):
+            # validate user
+            user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role__permission").first()
+            if user is None:
+                raise BackendException("Invalid uid")
 
-        # validate permission
-        permission_list = await user.role.permission.filter(is_del=False).filter(service__in=[service, "all"]).all()
-        if not permission_list:
-            raise BackendException("Invalid permission")
-        return await f(*args, **kwargs)
+            # validate permission
+            permission = await user.role.permission_role.filter(is_del=False).filter(service=service).first()
+            if permission is None:
+                raise BackendException("Invalid permission")
+            return await f(*args, **kwargs)
 
-    return wrapper
+        return wrapper
+    return _permission_validator
 
 
 @atomic()

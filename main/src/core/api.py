@@ -7,12 +7,14 @@ from typing import List
 from main.src.models import Api, User
 from main.src.exception import BackendException
 from main.src.core.cipher import encrypt
+from main.src.core.permission import permission_validator
 
 
 logger = logging.getLogger(__name__)
 
 
 @atomic()
+@permission_validator("get_api_user")
 async def _get_user_api(uid: str) -> List[Api]:
     logger.info(f"Get api for user {uid}")
     user = await User.filter(uid=uid).first()
@@ -64,6 +66,7 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
 
 
 @atomic()
+@permission_validator("create_user_api")
 async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
     logger.info(f"Create new api for user [{uid}]")
 
@@ -110,6 +113,7 @@ async def _create_user_api(uid: str, api_key: str, api_secret: str, exchange: st
 
 
 @atomic()
+@permission_validator("update_user_api")
 async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
     logger.info(f"Update api [{api_id}] for user [{uid}]")
 
@@ -135,6 +139,7 @@ async def _update_user_api(uid: str, api_id: int, api_key: str, api_secret: str,
 
 
 @atomic()
+@permission_validator("delete_user_api")
 async def _delete_user_api(uid: str, api_id: int) -> int:
     logger.info(f"Delete api [{api_id}] for user {uid}")
 
