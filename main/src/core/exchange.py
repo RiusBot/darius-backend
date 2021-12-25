@@ -17,7 +17,7 @@ def fetch_api_firestore(exchange: str):
 def init_exchange(exchange: str):
     # read only api keys
     api_key, api_secret = fetch_api_firestore(exchange)
-    return get_attr(ccxt, exchange)({
+    return getattr(ccxt, exchange)({
         "enableRateLimit": True,
         "api_key": api_key,
         "api_secret": api_secret,

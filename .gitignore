@@ -3,6 +3,7 @@ darius-332003-6391a8358dec.json
 darius-332003-*.json
 config.yaml
 .ipynb_checkpoints/
+Pipfile.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
