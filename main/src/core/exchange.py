@@ -9,7 +9,8 @@ def fetch_api_firestore(exchange: str):
     db = firestore.Client()
     Secret = db.collection("config").document("backend").get().to_dict()
     api_key = Secret[f'{exchange}_api_key']
-    api_secret = decrypt(Secret[f'{exchange}_api_secret'])
+    api_secret = Secret[f'{exchange}_api_secret']
+    api_secret = decrypt(api_key, api_secret)
     return (api_key, api_secret)
 
 
