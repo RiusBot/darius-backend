@@ -1,8 +1,6 @@
 import json
 import logging
-from functools import wraps
 from datetime import datetime
-from dateutil.parser import parse as parse_date
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
@@ -41,12 +39,12 @@ async def _get_user_subscription(user: User) -> List[Subscription]:
 async def _create_user_subscription(user: User, plan_id: int, payment_id: int = None) -> List[int]:
     uid = user.uid
     logger.info(f"Create new subscription for user [{uid}] with plans [{plan_id}]")
-    
+
     # validate plan exists
     plan = await Plan.filter(id=plan_id).filter(is_del=False).first()
     if plan is None:
-        raise BackendException(f"Invalid plan_id")
-    
+        raise BackendException("Invalid plan_id")
+
     # validate duplicate subscriptions
     duplicate_subscription = await user.subscription_user.filter(is_del=False).filter(plan__channel=plan.channel).first()
     if duplicate_subscription is not None:
@@ -57,8 +55,8 @@ async def _create_user_subscription(user: User, plan_id: int, payment_id: int = 
     if payment_id:
         payment = await Payment.filter(is_del=False).filter(id=payment_id).first()
         if payment is not None:
-            raise BackendException(f"Invalid payment_id")
-    
+            raise BackendException("Invalid payment_id")
+
     # create subscription
     subscription = await Subscription.create(
         user=user,

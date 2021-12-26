@@ -1,8 +1,4 @@
-import json
 import logging
-from functools import wraps
-from datetime import datetime, timedelta
-from dateutil.parser import parse as parse_date
 from tortoise.transactions import atomic
 from typing import List
 from main.src.models import Subscription, User, Plan, Payment
@@ -50,19 +46,19 @@ async def _create_user_payment(user: User, plan_ids: List[int]) -> int:
     # validate duplicate plan_ids
     if len(set(plan_ids)) != len(plan_ids):
         raise BackendException("duplicate plan_ids")
-    
+
     # validate plan exists
     plans = await Plan.filter(id__in=plan_ids).filter(is_del=False)
     valid_plan_ids = set([plan.id for plan in plans])
     invalid_plan_ids = set(plan_ids) - valid_plan_ids
     if invalid_plan_ids:
         raise BackendException(f"Invalid plans: {invalid_plan_ids}")
-    
+
     # validate duplicate channel
     subscribe_channels = set([plan.channel for plan in plans])
     if len(subscribe_channels) != len(plan_ids):
         raise BackendException("duplicate channels")
-    
+
     # validate duplicate subscriptions
     duplicate_subscription = await user.subscription_user.filter(is_del=False).filter(plan__channel__in=subscribe_channels).first()
     if duplicate_subscription is not None:
@@ -121,7 +117,6 @@ async def _update_user_payment(user: User, payment_id: int, remain: float):
 
     if remain == 0:
         await payment.subscription_payment.filter(is_del=False).update(status=SubscriptionStatus.CONFIRM)
-        
 
 
 @atomic()

@@ -34,7 +34,6 @@ async def create_permission(api):
         for method, endpoint in endpoints.items():
             operationId = endpoint['operationId']
             func_name = operationId.split('.')[-1]
-            
             permission = await Permission.filter(service=func_name).filter(is_del=False).first()
             if permission is None:
                 logger.info(func_name)

@@ -27,7 +27,7 @@ def main():
     }
     cors = aiohttp_cors.setup(app.app, defaults=cors_allow_origin_dict)
 
-    api = app.add_api(
+    app.add_api(
         'specification.yaml',
         pass_context_arg_name='request',
         strict_validation=True,

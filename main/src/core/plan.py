@@ -1,6 +1,5 @@
 import json
 import logging
-from functools import wraps
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import Plan, User
@@ -28,7 +27,7 @@ async def _get_plan(user: User, plan_id: int) -> Plan:
 @atomic()
 @permission_validator("get_plan")
 async def _get_plans(user: User) -> Plan:
-    logger.info(f"Get plans")
+    logger.info("Get plans")
     Plan_Pydantic_List = pydantic_queryset_creator(
         Plan,
         include=["id", "price", "name", "channel", "price", "day"]
