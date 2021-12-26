@@ -12,6 +12,7 @@ tags:
 - name: account
 - name: plan
 - name: subscription
+- name: payment
 security:
   - bearerAuth: []
 paths:
@@ -528,7 +529,7 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
           
-  /get_plan:
+  /get_plan/{plan_id}:
     get:
       tags:
       - plan
@@ -536,8 +537,9 @@ paths:
       operationId: main.src.controllers.v1.plan.get_plan
       security: []
       parameters:
-        - in: query
+        - in: path
           name: plan_id
+          required: true
           schema:
             type: integer
           description: plan ID
@@ -562,6 +564,40 @@ paths:
                       type: integer
                   required:
                   - plan_id
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_plan:
+    get:
+      tags:
+      - plan
+      summary: get plan
+      operationId: main.src.controllers.v1.plan.get_plans
+      security: []
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                  - $ref: '#/components/schemas/Plan'
+                  - type: object
+                    properties:
+                      plan_id:
+                        type: integer
+                    required:
+                    - plan_id
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -604,17 +640,21 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                uid:
-                  type: string
-                  maxLength: 28
-                  minLength: 28
-                plan_id:
-                  type: integer
-              required:
-              - uid
-              - plan_id
+              allOf:
+                - $ref: '#/components/schemas/Subscription'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                    plan_id:
+                      type: integer
+                    payment_id:
+                      type: integer
+                  required:
+                  - uid
+                  - plan_id
       responses:
         '200':
           description: success
@@ -647,15 +687,10 @@ paths:
                       type: string
                       maxLength: 28
                       minLength: 28
-                    update_uid:
-                      type: string
-                      maxLength: 28
-                      minLength: 28
                     subscription_id:
                       type: integer
                   required:
                   - uid
-                  - update_uid
                   - subscription_id
       responses:
         '200':
@@ -716,22 +751,153 @@ paths:
                   type: string
                   maxLength: 28
                   minLength: 28
-                delete_uid:
-                  type: string
-                  maxLength: 28
-                  minLength: 28
                 subscription_id:
                   type: integer
               required:
               - uid
-              - delete_uid
               - subscription_id
       responses:
         '200':
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
+  /create_user_payment:
+    post:
+      tags:
+      - payment
+      summary: create new payment.
+      operationId: main.src.controllers.v1.payment.create_user_payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Payment'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                    plan_ids:
+                      type: array
+                      items:
+                        type: integer
+                  required:
+                  - uid
+                  - plan_ids
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /update_user_payment:
+    patch:
+      tags:
+      - payment
+      summary: update user payment.
+      operationId: main.src.controllers.v1.payment.update_user_payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Payment'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                    payment_id:
+                      type: integer
+                  required:
+                  - uid
+                  - payment_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_user_payment:
+    get:
+      tags:
+      - payment
+      summary: get user payment.
+      operationId: main.src.controllers.v1.payment.get_user_payment
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: object
+                    nullable: true
+                  - allOf:
+                      - $ref: '#/components/schemas/Payment'
+                      - type: object
+                        properties:
+                          payment_id:
+                            type: integer
+                          plans:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Plan'
+                        required:
+                        - payment_id
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_user_payment:
+    delete:
+      tags:
+      - payment
+      summary: delete payment
+      operationId: main.src.controllers.v1.payment.delete_user_payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                payment_id:
+                  type: integer
+              required:
+              - uid
+              - payment_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+
 components:
 
   securitySchemes:
@@ -776,13 +942,13 @@ components:
 
     ExtendedError:
       allOf:
-      - $ref: '#/components/schemas/Error'
-      - type: object
-        required:
-        - rootCause
-        properties:
-          rootCause:
-            type: string
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          required:
+          - rootCause
+          properties:
+            rootCause:
+              type: string
 
     Action:
       type: string
@@ -958,14 +1124,10 @@ components:
           nullable: true
           maxLength: 1024
         message_timestamp:
-          oneOf:
-            - type: string
-            - type: number
+          type: number
           minimum: 0
         recieve_timestamp:
-          oneOf:
-            - type: string
-            - type: number
+          type: number
           minimum: 0
         symbol:
           type: string
@@ -1014,18 +1176,31 @@ components:
       - price
       - day
       
+    SubscriptionStatus:
+      type: string
+      maxLength: 16
+      enum:
+        - PENDING
+        - CONFIRM
+        - CANCEL
+        - EXPIRED
+    
     Subscription:
       type: object
       properties:
         expire_date:
-          type: string
-          maxLength: 32
+          type: number
+          minimum: 0
+          nullable: true
         status:
-          type: string
-          maxLength: 16
-      required:
-      - expire_date
-      - status
+          $ref: '#/components/schemas/SubscriptionStatus'
+          
+    Payment:
+      type: object
+      properties:
+        remain:
+          type: number
+          minimum: 0
       
     Trade:
       type: object

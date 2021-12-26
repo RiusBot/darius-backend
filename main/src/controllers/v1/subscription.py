@@ -14,7 +14,6 @@ async def get_user_subscription(request):
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        logger.info("Get subscription")
         uid = json_payload["uid"]
         subscribe_list = await _get_user_subscription(uid)
         return json_response(
@@ -40,10 +39,10 @@ async def create_user_subscription(request):
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        logger.info("Create subscription")
         uid = json_payload["uid"]
         plan_id = json_payload["plan_id"]
-        subscription_id = await _create_user_subscription(uid, plan_id)
+        payment_id = json_payload.get("payment_id")
+        subscription_id = await _create_user_subscription(uid, plan_id, payment_id)
         return json_response(
             status=200,
             data={
@@ -69,13 +68,11 @@ async def update_user_subscription(request):
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        logger.info("Update subscription")
         uid = json_payload["uid"]
-        update_uid = json_payload["update_uid"]
         subscription_id = json_payload["subscription_id"]
         expire_date = json_payload["expire_date"]
         status = json_payload["status"]
-        await _update_user_subscription(uid, update_uid, subscription_id, expire_date, status)
+        await _update_user_subscription(uid, subscription_id, expire_date, status)
         return json_response(
             status=200,
             data={}
@@ -99,7 +96,6 @@ async def delete_user_subscription(request):
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        logger.info("Delete subscription")
         uid = json_payload["uid"]
         subscription_id = json_payload["subscription_id"]
         await _delete_user_subscription(uid, subscription_id)

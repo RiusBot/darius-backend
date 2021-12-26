@@ -23,7 +23,7 @@ async def _get_user_api(user: User) -> List[Api]:
         Api,
         include=["api_key", "exchange", "id", "subaccount"]
     )
-    api_list = await Api_Pydantic_List.from_queryset(user.api_user.filter(is_del=False).all())
+    api_list = await Api_Pydantic_List.from_queryset(user.api_user.filter(is_del=False))
     api_list = json.loads(api_list.json())
     for api in api_list:
         api["api_id"] = api.pop("id")
@@ -75,7 +75,7 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: 
         raise BackendException("Invalid uid")
 
     # validate api number
-    api_list = await user.api_user.all()
+    api_list = await user.api_user.filter(is_del=False)
     valid_api_list = [api for api in api_list if not api.is_del]
     if valid_api_list and len(valid_api_list) >= 3:
         raise BackendException("Maximum 3 api per user")

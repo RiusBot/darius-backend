@@ -1,6 +1,8 @@
+import json
 import logging
 from functools import wraps
 from tortoise.transactions import atomic
+from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import Plan, User
 from main.src.models.plan import PlanSchemaModel
 from main.src.exception import BackendException
@@ -24,9 +26,24 @@ async def _get_plan(user: User, plan_id: int) -> Plan:
 
 
 @atomic()
+@permission_validator("get_plan")
+async def _get_plans(user: User) -> Plan:
+    logger.info(f"Get plans")
+    Plan_Pydantic_List = pydantic_queryset_creator(
+        Plan,
+        include=["id", "price", "name", "channel", "price", "day"]
+    )
+    plan_list = await Plan_Pydantic_List.from_queryset(Plan.filter(is_del=False).all())
+    plan_list = json.loads(plan_list.json())
+    for plan in plan_list:
+        plan["plan_id"] = plan.pop("id")
+    return plan_list
+
+
+@atomic()
 @permission_validator("create_plan")
 async def _create_plan(user: User, name: str, channel: str, price: float, day: int) -> int:
-    logger.info("Create new plan")
+    logger.info("Create plan")
     plan = await Plan.create(
         name=name,
         channel=channel,

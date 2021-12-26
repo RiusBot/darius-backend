@@ -13,13 +13,12 @@ def permission_validator(service):
         @wraps(f)
         async def wrapper(uid, *args, **kwargs):
             # validate user
-            user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role__permission").first()
+            user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role").first()
             if user is None:
                 raise BackendException("Invalid uid")
 
             # validate permission
             permission = await user.role.permission_role.filter(is_del=False).filter(service=service).first()
-            permission = await user.role.permission_role.filter(is_del=False).all()
             if permission is None:
                 raise BackendException("Invalid permission")
             return await f(user, *args, **kwargs)

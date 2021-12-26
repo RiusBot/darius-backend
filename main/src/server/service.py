@@ -18,8 +18,13 @@ def main():
 
     options = {"swagger_ui": (usingProjectId == "local")}
     app = AioHttpApp(__name__, port=app_config['PORT'], specification_dir='openapi/', options=options)
-    cors_allow_origin_dict = {domain: aiohttp_cors.ResourceOptions(allow_headers='*', allow_methods='*')
-                              for domain in app_config['CORS_ALLOW_ORIGIN']}
+    cors_allow_origin_dict = {
+        domain: aiohttp_cors.ResourceOptions(
+            allow_headers='*',
+            allow_methods='*'
+        )
+        for domain in app_config['CORS_ALLOW_ORIGIN']
+    }
     cors = aiohttp_cors.setup(app.app, defaults=cors_allow_origin_dict)
 
     api = app.add_api(

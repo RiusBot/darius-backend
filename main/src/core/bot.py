@@ -35,7 +35,7 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     logger.info("Get all bot")
     try:
         bot_dict = {}
-        async for bot in BotOrder.filter(is_del=False).filter(status="RUNNING").filter(channel=channel).all().prefetch_related(
+        async for bot in BotOrder.filter(is_del=False).filter(status="RUNNING").filter(channel=channel).prefetch_related(
             "config__api",
             "user",
         ).order_by("config__order_type"):
@@ -179,8 +179,8 @@ async def write_message(
     content: str,
     symbol: str,
     action: str,
-    message_timestamp: float,
-    recieve_timestamp: float,
+    message_timestamp: datetime,
+    recieve_timestamp: datetime,
     entry: float,
     stop_loss: float,
     take_profit: float
@@ -334,7 +334,7 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
         BotOrder,
         include=["id", "config", "status", "channel", "config_id"]
     )
-    bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False).all())
+    bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False))
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot["bot_id"] = bot.pop("id")
@@ -359,7 +359,7 @@ async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
     if bot is None:
         raise BackendException("Invalid bot_id")
 
-    trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).all())
+    trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).offset(0).limit(20))
     trade_list = trade_list.dict()['__root__']
     for trade in trade_list:
         trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
@@ -383,17 +383,17 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         raise BackendException("Invalid api_id")
 
     # validate channel subscription
-    # plans = await user.subscription_user.filter(is_del=False).all().prefetch_related("plan")
+    # plans = await user.subscription_user.filter(is_del=False).prefetch_related("plan")
     # channels = set([i.plan.channel.value for i in plans])
 
-    plans = await Plan.filter(is_del=False).all()
+    plans = await Plan.filter(is_del=False)
     channels = set([i.channel.value for i in plans])
 
     if channel not in channels and "darius" not in channels:
         raise BackendException("Invalid channel")
 
     # validate bot number
-    bot_list = await user.bot_user.filter(is_del=False).all()
+    bot_list = await user.bot_user.filter(is_del=False)
     if bot_list and len(bot_list) >= 5:
         raise BackendException("Maximum 5 bot per user")
 
