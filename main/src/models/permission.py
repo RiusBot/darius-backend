@@ -12,7 +12,7 @@ class Permission(BaseModel):
     class Meta:
         table = "permission"
         table_description = "Permission"
-        ordering = ["-created_at", "id"]
+        ordering = ["role_id", "-created_at", "id"]
 
     class PydanticMeta:
         exclude = ["created_at", "id", "is_del"]

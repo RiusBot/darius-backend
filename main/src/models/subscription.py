@@ -8,13 +8,15 @@ from main.src.models import BaseModel
 class SubscriptionStatus(str, Enum):
     PENDING = "PENDING"
     CONFIRM = "CONFIRM"
-    FAILED = "FAILED"
+    CANCEL = "CANCEL"
+    EXPIRED = "EXPIRED"
 
 
 class Subscription(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="subscription_user")
     plan = fields.ForeignKeyField("darius.Plan", related_name="subscription_plan")
+    payment = fields.ForeignKeyField("darius.Payment", related_name="subscription_payment", null=True)
     expire_date = fields.DatetimeField(null=True)
     status = fields.CharEnumField(SubscriptionStatus, max_length=16, null=False, default=SubscriptionStatus.PENDING)
 

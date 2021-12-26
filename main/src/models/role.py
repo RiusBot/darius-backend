@@ -6,7 +6,6 @@ from main.src.models import BaseModel
 
 class Role(BaseModel):
 
-    permission = fields.ForeignKeyField("darius.Permission", related_name="role_permission", through="role_permission")
     name = fields.CharField(50, null=False)
 
     class Meta:

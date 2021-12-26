@@ -9,6 +9,8 @@ from .permission import Permission
 from .api import Api
 from .plan import Plan
 from .subscription import Subscription
+from .payment import Payment
+from .transaction import Transaction
 
 
 __all__ = [
@@ -23,4 +25,6 @@ __all__ = [
     "Api",
     "Plan",
     "Subscription",
+    "Payment",
+    "Transaction"
 ]

@@ -4,22 +4,17 @@ CREATE TABLE `permission` (
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `role_id` int(11),
     `service` varchar(50) NOT NULL,
-    KEY (`role_id`)
+    KEY (`role_id`),
+    CONSTRAINT FOREIGN KEY(`role_id`) REFERENCES `role`(id) ON DELETE CASCADE
 ) CHARACTER SET utf8;
 
 -- role
 CREATE TABLE `role` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `permission_id` int(11) NOT NULL,
-    `name` varchar(50) NOT NULL,
-    KEY (`permission_id`),
+    `name` varchar(50) UNIQUE NOT NULL,
     KEY (`name`),
-    CONSTRAINT FOREIGN KEY(`permission_id`) REFERENCES `permission`(id) ON DELETE CASCADE
 ) CHARACTER SET utf8;
-
-
-ALTER TABLE `permission` ADD  CONSTRAINT FOREIGN KEY(`role_id`) REFERENCES `role`(id) ON DELETE CASCADE;
 
 
 -- user
@@ -57,15 +52,45 @@ CREATE TABLE `subscription` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `user_id` int(11) NOT NULL,
-  `expire_date` datetime,
   `plan_id` int(11) NOT NULL,
-  `status` varchar(16) NOT NULL,
+  `payment_id` int(11),
+  `expire_date` DATETIME(6),
+  `status` varchar(16) NOT NULL DEFAULT 'PENDING',
   KEY (`user_id`),
-  KEY (`expire_date`),
   KEY (`plan_id`),
+  KEY (`payment_id`),
+  KEY (`expire_date`),
   KEY (`status`),
   CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`),
-  CONSTRAINT FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`)
+  CONSTRAINT FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`),
+  CONSTRAINT FOREIGN KEY (`payment_id`) REFERENCES `payment`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- payment
+CREATE TABLE `payment` (
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `user_id` int(11) NOT NULL,
+  `remain` DOUBLE NOT NULL,
+  KEY (`user_id`),
+  CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- transaction
+CREATE TABLE `transaction` (
+  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  `user_id` int(11) NOT NULL,
+  `payment_id` int(11) NOT NULL,
+  `wallet` varchar(128) NOT NULL,
+  `txid` varchar(128) UNIQUE NOT NULL,
+  `amount` DOUBLE NOT NULL,
+  KEY (`user_id`),
+  KEY (`payment_id`),
+  KEY (`txid`),
+  KEY (`wallet`),
+  CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`),
+  CONSTRAINT FOREIGN KEY (`payment_id`) REFERENCES `payment`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- api
@@ -182,3 +207,5 @@ ALTER TABLE bot_order add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE bot_config add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE trade_history add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE message add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE payment add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE transaction add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
