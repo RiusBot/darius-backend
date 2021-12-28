@@ -13,6 +13,7 @@ tags:
 - name: plan
 - name: subscription
 - name: payment
+- name: transaction
 security:
   - bearerAuth: []
 paths:
@@ -66,6 +67,18 @@ paths:
       - general
       summary: create test data in database
       operationId: main.src.controllers.v1.general.create_test_data
+      responses:
+        '200':
+          description: received
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_stats:
+    get:
+      tags:
+      - general
+      summary: get stats in database
+      operationId: main.src.controllers.v1.general.get_stats
       responses:
         '200':
           description: received
@@ -170,6 +183,7 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
       responses:
         '200':
           description: success
@@ -224,6 +238,7 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
       responses:
         '200':
           description: success
@@ -262,6 +277,7 @@ paths:
           schema:
             type: integer
           description: bot ID
+          required: true
         - in: query
           name: uid
           schema:
@@ -269,6 +285,7 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
       responses:
         '200':
           description: success
@@ -425,6 +442,7 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
       responses:
         '200':
           description: success
@@ -543,6 +561,7 @@ paths:
           schema:
             type: integer
           description: plan ID
+          required: true
         - in: query
           name: uid
           schema:
@@ -550,6 +569,7 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
       responses:
         '200':
           description: success
@@ -582,6 +602,7 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
       responses:
         '200':
           description: success
@@ -650,8 +671,6 @@ paths:
                       minLength: 28
                     plan_id:
                       type: integer
-                    payment_id:
-                      type: integer
                   required:
                   - uid
                   - plan_id
@@ -712,6 +731,7 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
       responses:
         '200':
           description: success
@@ -761,33 +781,35 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-
-  /create_user_payment:
+          
+  /create_user_transaction:
     post:
       tags:
-      - payment
-      summary: create new payment.
-      operationId: main.src.controllers.v1.payment.create_user_payment
+      - transaction
+      summary: create new transaction
+      operationId: main.src.controllers.v1.transaction.create_user_transaction
       requestBody:
         required: true
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/Payment'
+                - $ref: '#/components/schemas/Transaction'
                 - type: object
                   properties:
                     uid:
                       type: string
                       maxLength: 28
                       minLength: 28
-                    plan_ids:
-                      type: array
-                      items:
-                        type: integer
+                    transaction_date:
+                      type: string
+                      maxLength: 8
+                    payment_id:
+                      type: integer
                   required:
                   - uid
-                  - plan_ids
+                  - transaction_date
+                  - payment_id
       responses:
         '200':
           description: success
@@ -796,47 +818,47 @@ paths:
               schema:
                 type: object
                 properties:
-                  payment_id:
+                  transaction_id:
                     type: integer
         default:
           $ref: '#/components/responses/Unexpected'
 
-  /update_user_payment:
+  /update_user_transaction:
     patch:
       tags:
-      - payment
-      summary: update user payment.
-      operationId: main.src.controllers.v1.payment.update_user_payment
+      - transaction
+      summary: update user transaction
+      operationId: main.src.controllers.v1.transaction.update_user_transaction
       requestBody:
         required: true
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/Payment'
+                - $ref: '#/components/schemas/Transaction'
                 - type: object
                   properties:
                     uid:
                       type: string
                       maxLength: 28
                       minLength: 28
-                    payment_id:
+                    transaction_id:
                       type: integer
                   required:
                   - uid
-                  - payment_id
+                  - transaction_id
       responses:
         '200':
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
 
-  /get_user_payment:
+  /get_user_transaction:
     get:
       tags:
-      - payment
-      summary: get user payment.
-      operationId: main.src.controllers.v1.payment.get_user_payment
+      - transaction
+      summary: get user transaction
+      operationId: main.src.controllers.v1.transaction.get_user_transaction
       parameters:
         - in: query
           name: uid
@@ -845,36 +867,38 @@ paths:
             maxLength: 28
             minLength: 28
           description: user ID
+          required: true
+        - in: query
+          name: payment_id
+          schema:
+            type: integer
+          description: payment ID
       responses:
         '200':
           description: success
           content:
             application/json:
               schema:
-                anyOf:
-                  - type: object
-                    nullable: true
-                  - allOf:
-                      - $ref: '#/components/schemas/Payment'
-                      - type: object
-                        properties:
-                          payment_id:
-                            type: integer
-                          plans:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/Plan'
-                        required:
-                        - payment_id
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Transaction'
+                    - type: object
+                      properties:
+                        amount:
+                          type: number
+                          minimum: 0
+                      required:
+                      - amount
         default:
           $ref: '#/components/responses/Unexpected'
 
-  /delete_user_payment:
+  /delete_user_transaction:
     delete:
       tags:
-      - payment
-      summary: delete payment
-      operationId: main.src.controllers.v1.payment.delete_user_payment
+      - transaction
+      summary: delete transaction
+      operationId: main.src.controllers.v1.transaction.delete_user_transaction
       requestBody:
         required: true
         content:
@@ -886,11 +910,11 @@ paths:
                   type: string
                   maxLength: 28
                   minLength: 28
-                payment_id:
+                transaction_id:
                   type: integer
               required:
               - uid
-              - payment_id
+              - transaction_id
       responses:
         '200':
           description: success
@@ -1155,6 +1179,19 @@ components:
       - symbol
       - action
 
+    Transaction:
+      type: object
+      properties:
+        wallet:
+          type: string
+          maxLength: 96
+        txid:
+          type: string
+          maxLength: 96
+      required:
+        - wallet
+        - txid
+
     Plan:
       type: object
       properties:
@@ -1175,33 +1212,14 @@ components:
       - channel
       - price
       - day
-      
-    SubscriptionStatus:
-      type: string
-      maxLength: 16
-      enum:
-        - PENDING
-        - CONFIRM
-        - CANCEL
-        - EXPIRED
     
     Subscription:
       type: object
       properties:
         expire_date:
-          type: number
-          minimum: 0
+          type: string
           nullable: true
-        status:
-          $ref: '#/components/schemas/SubscriptionStatus'
-          
-    Payment:
-      type: object
-      properties:
-        remain:
-          type: number
-          minimum: 0
-      
+
     Trade:
       type: object
       properties:

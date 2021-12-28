@@ -25,10 +25,16 @@ CREATE TABLE `user` (
   `email` varchar(32) UNIQUE NOT NULL,
   `uid` varchar(28) UNIQUE NOT NULL,
   `role_id` int(11) NOT NULL,
+  `points` DOUBLE NOT NULL DEFAULT 0,
+  `balance` DOUBLE NOT NULL DEFAULT 0,
+  `referrer` varchar(8),
+  `referral_code` varchar(8) UNIQUE NOT NULL,
    KEY (`user_name`),
    KEY (`email`),
    KEY (`created_at`),
    KEY (`uid`),
+   KEY (`referrer`),
+   KEY (`referral_code`),
    CONSTRAINT FOREIGN KEY (`role_id`) REFERENCES `role`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -53,27 +59,12 @@ CREATE TABLE `subscription` (
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `user_id` int(11) NOT NULL,
   `plan_id` int(11) NOT NULL,
-  `payment_id` int(11),
   `expire_date` DATETIME(6),
-  `status` varchar(16) NOT NULL DEFAULT 'PENDING',
   KEY (`user_id`),
   KEY (`plan_id`),
-  KEY (`payment_id`),
   KEY (`expire_date`),
-  KEY (`status`),
   CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`),
-  CONSTRAINT FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`),
-  CONSTRAINT FOREIGN KEY (`payment_id`) REFERENCES `payment`(`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- payment
-CREATE TABLE `payment` (
-  `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `user_id` int(11) NOT NULL,
-  `remain` DOUBLE NOT NULL,
-  KEY (`user_id`),
-  CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`)
+  CONSTRAINT FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- transaction
@@ -81,16 +72,15 @@ CREATE TABLE `transaction` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `user_id` int(11) NOT NULL,
-  `payment_id` int(11) NOT NULL,
   `wallet` varchar(128) NOT NULL,
-  `txid` varchar(128) UNIQUE NOT NULL,
+  `txid` varchar(128) UNIQUE,
+  `date` DATETIME(6) NOT NULL,
   `amount` DOUBLE NOT NULL,
   KEY (`user_id`),
-  KEY (`payment_id`),
   KEY (`txid`),
   KEY (`wallet`),
-  CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`),
-  CONSTRAINT FOREIGN KEY (`payment_id`) REFERENCES `payment`(`id`)
+  KEY (`date`),
+  CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- api
@@ -207,5 +197,5 @@ ALTER TABLE bot_order add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE bot_config add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE trade_history add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE message add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
-ALTER TABLE payment add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE subscription add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE transaction add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;

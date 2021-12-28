@@ -1,11 +1,11 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.parser import parse as parse_date
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
-from main.src.models import Subscription, User, Plan, Payment
-from main.src.models.subscription import SubscriptionStatus
+from main.src.models import Subscription, User, Plan
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 
@@ -25,63 +25,76 @@ async def _get_user_subscription(user: User) -> List[Subscription]:
     )
 
     subscription_list = await subscription_Pydantic_List.from_queryset(
-        user.subscription_user.filter(is_del=False).filter(status=SubscriptionStatus.CONFIRM).prefetch_related("plan")
+        user.subscription_user.filter(is_del=False).prefetch_related("plan")
     )
     subscription_list = json.loads(subscription_list.json())
     for subscription in subscription_list:
         subscription["subscription_id"] = subscription.pop("id")
+
     logger.info(f"Get user [{uid}] {len(subscription_list)} subscription")
     return subscription_list
 
 
 @atomic()
 @permission_validator("create_user_subscription")
-async def _create_user_subscription(user: User, plan_id: int, payment_id: int = None) -> List[int]:
+async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     uid = user.uid
-    logger.info(f"Create new subscription for user [{uid}] with plans [{plan_id}]")
+    logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
+
+    # acquire lock
+    user = await user.filter(id=user.id).select_for_update().first()
 
     # validate plan exists
-    plan = await Plan.filter(id=plan_id).filter(is_del=False).first()
+    plan = await Plan.filter(id=plan_id, is_del=False).first()
     if plan is None:
         raise BackendException("Invalid plan_id")
 
     # validate duplicate subscriptions
-    duplicate_subscription = await user.subscription_user.filter(is_del=False).filter(plan__channel=plan.channel).first()
-    if duplicate_subscription is not None:
+    duplicate_subscription = await user.subscription_user.filter(is_del=False, plan__channel=plan.channel).exists()
+    if duplicate_subscription:
         raise BackendException(f"{plan.channel} channel already subscribed")
 
-    # validate payment
-    payment = None
-    if payment_id:
-        payment = await Payment.filter(is_del=False).filter(id=payment_id).first()
-        if payment is not None:
-            raise BackendException("Invalid payment_id")
+    # validate balance
+    if user.balance < plan.price:
+        raise BackendException("Insufficient balance")
 
     # create subscription
     subscription = await Subscription.create(
         user=user,
         plan=plan,
-        payment=payment
+        expire_date=datetime.now() + timedelta(days=int(plan.day)),
     )
     subscription_id = subscription.id
     logger.info(f"Create subscription [{subscription_id}]")
+
+    # update user balance
+    user.balance -= float(plan.price)
+    await user.save()
+
     return subscription_id
 
 
 @atomic()
 @permission_validator("update_user_subscription")
-async def _update_user_subscription(user: User, subscription_id: int, expire_date: float, status: str):
+async def _update_user_subscription(user: User, subscription_id: int, expire_date: float):
     uid = user.uid
     logger.info(f"Update subscription [{subscription_id}] for user [{uid}]")
 
     # validate subscription
-    subscription = await user.subscription_user.filter(is_del=False).filter(id=subscription_id).first()
+    subscription = await user.subscription_user.filter(is_del=False, id=subscription_id).first()
     if subscription is None:
         raise BackendException("Invalid subscription.")
+    
+    # validate date
+    try:
+        expire_date = parse_date(expire_date)
+        if expire_date < datetime.now():
+            raise
+    except Exception:
+        raise BackendException("Invalid date")
 
     # update subscription
-    subscription.expire_date = datetime.fromtimestamp(expire_date)
-    subscription.status = status
+    subscription.expire_date = expire_date
     await subscription.save()
 
 
@@ -92,7 +105,7 @@ async def _delete_user_subscription(user: User, subscription_id: int):
     logger.info(f"Delete subscription [{subscription_id}] for user [{uid}]")
 
     # validate subscription
-    subscription = await user.subscription_user.filter(id=subscription_id).filter(is_del=False).first()
+    subscription = await user.subscription_user.filter(id=subscription_id, is_del=False).first()
     if subscription is None:
         raise BackendException("Invalid subscription_id")
 

@@ -1,4 +1,6 @@
 import re
+import random
+import string
 import logging
 from email_validator import validate_email
 from tortoise.transactions import atomic
@@ -26,6 +28,13 @@ def email_normalize_and_validate(email: str):
         logger.error("Validate email error")
         logger.exception("")
         raise BackendException("Invalid email")
+        
+        
+def generate_referral_code(k=8):
+    return ''.join(random.choices(
+        string.ascii_uppercase + string.ascii_lowercase + string.digits,
+        k=k,
+    ))
 
 
 @atomic()
@@ -54,6 +63,7 @@ async def _create_user(uid: str):
     user = await User.create(
         uid=uid,
         role=role,
+        referral_code=generate_referral_code()
     )
     logger.info(f"Create user [{user.id}]")
     return user.id

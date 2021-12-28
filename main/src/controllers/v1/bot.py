@@ -70,7 +70,7 @@ async def execute_bot_signal(request):
 
 async def get_user_bots(request):
 
-    json_payload = json_payload = dict(request.rel_url.query)
+    json_payload = dict(request.rel_url.query)
     json_payload = filter_illegal_char(json_payload)
 
     try:

@@ -36,7 +36,7 @@ def encrypt(api_key: str, api_secret: str) -> str:
     return ciphered_text.decode("utf-8")
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=1024)
 def decrypt(api_key: str, ciphered_api_secret: str) -> str:
     b_token = fetch_secret_token_firestore().encode("utf-8")
     b_api_key = api_key.encode("utf-8")

@@ -2,6 +2,8 @@ import logging
 from aiohttp.web import json_response
 from tortoise.transactions import atomic
 from main.src.exception import BackendException
+from main.src.core.validator import filter_illegal_char
+from main.src.core.stats import _get_stats
 
 
 logger = logging.getLogger(__name__)
@@ -15,6 +17,31 @@ async def get_health_liveness(request):
 async def get_health_readiness(request):
     return json_response(status=200, data={'message': 'The service is healthy based on readiness healthcheck'})
 
+
+async def get_stats(request):
+
+    json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        uid = json_payload['uid']
+        stats = await _get_stats(uid)
+        return json_response(
+            status=200,
+            data=stats,
+        )
+    except Exception as e:
+        logger.error("avaiable balance error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+    
 
 async def create_test_data(request):
 
@@ -74,7 +101,7 @@ async def create_test_data(request):
             data={},
         )
     except Exception as e:
-        logger.error("bot singal error.")
+        logger.error("create test data error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(

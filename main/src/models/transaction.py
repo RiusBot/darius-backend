@@ -7,10 +7,10 @@ from main.src.models import BaseModel
 class Transaction(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="transaction_user")
-    payment = fields.ForeignKeyField("darius.Payment", related_name="transaction_payment")
     wallet = fields.CharField(96, null=False)
-    txid = fields.CharField(96, null=False)
+    txid = fields.CharField(96, null=True)
     amount = fields.FloatField(null=False)
+    date = fields.DatetimeField(null=False)
 
     class Meta:
         table = "transaction"

@@ -32,7 +32,7 @@ async def _get_plans(user: User) -> Plan:
         Plan,
         include=["id", "price", "name", "channel", "price", "day"]
     )
-    plan_list = await Plan_Pydantic_List.from_queryset(Plan.filter(is_del=False).all())
+    plan_list = await Plan_Pydantic_List.from_queryset(Plan.filter(is_del=False))
     plan_list = json.loads(plan_list.json())
     for plan in plan_list:
         plan["plan_id"] = plan.pop("id")

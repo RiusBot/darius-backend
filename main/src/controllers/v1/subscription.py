@@ -41,8 +41,7 @@ async def create_user_subscription(request):
     try:
         uid = json_payload["uid"]
         plan_id = json_payload["plan_id"]
-        payment_id = json_payload.get("payment_id")
-        subscription_id = await _create_user_subscription(uid, plan_id, payment_id)
+        subscription_id = await _create_user_subscription(uid, plan_id)
         return json_response(
             status=200,
             data={
@@ -71,8 +70,7 @@ async def update_user_subscription(request):
         uid = json_payload["uid"]
         subscription_id = json_payload["subscription_id"]
         expire_date = json_payload["expire_date"]
-        status = json_payload["status"]
-        await _update_user_subscription(uid, subscription_id, expire_date, status)
+        await _update_user_subscription(uid, subscription_id, expire_date)
         return json_response(
             status=200,
             data={}

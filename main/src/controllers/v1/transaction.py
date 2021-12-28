@@ -1,6 +1,6 @@
 import logging
 from aiohttp.web import json_response
-from main.src.core.payment import _get_user_payment, _create_user_payment, _delete_user_payment, _update_user_payment
+from main.src.core.transaction import _get_user_transaction, _create_user_transaction, _delete_user_transaction, _update_user_transaction
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -8,20 +8,21 @@ from main.src.core.validator import filter_illegal_char
 logger = logging.getLogger(__name__)
 
 
-async def get_user_payment(request):
+async def get_user_transaction(request):
 
     json_payload = dict(request.rel_url.query)
     json_payload = filter_illegal_char(json_payload)
 
     try:
         uid = json_payload["uid"]
-        payment = await _get_user_payment(uid)
+        payment_id = json_payload.get("payment_id")
+        transaction = await _get_user_transaction(uid, payment_id)
         return json_response(
             status=200,
-            data=payment
+            data=transaction
         )
     except Exception as e:
-        logger.error("Get payment error.")
+        logger.error("Get transaction error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
@@ -33,23 +34,26 @@ async def get_user_payment(request):
         )
 
 
-async def create_user_payment(request):
+async def create_user_transaction(request):
 
     json_payload = await request.json()
     json_payload = filter_illegal_char(json_payload)
 
     try:
         uid = json_payload["uid"]
-        plan_ids = json_payload["plan_ids"]
-        payment_id = await _create_user_payment(uid, plan_ids)
+        wallet = json_payload["wallet"]
+        txid = json_payload.get["txid"]
+        payment_id = json_payload.get("payment_id")
+        transaction_date = json_payload["transaction_date"]
+        transaction_id = await _create_user_transaction(uid, wallet, txid, payment_id, transaction_date)
         return json_response(
             status=200,
             data={
-                "payment_id": payment_id
+                "transaction_id": transaction_id
             }
         )
     except Exception as e:
-        logger.error("Create payment error.")
+        logger.error("Create transaction error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
@@ -61,22 +65,24 @@ async def create_user_payment(request):
         )
 
 
-async def update_user_payment(request):
+async def update_user_transaction(request):
 
     json_payload = await request.json()
     json_payload = filter_illegal_char(json_payload)
 
     try:
         uid = json_payload["uid"]
-        payment_id = json_payload["payment_id"]
-        remain = json_payload["remain"]
-        await _update_user_payment(uid, payment_id, remain)
+        transaction_id = json_payload["transaction_id"]
+        wallet = json_payload["wallet"]
+        txid = json_payload["txid"]
+        amount = json_payload["amount"]
+        await _update_user_transaction(uid, transaction_id, wallet, txid, amount)
         return json_response(
             status=200,
             data={}
         )
     except Exception as e:
-        logger.error("Update payment error.")
+        logger.error("Update transaction error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
@@ -88,21 +94,21 @@ async def update_user_payment(request):
         )
 
 
-async def delete_user_payment(request):
+async def delete_user_transaction(request):
 
     json_payload = await request.json()
     json_payload = filter_illegal_char(json_payload)
 
     try:
         uid = json_payload["uid"]
-        payment_id = json_payload["payment_id"]
-        await _delete_user_payment(uid, payment_id)
+        transaction_id = json_payload["transaction_id"]
+        await _delete_user_transaction(uid, transaction_id)
         return json_response(
             status=200,
             data={}
         )
     except Exception as e:
-        logger.error("Delete payment error.")
+        logger.error("Delete transaction error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
