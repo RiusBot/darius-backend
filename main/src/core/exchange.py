@@ -3,8 +3,8 @@ import logging
 import functools
 from typing import List
 from firebase_admin import firestore
-from dateutil.parser import parse as parse_date
 from cachetools import cached, TTLCache
+from dateutil.parser import parse as parse_date
 
 from main.src.core.cipher import decrypt
 from main.src.exception import BackendException
@@ -41,12 +41,11 @@ def init_exchange(exchange: str):
 def get_deposit_history(transaction_date: str) -> List[dict]:
     global Exchange
     try:
-        transaction_date = parse_date(transaction_date)
         start_timestamp = int(transaction_date.timestamp() * 1000) - (86400 * 1000)
-        end_timestamp = start_timestamp + (86400 * 1000)
+        end_timestamp = start_timestamp + (86400 * 1000 * 2)
         deposit_history = Exchange.fetchDeposits(
             code="USDT",
-            since=transaction_timestamp
+            since=start_timestamp,
             params={
                 "status": 1,
                 "endTime": end_timestamp,
@@ -60,13 +59,19 @@ def get_deposit_history(transaction_date: str) -> List[dict]:
         raise BackendException("get deposit history error")
 
 
-def validate_transaction(exchange, wallet: str, txid: str, transaction_date: str):
+def validate_transaction(wallet: str, txid: str, transaction_date: str):
+    try:
+        transaction_date = parse_date(transaction_date)
+    except Exception:
+        logger.exception("")
+        raise BackendException("Invalid date")
+
     deposit_history = get_deposit_history(transaction_date)
     if txid in deposit_history:
         amount = deposit_history[txid]
         if amount <= 0:
             raise BackendException("amount less than zero")
-        return amount
+        return amount, transaction_date
     else:
         raise BackendException("transaction not found")
 

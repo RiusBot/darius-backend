@@ -65,7 +65,8 @@ async def create_user(request):
     try:
         logger.info("Create user profile")
         uid = json_payload["uid"]
-        user_id = await _create_user(uid)
+        referrer = json_payload.get("referrer")
+        user_id = await _create_user(uid, referrer)
         return json_response(
             status=200,
             data={

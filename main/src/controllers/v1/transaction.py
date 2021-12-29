@@ -15,8 +15,7 @@ async def get_user_transaction(request):
 
     try:
         uid = json_payload["uid"]
-        payment_id = json_payload.get("payment_id")
-        transaction = await _get_user_transaction(uid, payment_id)
+        transaction = await _get_user_transaction(uid)
         return json_response(
             status=200,
             data=transaction
@@ -42,10 +41,9 @@ async def create_user_transaction(request):
     try:
         uid = json_payload["uid"]
         wallet = json_payload["wallet"]
-        txid = json_payload.get["txid"]
-        payment_id = json_payload.get("payment_id")
-        transaction_date = json_payload["transaction_date"]
-        transaction_id = await _create_user_transaction(uid, wallet, txid, payment_id, transaction_date)
+        txid = json_payload["txid"]
+        date = json_payload["date"]
+        transaction_id = await _create_user_transaction(uid, wallet, txid, date)
         return json_response(
             status=200,
             data={

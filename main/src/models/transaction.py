@@ -8,7 +8,7 @@ class Transaction(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="transaction_user")
     wallet = fields.CharField(96, null=False)
-    txid = fields.CharField(96, null=True)
+    txid = fields.CharField(96, null=False, unique=True)
     amount = fields.FloatField(null=False)
     date = fields.DatetimeField(null=False)
 

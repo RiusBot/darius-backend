@@ -49,21 +49,32 @@ async def _update_user_profile(user: User, user_name: str):
 async def _get_user_profile(user: User):
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
+    print(user)
     return user
 
 
 @atomic()
-async def _create_user(uid: str):
+async def _create_user(uid: str, referrer: str = None):
     role = await Role.filter(is_del=False).filter(name="user").first()
     user = await User.filter(uid=uid).first()
     if user:
         logger.info("User %s was created before, will activate user", user)
         user.is_del = False
         return user.id
+
+    referral_code = None
+    for _ in range(10):
+        referral_code = generate_referral_code()
+        if (await User.filter(referral_code=referral_code).exists()):
+            continue
+    if referral_code is None:
+        raise BackendException("Cannot generate referral_code")
+
     user = await User.create(
         uid=uid,
         role=role,
-        referral_code=generate_referral_code()
+        referrer=referrer,
+        referral_code=referral_code
     )
     logger.info(f"Create user [{user.id}]")
     return user.id

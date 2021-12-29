@@ -59,11 +59,17 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         raise BackendException("Insufficient balance")
 
     # create subscription
-    subscription = await Subscription.create(
-        user=user,
+    subscription, create = await Subscription.get_or_create(
+        defaults={
+            "user": user,
+            "expire_date": datetime.now() + timedelta(days=int(plan.day)),
+        },
         plan=plan,
-        expire_date=datetime.now() + timedelta(days=int(plan.day)),
+        is_del=False
     )
+    if not create:
+        raise BackendException("subscription exists")
+
     subscription_id = subscription.id
     logger.info(f"Create subscription [{subscription_id}]")
 

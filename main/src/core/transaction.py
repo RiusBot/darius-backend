@@ -8,6 +8,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import User, Transaction
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
+from main.src.core.exchange import validate_transaction
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ async def _get_user_transaction(user: User, payment_id: int = None):
 
     Transaction_Pydantic_List = pydantic_queryset_creator(
         Transaction,
-        include=["wallet", "txid", "id", "amount"]
+        include=["wallet", "txid", "id", "amount", "date"]
     )
 
     query = user.transaction_user.filter(is_del=False)
@@ -32,59 +33,40 @@ async def _get_user_transaction(user: User, payment_id: int = None):
     transaction_list = json.loads(transaction_list.json())
     for transaction in transaction_list:
         transaction["transaction_id"] = transaction.pop("id")
+        transaction["date"] = transaction["date"][:10]
+
     logger.info(f"Get user [{uid}] {len(transaction_list)} transactions")
     return transaction_list
 
 
 @atomic()
 @permission_validator("create_user_transaction")
-async def _create_user_transaction(user: User, wallet: str, txid: str, payment_id: int, transaction_date: str) -> int:
+async def _create_user_transaction(user: User, wallet: str, txid: str, date: str) -> int:
     uid = user.uid
-    logger.info(f"Create new transaction for user [{uid}] with plans [{plan_ids}]")
+    logger.info(f"Create new transaction for user [{uid}] with txid [{txid}]")
 
-    # validate payment: apply lock here
-    payment = await user.payment_user.filter(is_del=False).select_for_update(nowait=True).first()
-    if payment is None:
-        raise BackendException("Invalid payment_id")
+    # acquire lock
+    user = await user.filter(id=user.id).select_for_update().first()
 
     # validate transaction
-    amount = validate_transaction(wallet, txid, transaction_date)  
+    amount, date = validate_transaction(wallet, txid, date)
 
     # create transaction
     transaction, create = await Transaction.get_or_create(
         defaults={
             "user": user,
-            "payment": payment,
             "wallet": wallet,
-            "txid": txid,
             "amount": amount,
+            "date": date
         },
         txid=txid,
     )
     if not create:
         raise BackendException("transaction exists")
 
-    # update payment
-    remain = max(payment.remain - amount, 0)
-    payment.remain = remain
-
-    if remain == 0:
-
-        # delete payment
-        payment.is_del = True
-
-        # activate subscription
-        async for subscription in payment.subscription_payment.filter(is_del=False).prefetch_related("plan"):
-            subscription.status = SubscriptionStatus.CONFIRM
-            subscription.expire_date = datetime.now() + timedelta(days=subscription.plan.day)
-            await subscription.save()
-        # update query at once, but cannot customize expire_date
-        # await payment.subscription_payment.filter(is_del=False).update(
-        #     status=SubscriptionStatus.CONFIRM,
-        #     expire_date=datetime.now() + timedelta(days=)
-        # )
-
-    await payment.save()
+    # update balance
+    user.balance += amount
+    await user.save()
 
     transaction_id = transaction.id
     logger.info(f"Create transaction [{transaction_id}]")

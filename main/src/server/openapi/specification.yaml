@@ -129,6 +129,10 @@ paths:
               properties:
                 uid:
                   type: string
+                referrer:
+                  type: string
+                  maxLength: 8
+                  nullable: True
               required:
                 - uid
       responses:
@@ -801,15 +805,8 @@ paths:
                       type: string
                       maxLength: 28
                       minLength: 28
-                    transaction_date:
-                      type: string
-                      maxLength: 8
-                    payment_id:
-                      type: integer
                   required:
                   - uid
-                  - transaction_date
-                  - payment_id
       responses:
         '200':
           description: success
@@ -1027,13 +1024,32 @@ components:
         user_name:
           type: string
           maxLength: 16
+          nullable: True
         email: 
           type: string
           maxLength: 32
+          nullable: True
+        points:
+          type: number
+          minimum: 0
+        balance:
+          type: number
+          minimum: 0
+        referrer:
+          type: string
+          maxLength: 8
+          nullable: True
+        referral_code:
+          type: string
+          maxLength: 8
       required:
         - uid
         - user_name
         - email
+        - points
+        - balance
+        - referrer
+        - referral_code
     
     API_READ:
       type: object
@@ -1188,9 +1204,18 @@ components:
         txid:
           type: string
           maxLength: 96
+        date:
+          type: string
+          maxLength: 10
+          example:
+            value: "2022-01-01"
+        amount:
+          type: number
+          minimum: 0
       required:
         - wallet
         - txid
+        - date
 
     Plan:
       type: object

@@ -73,7 +73,7 @@ CREATE TABLE `transaction` (
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `user_id` int(11) NOT NULL,
   `wallet` varchar(128) NOT NULL,
-  `txid` varchar(128) UNIQUE,
+  `txid` varchar(128) UNIQUE NOT NULL,
   `date` DATETIME(6) NOT NULL,
   `amount` DOUBLE NOT NULL,
   KEY (`user_id`),
