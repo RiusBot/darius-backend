@@ -55,7 +55,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         raise BackendException(f"{plan.channel} channel already subscribed")
 
     # validate balance
-    if user.balance < plan.price:
+    if (float(user.balance) + float(user.points)) < float(plan.price):
         raise BackendException("Insufficient balance")
 
     # create subscription
@@ -73,9 +73,22 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     subscription_id = subscription.id
     logger.info(f"Create subscription [{subscription_id}]")
 
-    # update user balance
-    user.balance -= float(plan.price)
+    # discount with points, update balance
+    if float(user.points) >= float(plan.price):
+        user.points -= float(plan.price)
+    else:
+        user.balance -= (float(plan.price) - float(user.points))
+        user.points = 0.0
+
+    user.points += float(plan.day / 3)
     await user.save()
+
+    # if first time create subscription, referrer add points
+    if (await user.subscription_user.count()) == 1:
+        referrer = User.filter(referral_code=user.referrer, is_del=False).first()
+        if referrer is not None:
+            referrer.points += float(plan.day / 6)
+            await referrer.save()
 
     return subscription_id
 
