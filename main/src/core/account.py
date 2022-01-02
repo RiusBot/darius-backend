@@ -49,7 +49,6 @@ async def _update_user_profile(user: User, user_name: str):
 async def _get_user_profile(user: User):
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
-    print(user)
     return user
 
 
