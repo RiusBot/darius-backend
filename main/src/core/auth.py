@@ -28,6 +28,19 @@ async def openapi_auth(bearer_token: str, request):
     return {'sub': ''}
 
 
+async def openapi_auth_backend_only(bearer_token: str, request):
+    if request._method == "GET":
+        json_payload = dict(request.rel_url.query)
+    else:
+        json_payload = await request.json()
+    json_payload['idToken'] = bearer_token
+    json_payload['token'] = bearer_token
+    if usingProjectId != "local":
+        if check_server_access(json_payload) is False:
+            raise Unauthorized from JWTError
+    return {'sub': ''}
+
+
 def authenticate(json_payload):
     if usingProjectId != "local":
         if check_client_access(json_payload) is False:

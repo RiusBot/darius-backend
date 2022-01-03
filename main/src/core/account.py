@@ -40,6 +40,8 @@ def generate_referral_code(k=8):
 @atomic()
 @permission_validator("update_user_profile")
 async def _update_user_profile(user: User, user_name: str):
+    uid = user.uid
+    logger.info(f"Update profile user {uid}")
     user.user_name = user_name
     await user.save()
 
@@ -47,6 +49,7 @@ async def _update_user_profile(user: User, user_name: str):
 @atomic()
 @permission_validator("get_user_profile")
 async def _get_user_profile(user: User):
+    logger.info(f"Get profile user {uid}")
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
     return user
@@ -54,7 +57,6 @@ async def _get_user_profile(user: User):
 
 @atomic()
 async def _create_user(uid: str, referrer: str = None):
-    role = await Role.filter(is_del=False).filter(name="user").first()
     user = await User.filter(uid=uid).first()
     if user:
         logger.info("User %s was created before, will activate user", user)
@@ -69,6 +71,7 @@ async def _create_user(uid: str, referrer: str = None):
     if referral_code is None:
         raise BackendException("Cannot generate referral_code")
 
+    role = await Role.filter(is_del=False).filter(name="user").first()
     user = await User.create(
         uid=uid,
         role=role,
@@ -82,6 +85,7 @@ async def _create_user(uid: str, referrer: str = None):
 @atomic()
 @permission_validator("delete_user")
 async def _delete_user(user: User, delete_uid: str):
+    logger.info(f"Delete user [{delete_uid}]")
     user = await User.filter(uid=delete_uid).first()
     if delete_uid is None:
         raise BackendException("Invalid delete_uid")

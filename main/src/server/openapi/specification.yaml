@@ -12,8 +12,8 @@ tags:
 - name: account
 - name: plan
 - name: subscription
-- name: payment
 - name: transaction
+- name: telegram
 security:
   - bearerAuth: []
 paths:
@@ -216,6 +216,8 @@ paths:
       - bot
       summary: recieve signal info and make orders
       operationId: main.src.controllers.v1.bot.execute_bot_signal
+      security:
+        - bearerAuthBackendOnly: []
       requestBody:
         required: true
         content:
@@ -865,11 +867,6 @@ paths:
             minLength: 28
           description: user ID
           required: true
-        - in: query
-          name: payment_id
-          schema:
-            type: integer
-          description: payment ID
       responses:
         '200':
           description: success
@@ -917,6 +914,137 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
+          
+  /create_user_telegram:
+    post:
+      tags:
+      - telegram
+      summary: Bind telegram account
+      operationId: main.src.controllers.v1.telegram.create_user_telegram
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                telegram_id:
+                  type: integer
+                  minimum: 0
+                token:
+                  type: string
+                  maxLength: 32
+              required:
+              - uid
+              - token
+              - telegram_id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  telegram_id:
+                    type: integer
+                    minimum: 0
+                required:
+                - telegram_id
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /update_user_telegram:
+    patch:
+      tags:
+      - telegram
+      summary: update user telegram
+      operationId: main.src.controllers.v1.telegram.update_user_telegram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                telegram_id:
+                  type: integer
+                  minimum: 0
+              required:
+              - uid
+              - telegram_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_user_telegram:
+    get:
+      tags:
+      - transaction
+      summary: get user telegram
+      operationId: main.src.controllers.v1.telegram.get_user_telegram
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  telegram_id:
+                    type: integer
+                    minimum: 0
+                  username:
+                    type: string
+                    maxLength: 64
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_user_telegram:
+    delete:
+      tags:
+      - telegram
+      summary: delete telegram id
+      operationId: main.src.controllers.v1.telegram.delete_user_telegram
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+              required:
+              - uid
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
 
 
 components:
@@ -927,6 +1055,12 @@ components:
       scheme: bearer
       bearerFormat: JWT
       x-bearerInfoFunc: main.src.core.auth.openapi_auth
+      
+    bearerAuthBackendOnly:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: main.src.core.auth.openapi_auth_backend_only
 
   responses:
     NotFound:

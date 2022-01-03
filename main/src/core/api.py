@@ -69,11 +69,6 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: 
     uid = user.uid
     logger.info(f"Create new api for user [{uid}]")
 
-    # validate user
-    user = await User.filter(uid=uid).filter(is_del=False).first()
-    if user is None:
-        raise BackendException("Invalid uid")
-
     # validate api number
     api_list = await user.api_user.filter(is_del=False)
     valid_api_list = [api for api in api_list if not api.is_del]
@@ -117,13 +112,8 @@ async def _update_user_api(user: User, api_id: int, api_key: str, api_secret: st
     uid = user.uid
     logger.info(f"Update api [{api_id}] for user [{uid}]")
 
-    # validate user
-    user = await User.filter(uid=uid).filter(is_del=False).first()
-    if user is None:
-        raise BackendException("Invalid uid")
-
     # validate api belongs to user
-    api = await user.api_user.filter(is_del=False).filter(id=api_id).first()
+    api = await user.api_user.filter(is_del=False, id=api_id).first()
     if api is None:
         raise BackendException("Invalid api.")
 
@@ -144,12 +134,8 @@ async def _delete_user_api(user: User, api_id: int) -> int:
     uid = user.uid
     logger.info(f"Delete api [{api_id}] for user {uid}")
 
-    user = await User.filter(uid=uid).filter(is_del=False).first()
-    if user is None:
-        raise BackendException("Invalid uid")
-
     # validate api belongs to user
-    api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
+    api = await user.api_user.filter(id=api_id, is_del=False).first()
     if api is None:
         raise BackendException("Invalid api_id")
 

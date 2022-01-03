@@ -11,7 +11,6 @@ class User(BaseModel):
     password = fields.CharField(50, null=True)
     role = fields.ForeignKeyField("darius.Role", related_name="user_role")
     uid = fields.CharField(28, null=False)
-    points = fields.FloatField(null=False, default=0.0)
     balance = fields.FloatField(null=False, default=0.0)
     referrer = fields.CharField(8, null=True)
     referral_code = fields.CharField(8, null=False, unique=True)

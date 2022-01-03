@@ -54,3 +54,4 @@ google-cloud-firestore==2.3.4
 python-jose==3.3.0
 cachetools==5.0.0
 cryptography==36.0.1
+python-telegram-bot==13.9

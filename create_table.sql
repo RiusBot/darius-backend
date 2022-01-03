@@ -25,7 +25,6 @@ CREATE TABLE `user` (
   `email` varchar(32) UNIQUE NOT NULL,
   `uid` varchar(28) UNIQUE NOT NULL,
   `role_id` int(11) NOT NULL,
-  `points` DOUBLE NOT NULL DEFAULT 0,
   `balance` DOUBLE NOT NULL DEFAULT 0,
   `referrer` varchar(8),
   `referral_code` varchar(8) UNIQUE NOT NULL,
@@ -37,6 +36,19 @@ CREATE TABLE `user` (
    KEY (`referral_code`),
    CONSTRAINT FOREIGN KEY (`role_id`) REFERENCES `role`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+-- telegram
+CREATE TABLE IF NOT EXISTS `telegram` (
+    `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    `created_at` DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6),
+    `telegram_id` INT(16) UNIQUE NOT NULL,
+    `user_id` INT UNIQUE NOT NULL,
+    KEY (`user_id`),
+    KEY (`telegram_id`),
+    KEY (`created_at`),
+    FOREIGN KEY(user_id) REFERENCES user(id)
+) CHARACTER SET utf8;
 
 -- plan
 CREATE TABLE `plan` (
@@ -199,3 +211,4 @@ ALTER TABLE trade_history add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE message add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE subscription add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE transaction add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE telegram add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;

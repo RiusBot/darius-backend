@@ -10,6 +10,7 @@ from .api import Api
 from .plan import Plan
 from .subscription import Subscription
 from .transaction import Transaction
+from .telegram import Telegram
 
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "Api",
     "Plan",
     "Subscription",
-    "Transaction"
+    "Transaction",
+    "Telegram",
 ]
