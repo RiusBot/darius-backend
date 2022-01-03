@@ -383,13 +383,10 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         raise BackendException("Invalid api_id")
 
     # validate channel subscription
-    # plans = await user.subscription_user.filter(is_del=False).prefetch_related("plan")
-    # channels = set([i.plan.channel.value for i in plans])
-
-    plans = await Plan.filter(is_del=False)
-    channels = set([i.channel.value for i in plans])
-
-    if channel not in channels and "darius" not in channels:
+    subscription = await user.subscription_user.filter(
+        is_del=False, plan__channel__in=[channel, "DARIUS"]
+    ).exists()
+    if not subscription:
         raise BackendException("Invalid channel")
 
     # validate bot number

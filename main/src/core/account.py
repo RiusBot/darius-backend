@@ -4,7 +4,7 @@ import string
 import logging
 from email_validator import validate_email
 from tortoise.transactions import atomic
-from main.src.models import User, Role
+from main.src.models import User, Role, BotOrder
 from main.src.models.user import UserSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
@@ -41,7 +41,7 @@ def generate_referral_code(k=8):
 @permission_validator("update_user_profile")
 async def _update_user_profile(user: User, user_name: str):
     uid = user.uid
-    logger.info(f"Update profile user {uid}")
+    logger.info(f"Update profile user {user.uid}")
     user.user_name = user_name
     await user.save()
 
@@ -49,9 +49,15 @@ async def _update_user_profile(user: User, user_name: str):
 @atomic()
 @permission_validator("get_user_profile")
 async def _get_user_profile(user: User):
-    logger.info(f"Get profile user {uid}")
+    logger.info(f"Get profile user {user.uid}")
+
+    # get referral count
+    referral_code = user.referral_code
+    referral_cnt = await User.filter(is_del=False, referrer=referral_code).count()
+
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
+    user["referral_count"] = referral_cnt
     return user
 
 

@@ -59,13 +59,14 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         raise BackendException("Insufficient balance")
 
     # create subscription
+    expire_date = None if float(plan.day) == 0 else datetime.now() + timedelta(days=int(plan.day))
     subscription, create = await Subscription.get_or_create(
         defaults={
-            "user": user,
-            "expire_date": datetime.now() + timedelta(days=int(plan.day)),
+            "expire_date": expire_date,
         },
         plan=plan,
-        is_del=False
+        is_del=False,
+        user=user
     )
     if not create:
         raise BackendException("subscription exists")
@@ -78,7 +79,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     await user.save()
 
     # if first time create subscription, referrer
-    if (await user.subscription_user.count()) == 1:
+    if (await user.subscription_user.all().count()) == 1:
         referrer = User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
         if referrer is not None:
             referrer.balance += float(plan.day / 10)

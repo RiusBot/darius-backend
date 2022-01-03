@@ -8,4 +8,4 @@ class ChannelType(str, Enum):
     DAILYSCALP = "DAILYSCALP"
     TEST2 = "test2"
     TEST = "test"
-    DARIUS = "darius"
+    DARIUS = "DARIUS"

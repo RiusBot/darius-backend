@@ -1163,9 +1163,6 @@ components:
           type: string
           maxLength: 32
           nullable: True
-        points:
-          type: number
-          minimum: 0
         balance:
           type: number
           minimum: 0
@@ -1180,7 +1177,6 @@ components:
         - uid
         - user_name
         - email
-        - points
         - balance
         - referrer
         - referral_code
