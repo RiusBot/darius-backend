@@ -4,7 +4,7 @@ import string
 import logging
 from email_validator import validate_email
 from tortoise.transactions import atomic
-from main.src.models import User, Role, BotOrder
+from main.src.models import User, Role
 from main.src.models.user import UserSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
@@ -28,8 +28,8 @@ def email_normalize_and_validate(email: str):
         logger.error("Validate email error")
         logger.exception("")
         raise BackendException("Invalid email")
-        
-        
+
+
 def generate_referral_code(k=8):
     return ''.join(random.choices(
         string.ascii_uppercase + string.ascii_lowercase + string.digits,
@@ -40,7 +40,6 @@ def generate_referral_code(k=8):
 @atomic()
 @permission_validator("update_user_profile")
 async def _update_user_profile(user: User, user_name: str):
-    uid = user.uid
     logger.info(f"Update profile user {user.uid}")
     user.user_name = user_name
     await user.save()

@@ -1,4 +1,3 @@
-from enum import Enum
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 

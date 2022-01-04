@@ -41,7 +41,7 @@ async def get_stats(request):
                 'message': error_message
             }
         )
-    
+
 
 async def create_test_data(request):
     from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription
@@ -96,24 +96,21 @@ async def create_test_data(request):
         assert subscription is not None
     try:
         # await create()
-        
-#         import datetime
-#         from dateutil.parser import parse as parse_date
-#         json_payload = await request.json()
-#         uid = json_payload["uid"]
-#         plan = json_payload["plan"]
-#         expire_date = json_payload["expire_date"]
-        
-#         user = await User.filter(uid=uid).first()
-#         plan = await Plan.filter(id=plan).first()
-#         expire_date = None if not expire_date else parse_date(expire_date)
-#         await Subscription.create(
-#             user=user,
-#             expire_date=expire_date,
-#             plan=plan,
-#             is_del=False
-#         )
-        
+        # import datetime
+        # from dateutil.parser import parse as parse_date
+        # json_payload = await request.json()
+        # uid = json_payload["uid"]
+        # plan = json_payload["plan"]
+        # expire_date = json_payload["expire_date"]
+        # user = await User.filter(uid=uid).first()
+        # plan = await Plan.filter(id=plan).first()
+        # expire_date = None if not expire_date else parse_date(expire_date)
+        # await Subscription.create(
+        #     user=user,
+        #     expire_date=expire_date,
+        #     plan=plan,
+        #     is_del=False
+        # )
         return json_response(
             status=200,
             data={},

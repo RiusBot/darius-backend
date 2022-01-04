@@ -14,6 +14,7 @@ class TargetType(str, Enum):
 class OrderType(str, Enum):
     LIMIT = "LIMIT"
     MARKET = "MARKET"
+    TRAILING = "TRAILING"
 
 
 class BotConfig(BaseModel):
@@ -32,6 +33,7 @@ class BotConfig(BaseModel):
     order_type = fields.CharEnumField(OrderType, null=False, default="MARKET")
     stop_loss_type = fields.CharEnumField(OrderType, null=False, default="MARKET")
     take_profit_type = fields.CharEnumField(OrderType, null=False, default="MARKET")
+    others = fields.CharField(64, null=True)
 
     class Meta:
         table = "bot_config"

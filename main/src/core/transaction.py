@@ -1,7 +1,5 @@
 import json
 import logging
-from typing import List
-from datetime import datetime, timedelta
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 
@@ -81,10 +79,10 @@ async def _update_user_transaction(user: User, transaction_id: int, wallet: str,
 
     # warning amount
     if amount < 0:
-        logger.warning(f"Negative amount")
+        logger.warning("Negative amount")
 
     # validate transaction
-    transaction = await user.transaction_user.filter(is_del=False).filter(id=transaction_id).first()
+    transaction = await user.transaction_user.filter(is_del=False, id=transaction_id).first()
     if transaction is None:
         raise BackendException("Invalid transaction_id.")
 

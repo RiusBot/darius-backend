@@ -105,7 +105,7 @@ async def get_user_balance_stats():
                     total_balance['binance_future'] += exchange.fetchBalance()['USDT']['total']
             except KeyboardInterrupt as e:
                 raise e
-            except Exception as e:
+            except Exception:
                 logger.exception("")
                 continue
         return total_balance

@@ -145,6 +145,7 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
     `margin` DOUBLE,
     `duplicate` BOOLEAN DEFAULT FALSE,
     `minimum_volume` DOUBLE,
+    `others` VARCHAR(64),
     KEY (`bot_id`),
     CHECK(quantity >= 50),
     CHECK(leverage > 0),
