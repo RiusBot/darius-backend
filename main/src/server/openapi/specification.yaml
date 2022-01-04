@@ -1268,10 +1268,10 @@ components:
           enum: [MARKET, LIMIT]
         stop_loss_type:
           type: string
-          enum: [MARKET, LIMIT]
+          enum: [MARKET, LIMIT, TRAILING]
         take_profit_type:
           type: string
-          enum: [MARKET, LIMIT]
+          enum: [MARKET, LIMIT, TRAILING]
       required:
         - api_id
         - test

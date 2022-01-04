@@ -13,7 +13,8 @@ from tortoise.queryset import QuerySet
 from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List, Dict, Tuple
-from main.src.models import BotOrder, BotConfig, Trade, Message, User, Plan
+from main.src.models import BotOrder, BotConfig, Trade, Message, User
+from main.src.models.channel import ChannelType
 from main.src.config import app_config
 from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
@@ -383,10 +384,13 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         raise BackendException("Invalid api_id")
 
     # validate channel subscription
-    subscription = await user.subscription_user.filter(
-        is_del=False, plan__channel__in=[channel, "DARIUS"]
-    ).exists()
-    if not subscription:
+    # subscription = await user.subscription_user.filter(
+    #     is_del=False, plan__channel__in=[channel, "DARIUS"]
+    # ).exists()
+    # if not subscription:
+    #     raise BackendException("Invalid channel")
+
+    if channel not in ChannelType._value2member_map_:
         raise BackendException("Invalid channel")
 
     # validate bot number
@@ -397,6 +401,10 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     # validate channel no duplicate
     # if channel in set([bot.channel for bot in bot_list]):
     #     raise BackendException("Channel duplicate")
+
+    # validate trailing
+    if (api.exchange == "binance" and config["target"] != "FUTURE") and (config["stop_loss_type"] == "TRAILING" or config["take_profit_type"] == "TRAILING"):
+        raise BackendException("Binance can only use trailing stop in future trading.")
 
     # create bot
     config["api"] = api

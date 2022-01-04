@@ -14,6 +14,7 @@ class TargetType(str, Enum):
 class OrderType(str, Enum):
     LIMIT = "LIMIT"
     MARKET = "MARKET"
+    TRAILING = "TRAILING"
 
 
 class BotConfig(BaseModel):

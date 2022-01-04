@@ -21,7 +21,7 @@ def fetch_telegram_bot_token_firestore():
     if doc not in config:
         raise BackendException("Fetch telegram bot token from firestore failed")
     return config[doc]
-  
+
 
 TGBot = telegram.Bot(token=fetch_telegram_bot_token_firestore())
 
@@ -32,7 +32,7 @@ async def _update_user_telegram(user: User, telegram_id: int):
     logger.info(f"Update telegram info user {user.uid}")
     bind_telegram = await user.telegram_user.all().first()
     if bind_telegram is None:
-        raise BackendException(f"User has no bind telegram")
+        raise BackendException("User has no bind telegram")
 
     logger.info(f"Update telegram for user [{user.uid}], {bind_telegram.telegram_id} --> {telegram_id}")
     bind_telegram.telegram_id = telegram_id
@@ -64,11 +64,11 @@ async def _get_user_telegram(user: User):
 async def _create_user_telegram(user: User, telegram_id: int, token: str):
     uid = user.uid
     logger.info(f"Bind telegram for user [{uid}]")
-    
+
     # validate telegram_id is already bind
     if (await Telegram.filter(telegram_id=telegram_id).exists()):
         raise BackendException(f"Telegram_id {telegram_id} already bind.")
-    
+
     # create
     bind_telegram, create = await Telegram.get_or_create(
         defaults={
@@ -89,8 +89,7 @@ async def _delete_user_telegram(user: User):
     uid = user.uid
     bind_telegram = await user.telegram_user.all().first()
     if bind_telegram is None:
-        raise BackendException(f"User has no bind telegram")
+        raise BackendException("User has no bind telegram")
 
     logger.info(f"Delete telegram [{bind_telegram.telegram_id}] for user {uid}")
     await bind_telegram.delete()
-    

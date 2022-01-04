@@ -98,7 +98,7 @@ async def _update_user_subscription(user: User, subscription_id: int, expire_dat
     subscription = await user.subscription_user.filter(is_del=False, id=subscription_id).first()
     if subscription is None:
         raise BackendException("Invalid subscription.")
-    
+
     # validate date
     try:
         expire_date = parse_date(expire_date)
