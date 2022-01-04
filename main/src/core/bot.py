@@ -108,9 +108,9 @@ def send_to_execute(config: dict):
                     break
             return response
     except Exception as e:
-        # logger.exception("")
+        logger.exception("")
         # return str(e)
-        logger.error(str(e))
+        # logger.error(str(e))
         return "EXECUTE ERROR"
 
 
