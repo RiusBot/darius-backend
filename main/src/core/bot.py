@@ -403,8 +403,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     #     raise BackendException("Channel duplicate")
 
     # validate trailing
-    if (api.exchange == "binance" and config["target"] != "FUTURE") and (config["stop_loss_type"] == "TRAILING" or config["take_profit_type"] == "TRAILING"):
-        raise BackendException("Binance can only use trailing stop in future trading.")
+    validate_trailing(api, config)
 
     # create bot
     config["api"] = api
@@ -425,6 +424,40 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     bot_id = bot_order.id
     logger.info(f"Create bot [{bot_id}]")
     return bot_id
+
+
+def validate_trailing(api, config):
+
+    params = {}
+
+    if (config["stop_loss_type"] == "TRAILING" or config["take_profit_type"] == "TRAILING"):
+
+        if api.exchange == "binance":
+
+            if config["target"] != "FUTURE":
+                raise BackendException("Binance can only use trailing stop in future trading.")
+
+            if config["stop_loss_type"] == "TRAILING":
+
+                if not config.get("sl_trailing_callback"):
+                    raise BackendException("Invalid sl_trailing_callback")
+
+                if float(config["sl_trailing_callback"]) < 0.1 or float(config["sl_trailing_callback"]) > 5:
+                    raise BackendException(" 0.1 < sl trailing callback < 5 %")
+
+                params["sl_trailing_callback"] = config.pop("sl_trailing_callback")
+
+            if config["take_profit_type"] == "TRAILING":
+
+                if not config.get("tp_trailing_callback"):
+                    raise BackendException("Invalid sl_trailing_callback")
+
+                if float(config["tp_trailing_callback"]) < 0.1 or float(config["tp_trailing_callback"]) > 5:
+                    raise BackendException(" 0.1 < tp trailing callback < 5 %")
+
+                params["tp_trailing_callback"] = config.pop("tp_trailing_callback")
+
+    return params
 
 
 @atomic()

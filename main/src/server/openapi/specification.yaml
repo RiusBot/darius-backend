@@ -1272,6 +1272,16 @@ components:
         take_profit_type:
           type: string
           enum: [MARKET, LIMIT, TRAILING]
+        sl_trailing_callback:
+          type: number
+          minimum: 0.1
+          maximum: 5
+          nullable: true
+        tp_trailing_callback:
+          type: number
+          minimum: 0.1
+          maximum: 5
+          nullable: true
       required:
         - api_id
         - test
