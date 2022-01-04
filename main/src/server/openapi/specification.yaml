@@ -567,7 +567,6 @@ paths:
           schema:
             type: integer
           description: plan ID
-          required: true
         - in: query
           name: uid
           schema:
@@ -1040,6 +1039,33 @@ paths:
                   minLength: 28
               required:
               - uid
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /recaptcha_assessment:
+    post:
+      tags:
+      - recaptcha
+      summary: Create an assessment to analyze the risk of a UI action
+      operationId: main.src.controllers.v1.recaptcha.recaptcha_assessment
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: 
+                  type: string
+                action:
+                  type: string
+              required:
+                - token
+                - action
       responses:
         '200':
           description: success

@@ -26,6 +26,9 @@ class BaseConfig:
     DARIUSDB_PASSWD = ''
     PORT = 8080
     CORS_ALLOW_ORIGIN = ['*']
+    G_CLOUD_PROJECT_ID = 'darius-332003'
+    RECAPTCHA_SITE_KEY = '6Ldlk7UdAAAAAGIchxvhR5nUajO6aPE0xlZ7h-dg'
+    RECAPTCHA_VALID_ACTIONS = ['LOGIN', 'REGISTER']
 
 
 ENV = os.environ.get('ENV', 'development')
