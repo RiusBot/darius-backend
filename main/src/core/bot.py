@@ -1,4 +1,5 @@
 import os
+import time
 import enum
 import json
 import asyncio
@@ -122,7 +123,8 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=No
             config.update(data_dict)
             task = executor.submit(send_to_execute, config)
             task_dict[task] = config["bot_id"]
-            await asyncio.sleep(1)
+            # await asyncio.sleep(1)
+            time.sleep(1)
         logger.info(f"All {len(config_list)} submitted.")
     return task_dict
 
@@ -439,23 +441,13 @@ def validate_trailing(api, config):
 
             if config["stop_loss_type"] == "TRAILING":
 
-                if not config.get("sl_trailing_callback"):
-                    raise BackendException("Invalid sl_trailing_callback")
-
-                if float(config["sl_trailing_callback"]) < 0.1 or float(config["sl_trailing_callback"]) > 5:
-                    raise BackendException(" 0.1 < sl trailing callback < 5 %")
-
-                params["sl_trailing_callback"] = config.pop("sl_trailing_callback")
+                if float(config["stop_loss"]) < 0.1 or float(config["stop_loss"]) > 5:
+                    raise BackendException(" 0.1 < stop_loss < 5 %")
 
             if config["take_profit_type"] == "TRAILING":
 
-                if not config.get("tp_trailing_callback"):
-                    raise BackendException("Invalid sl_trailing_callback")
-
-                if float(config["tp_trailing_callback"]) < 0.1 or float(config["tp_trailing_callback"]) > 5:
-                    raise BackendException(" 0.1 < tp trailing callback < 5 %")
-
-                params["tp_trailing_callback"] = config.pop("tp_trailing_callback")
+                if float(config["take_profit"]) < 0.1 or float(config["take_profit"]) > 5:
+                    raise BackendException(" 0.1 < take_profit < 5 %")
 
     return params
 
