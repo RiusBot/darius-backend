@@ -1155,8 +1155,7 @@ components:
         - PERPETUAL
         - WHALE
         - DAILYSCALP
-        - test
-        - test2
+        - VEGAS
     
     Exchange:
       type: string

@@ -9,3 +9,4 @@ class ChannelType(str, Enum):
     TEST2 = "test2"
     TEST = "test"
     DARIUS = "darius"
+    VEGAS = "VEGAS"
