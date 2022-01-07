@@ -118,8 +118,9 @@ async def get_user_balance_stats():
 async def get_bot_quantity_stats():
     try:
         quantity_stats = defaultdict(float)
-        async for config in BotConfig.filter(is_del=False, test=False).prefetch_related("api"):
+        async for config in BotConfig.filter(is_del=False, test=False).prefetch_related("api", "bot"):
             quantity = config.quantity * config.leverage
+            quantity_stats[config.bot.channel] += quantity
             quantity_stats[config.api.exchange] += quantity
             quantity_stats[config.target] += quantity
         return quantity_stats

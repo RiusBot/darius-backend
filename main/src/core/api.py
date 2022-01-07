@@ -6,7 +6,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
 from main.src.models import Api, User
 from main.src.exception import BackendException
-from main.src.core.cipher import encrypt
+from main.src.core.cipher import encrypt, decrypt
 from main.src.core.permission import permission_validator
 
 
@@ -33,7 +33,7 @@ async def _get_user_api(user: User) -> List[Api]:
 
 def validate_api_permission(api_key: str, api_secret: str, exchange: str, subaccount: str):
 
-    if exchange == "ftx":
+    if exchange in ["ftx", "ftxus"]:
         if len(api_key) != 40 or len(api_secret) != 40:
             raise BackendException("Invalid length")
     elif exchange == "binance":
@@ -42,7 +42,7 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
 
     headers = {}
     if subaccount:
-        if exchange == "ftx":
+        if exchange in ["ftx", "ftxus"]:
             headers = {
                 'FTX-SUBACCOUNT': subaccount
             }
@@ -147,3 +147,32 @@ async def _delete_user_api(user: User, api_id: int) -> int:
     # delete api
     api.is_del = True
     await api.save()
+
+
+@atomic()
+@permission_validator("clean_user_api")
+async def _clean_user_api(user: User) -> int:
+    logger.info(f"Clean api")
+    remove_bot_count = 0
+    remove_api_count = 0
+
+    async for api in Api.filter(is_del=False).all():
+        try:
+            api_secret = decrypt(api.api_key, api.api_secret)
+            validate_api_permission(api.api_key, api_secret, api.exchange, api.subaccount)
+        except Exception as e:
+
+            # remove running bot
+            async for config in api.config_api.filter(is_del=False).prefetch_related('bot'):
+                config.is_del = True
+                config.bot.is_del = True
+                await config.save()
+                await config.bot.save()
+                remove_bot_count += 1
+
+            # delete api
+            api.is_del = True
+            await api.save()
+            remove_api_count += 1
+
+    logger.info(f"Remove {remove_api_count} api, remove {remove_bot_count} bots.")

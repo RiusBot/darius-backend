@@ -449,6 +449,14 @@ def validate_trailing(api, config):
                 if float(config["take_profit"]) < 0.1 or float(config["take_profit"]) > 5:
                     raise BackendException(" 0.1 < take_profit < 5 %")
 
+    if config['stop_loss_type'] != "TRAILING":
+        if config['stop_loss'] < 0:
+            raise BackendException(" 0 < stop loss < 100 %")
+
+    if config['take_profit_type'] != "TRAILING":
+        if config['take_profit'] < 0:
+            raise BackendException(" 0 < take profit < 500 %")
+
     return params
 
 

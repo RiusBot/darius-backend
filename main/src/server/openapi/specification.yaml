@@ -488,6 +488,31 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
+
+  /clean_user_api:
+    delete:
+      tags:
+      - api
+      summary: clean api
+      operationId: main.src.controllers.v1.api.clean_user_api
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+              required:
+              - uid
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
           
   /create_plan:
     post:
@@ -1159,9 +1184,11 @@ components:
     
     Exchange:
       type: string
+      maxLength: 16
       enum:
         - binance
         - ftx
+        - ftxus
 
     TradeStatus:
       type: string
@@ -1218,9 +1245,7 @@ components:
           type: string
           maxLength: 64
         exchange:
-          type: string
-          maxLength: 16
-          enum: [binance, ftx]
+          $ref: '#/components/schemas/Exchange'
         subaccount:
           type: string
           maxLength: 32
@@ -1239,9 +1264,7 @@ components:
           type: string
           maxLength: 64
         exchange:
-          type: string
-          maxLength: 16
-          enum: [binance, ftx]
+          $ref: '#/components/schemas/Exchange'
         subaccount:
           type: string
           maxLength: 32
@@ -1280,12 +1303,12 @@ components:
           nullable: true
         stop_loss:
           type: number
-          minimum: 0
+          minimum: -1
           maximum: 1
           nullable: true
         take_profit:
           type: number
-          minimum: 0
+          minimum: -1
           maximum: 5
           nullable: true
         order_type:
@@ -1297,16 +1320,6 @@ components:
         take_profit_type:
           type: string
           enum: [MARKET, LIMIT, TRAILING]
-        sl_trailing_callback:
-          type: number
-          minimum: 0.1
-          maximum: 5
-          nullable: true
-        tp_trailing_callback:
-          type: number
-          minimum: 0.1
-          maximum: 5
-          nullable: true
       required:
         - api_id
         - test

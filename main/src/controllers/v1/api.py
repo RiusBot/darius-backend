@@ -1,6 +1,6 @@
 import logging
 from aiohttp.web import json_response
-from main.src.core.api import _get_user_api, _create_user_api, _delete_user_api, _update_user_api
+from main.src.core.api import _get_user_api, _create_user_api, _delete_user_api, _update_user_api, _clean_user_api
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -113,6 +113,32 @@ async def delete_user_api(request):
         )
     except Exception as e:
         logger.error("Delete api error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+
+
+async def clean_user_api(request):
+
+    json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        logger.info("Clean api")
+        uid = json_payload["uid"]
+        await _clean_user_api(uid)
+        return json_response(
+            status=200,
+            data={}
+        )
+    except Exception as e:
+        logger.error("Clean api error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(

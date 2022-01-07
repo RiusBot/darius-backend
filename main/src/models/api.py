@@ -8,6 +8,7 @@ from main.src.models import BaseModel
 class Exchange(str, Enum):
     BINANCE = "binance"
     FTX = "ftx"
+    FTXUS = "ftxus"
 
 
 class Api(BaseModel):
