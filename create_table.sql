@@ -28,6 +28,7 @@ CREATE TABLE `user` (
   `balance` DOUBLE NOT NULL DEFAULT 0,
   `referrer` varchar(8),
   `referral_code` varchar(8) UNIQUE NOT NULL,
+  `referrer_count` int(11) NOT NULL  DEFAULT 0,
    KEY (`user_name`),
    KEY (`email`),
    KEY (`created_at`),

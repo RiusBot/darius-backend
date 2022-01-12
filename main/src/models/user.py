@@ -14,6 +14,7 @@ class User(BaseModel):
     balance = fields.FloatField(null=False, default=0.0)
     referrer = fields.CharField(8, null=True)
     referral_code = fields.CharField(8, null=False, unique=True)
+    referrer_count = fields.IntField(0, null=False)
 
     class Meta:
         table = "user"
