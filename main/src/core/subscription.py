@@ -30,6 +30,8 @@ async def _get_user_subscription(user: User) -> List[Subscription]:
     subscription_list = json.loads(subscription_list.json())
     for subscription in subscription_list:
         subscription["subscription_id"] = subscription.pop("id")
+        if subscription["expire_date"] is None:
+            subscription["expire_date"] = "Life Time"
 
     logger.info(f"Get user [{uid}] {len(subscription_list)} subscription")
     return subscription_list
