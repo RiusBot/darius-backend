@@ -13,6 +13,7 @@ from tortoise.transactions import atomic
 from tortoise.queryset import QuerySet
 from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
+from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
 from main.src.models import BotOrder, BotConfig, Trade, Message, User
 from main.src.models.channel import ChannelType
@@ -64,7 +65,7 @@ def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
     def parse(model: Model):
         config_dict = {}
         for key, value in model:
-            if isinstance(value, QuerySet):
+            if isinstance(value, (QuerySet, ReverseRelation)):
                 continue
             elif isinstance(value, Model):
                 config_dict.update(parse(value))
@@ -401,8 +402,8 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         raise BackendException("Maximum 5 bot per user")
 
     # validate channel no duplicate
-    # if channel in set([bot.channel for bot in bot_list]):
-    #     raise BackendException("Channel duplicate")
+    if channel in set([bot.channel for bot in bot_list]):
+        raise BackendException("Channel duplicate")
 
     # validate trailing
     validate_trailing(api, config)
