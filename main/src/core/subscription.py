@@ -59,14 +59,16 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         raise BackendException("Insufficient balance")
 
     # update balance
-    user.balance = float(user.balance) - float(plan.price) + float(plan.day / 3)
+    user.balance = float(user.balance) - float(plan.price) + float(plan.day) / 3
     await user.save()
 
     # create subscription
+    channel = plan.channel
     expire_date = None if float(plan.day) == 0 else datetime.now() + timedelta(days=int(plan.day))
     subscription, create = await Subscription.get_or_create(
         defaults={
             "expire_date": expire_date,
+            "plan": plan
         },
         plan__channel=channel,
         is_del=False,
@@ -78,14 +80,16 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         logger.info(f"Create subscription [{subscription_id}]")
 
         # if first time create subscription, referrer
-        if (await user.subscription_user.all().count()) == 1:
-            referrer = User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
+        subscription_count = await user.subscription_user.all().count()
+        if subscription_count == 1:
+            referrer = await User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
             if referrer is not None:
-                referrer.balance += float(plan.day / 10)
+                referrer.referrer_count += 1
+                referrer.balance += float(plan.day) / 10
                 await referrer.save()
     else:
         logger.info(f"Expand subscription [{subscription_id}]")
-        expire_date = subscription.expire_date + timedelta(days=int(plan.day))
+        subscription.expire_date = subscription.expire_date + timedelta(days=int(plan.day))
         await subscription.save()
 
     return subscription_id
