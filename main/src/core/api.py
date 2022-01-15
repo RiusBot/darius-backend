@@ -150,8 +150,7 @@ async def _delete_user_api(user: User, api_id: int) -> int:
 
 
 @atomic()
-@permission_validator("clean_user_api")
-async def _clean_user_api(user: User) -> int:
+async def _clean_api() -> int:
     logger.info(f"Clean api")
     remove_bot_count = 0
     remove_api_count = 0

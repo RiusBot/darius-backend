@@ -14,6 +14,36 @@ logger = logging.getLogger(__name__)
 
 
 @atomic()
+async def _clean_subscription() -> List[Subscription]:
+    logger.info(f"Clean subscription")
+
+    # clear bots
+    expire_subscription_count = 0
+    closed_bot_count = 0
+
+    async for subscription in Subscription.filter(
+        is_del=False,
+        expire_date__lt=datetime.now()
+    ).prefetch_related("user", "plan"):
+        expire_subscription_count += 1
+        async for bot in subscription.user.bot_user.filter(
+            is_del=False,
+            channel=subscription.plan.channel
+        ).prefetch_related("config"):
+            closed_bot_count += 1
+            bot.is_del = True
+            bot.config.is_del = True
+            await bot.save()
+            await bot.config.save()
+
+    logger.info(f"{expire_subscription_count} subscription expired, {closed_bot_count} bot closed.")
+    await Subscription.filter(
+        is_del=False,
+        expire_date__lt=datetime.now()
+    ).update(is_del=True)
+
+
+@atomic()
 @permission_validator("get_user_subscription")
 async def _get_user_subscription(user: User) -> List[Subscription]:
     uid = user.uid
@@ -66,7 +96,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
 
     # create subscription
     channel = plan.channel
-    expire_date = None if float(plan.day) == 0 else datetime.now() + timedelta(days=int(plan.day))
+    expire_date = None if (float(plan.day) == 0 or plan.day is None) else datetime.now() + timedelta(days=int(plan.day))
     subscription, create = await Subscription.get_or_create(
         defaults={
             "expire_date": expire_date,
@@ -81,7 +111,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     if create:
         logger.info(f"Create subscription [{subscription_id}]")
 
-        # if first time create subscription, referrer
+        # if first time create subscription, referrer get credit
         subscription_count = await user.subscription_user.all().count()
         if subscription_count == 1:
             referrer = await User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
@@ -91,6 +121,8 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
                 await referrer.save()
     else:
         logger.info(f"Expand subscription [{subscription_id}]")
+        if subscription.expire_date is None:
+            raise BackendException("Life Time cannot expand expire date")
         subscription.expire_date = subscription.expire_date + timedelta(days=int(plan.day))
         await subscription.save()
 
@@ -111,8 +143,8 @@ async def _update_user_subscription(user: User, subscription_id: int, expire_dat
     # validate date
     try:
         expire_date = parse_date(expire_date)
-        if expire_date < datetime.now():
-            raise
+        # if expire_date < datetime.now():
+        #     raise
     except Exception:
         raise BackendException("Invalid date")
 

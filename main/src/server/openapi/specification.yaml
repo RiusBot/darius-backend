@@ -489,25 +489,20 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
-  /clean_user_api:
+  /clean_api:
     delete:
       tags:
       - api
       summary: clean api
-      operationId: main.src.controllers.v1.api.clean_user_api
+      operationId: main.src.controllers.v1.api.clean_api
+      security:
+        - bearerAuthBackendOnly: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              properties:
-                uid:
-                  type: string
-                  maxLength: 28
-                  minLength: 28
-              required:
-              - uid
       responses:
         '200':
           description: success
@@ -680,6 +675,31 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /clean_subscription:
+    delete:
+      tags:
+      - subscription
+      summary: clean subscription
+      operationId: main.src.controllers.v1.subscription.clean_subscription
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+  
   /create_user_subscription:
     post:
       tags:

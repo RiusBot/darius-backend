@@ -393,6 +393,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     # if not subscription:
     #     raise BackendException("Invalid channel")
 
+    # remove this check after activate above validation
     if channel not in ChannelType._value2member_map_:
         raise BackendException("Invalid channel")
 
