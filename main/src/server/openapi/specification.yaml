@@ -14,6 +14,7 @@ tags:
 - name: subscription
 - name: transaction
 - name: telegram
+- name: trade
 security:
   - bearerAuth: []
 paths:
@@ -493,7 +494,7 @@ paths:
     delete:
       tags:
       - api
-      summary: clean api
+      summary: clean api every day
       operationId: main.src.controllers.v1.api.clean_api
       security:
         - bearerAuthBackendOnly: []
@@ -679,7 +680,7 @@ paths:
     delete:
       tags:
       - subscription
-      summary: clean subscription
+      summary: clean subscription very day
       operationId: main.src.controllers.v1.subscription.clean_subscription
       security:
         - bearerAuthBackendOnly: []
@@ -1084,6 +1085,46 @@ paths:
                   minLength: 28
               required:
               - uid
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /clean_limit_order:
+    delete:
+      tags:
+      - trade
+      summary: clean limit order every 1 hour
+      operationId: main.src.controllers.v1.trade.clean_limit_order
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /clean_oco_order:
+    delete:
+      tags:
+      - trade
+      summary: clean oco order every day
+      operationId: main.src.controllers.v1.trade.clean_oco_order
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
       responses:
         '200':
           description: success

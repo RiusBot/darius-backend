@@ -51,8 +51,7 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
         logger.exception("")
 
 
-def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
-    logger.info("Get all bot config")
+def process_bot_config(config: BotConfig):
 
     def type_casting(value):
         if isinstance(value, enum.Enum):
@@ -73,9 +72,13 @@ def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
                 config_dict[key] = type_casting(value)
         return config_dict
 
+    return parse(config)
+        
+def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
+    logger.info("Get all bot config")
     config_list = []
     for bot in bot_dict.values():
-        config_dict = parse(bot.config)
+        config_dict = process_bot_config(bot.config)
         config_list.append(config_dict)
 
     logger.info(f"{len(config_list)} bot configs")
@@ -116,9 +119,9 @@ def send_to_execute(config: dict):
         return "EXECUTE ERROR"
 
 
-async def send_bot_executor(config_list: List[dict], data_dict: dict, workers=None) -> Dict[Future, int]:
+async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = 1) -> Dict[Future, int]:
     logger.info("Start activate bot executor")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         task_dict = dict()
         for config in config_list:
             config.update(data_dict)
