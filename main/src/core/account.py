@@ -81,7 +81,8 @@ async def _create_user(uid: str, referrer: str = None):
         uid=uid,
         role=role,
         referrer=referrer,
-        referral_code=referral_code
+        referral_code=referral_code,
+        referrer_count=0
     )
     logger.info(f"Create user [{user.id}]")
     return user.id

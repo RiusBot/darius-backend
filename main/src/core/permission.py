@@ -15,7 +15,7 @@ def permission_validator(service):
             # validate user
             user = await User.filter(is_del=False).filter(uid=uid).prefetch_related("role").first()
             if user is None:
-                raise BackendException("Invalid uid")
+                raise BackendException(f"Invalid uid [{uid}]")
 
             # validate permission
             permission = await user.role.permission_role.filter(is_del=False).filter(service=service).first()
