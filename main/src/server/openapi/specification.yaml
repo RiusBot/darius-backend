@@ -498,12 +498,6 @@ paths:
       operationId: main.src.controllers.v1.api.clean_api
       security:
         - bearerAuthBackendOnly: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
       responses:
         '200':
           description: success
@@ -684,17 +678,6 @@ paths:
       operationId: main.src.controllers.v1.subscription.clean_subscription
       security:
         - bearerAuthBackendOnly: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                uid:
-                  type: string
-                  maxLength: 28
-                  minLength: 28
       responses:
         '200':
           description: success
@@ -1099,12 +1082,6 @@ paths:
       operationId: main.src.controllers.v1.trade.clean_limit_order
       security:
         - bearerAuthBackendOnly: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
       responses:
         '200':
           description: success
@@ -1119,12 +1096,6 @@ paths:
       operationId: main.src.controllers.v1.trade.clean_oco_order
       security:
         - bearerAuthBackendOnly: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
       responses:
         '200':
           description: success

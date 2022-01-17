@@ -91,8 +91,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         raise BackendException("Insufficient balance")
 
     # update balance
-    user.balance = float(user.balance) - float(plan.price) + float(plan.day) / 3
-    await user.save()
+    user.balance = float(user.balance) - float(plan.price)
 
     # create subscription
     channel = plan.channel
@@ -114,6 +113,11 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         # if first time create subscription, referrer get credit
         subscription_count = await user.subscription_user.all().count()
         if subscription_count == 1:
+
+            # first subscription refund
+            user.balance += float(plan.price) * 0.3
+
+            # referrer credit
             referrer = await User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
             if referrer is not None:
                 referrer.referrer_count += 1
@@ -125,7 +129,9 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
             raise BackendException("Life Time cannot expand expire date")
         subscription.expire_date = subscription.expire_date + timedelta(days=int(plan.day))
         await subscription.save()
+        user.balance += float(plan.price) * 0.15
 
+    await user.save()
     return subscription_id
 
 

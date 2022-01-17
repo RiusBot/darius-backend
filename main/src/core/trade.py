@@ -64,11 +64,12 @@ async def _clean_limit_order() -> int:
         created_at__gt=one_hour_ago,
         status="success",
         bot__config__order_type="LIMIT"
-    ).prefetch_related("bot__config__api"):
+    ).prefetch_related("bot__config__api", "message"):
         if trade.open_order:
             config_dict = process_bot_config(trade.bot.config)
             config_dict["open_order"] = trade.open_order
             config_dict["trade_id"] = trade.id
+            config_dict["symbol"] = trade.message.symbol
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 

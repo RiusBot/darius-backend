@@ -18,7 +18,9 @@ async def openapi_auth(bearer_token: str, request):
     if request._method == "GET":
         json_payload = dict(request.rel_url.query)
     else:
-        json_payload = await request.json()
+        json_payload = await request.text()
+        json_payload = json.loads(json_payload) if json_payload else {}
+
     json_payload['idToken'] = bearer_token
     json_payload['token'] = bearer_token
     if usingProjectId != "local":
@@ -32,7 +34,9 @@ async def openapi_auth_backend_only(bearer_token: str, request):
     if request._method == "GET":
         json_payload = dict(request.rel_url.query)
     else:
-        json_payload = await request.json()
+        json_payload = await request.text()
+        json_payload = json.loads(json_payload) if json_payload else {}
+
     json_payload['idToken'] = bearer_token
     json_payload['token'] = bearer_token
     if usingProjectId != "local":
