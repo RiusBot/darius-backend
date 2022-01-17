@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @atomic()
 async def _clean_subscription() -> List[Subscription]:
-    logger.info(f"Clean subscription")
+    logger.info("Clean subscription")
 
     # clear bots
     expire_subscription_count = 0

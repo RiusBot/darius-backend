@@ -16,7 +16,7 @@ async def create_recaptcha_assessment(token, recaptcha_action):
         raise BackendException(f'Invalid reCAPTCHA action {recaptcha_action}')
     project_id = app_config['G_CLOUD_PROJECT_ID']
     client = recaptchaenterprise_v1.RecaptchaEnterpriseServiceClient()
-    
+
     event = recaptchaenterprise_v1.Event()
     event.site_key = app_config['RECAPTCHA_SITE_KEY']
     event.token = token
@@ -34,13 +34,16 @@ async def create_recaptcha_assessment(token, recaptcha_action):
 
     if not response.token_properties.valid:
         logger.warning('Recaptcha createAssessment failed because the token was invalid '
-            'for for the following reasons: %s', response.token_properties.invalid_reason)
-        raise BackendException(f'Invalid reCAPTCHA token')
+            'for the following reasons: %s', response.token_properties.invalid_reason)
+        raise BackendException('Invalid reCAPTCHA token')
     else:
         if response.token_properties.action.upper() == recaptcha_action.upper():
             logger.info('The reCAPTCHA score for this token is: %s, reasons: %s',
                 response.risk_analysis.score, response.risk_analysis.reasons)
         else:
-            logger.warning('The action: %s in reCAPTCHA tag does not match the action: %s expecting to score', 
-                response.token_properties.action, recaptcha_action)
+            logger.warning(
+                'The action: %s in reCAPTCHA tag does not match the action: %s expecting to score',
+                response.token_properties.action,
+                recaptcha_action
+            )
             raise BackendException(f'Mismatch reCAPTCHA action {recaptcha_action}')

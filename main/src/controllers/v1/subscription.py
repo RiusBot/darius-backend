@@ -10,8 +10,6 @@ logger = logging.getLogger(__name__)
 
 async def clean_subscription(request):
 
-    json_payload = await request.json()
-
     try:
         await _clean_subscription()
         return json_response(

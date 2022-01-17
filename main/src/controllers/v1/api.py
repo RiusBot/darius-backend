@@ -126,8 +126,6 @@ async def delete_user_api(request):
 
 async def clean_api(request):
 
-    json_payload = await request.json()
-
     try:
         logger.info("Clean api")
         await _clean_api()

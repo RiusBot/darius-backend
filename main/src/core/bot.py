@@ -73,7 +73,8 @@ def process_bot_config(config: BotConfig):
         return config_dict
 
     return parse(config)
-        
+
+
 def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
     logger.info("Get all bot config")
     config_list = []
@@ -109,7 +110,7 @@ def send_to_execute(config: dict):
                         response = str(response["error_messages"])
                 except Exception:
                     response = response.text
-                if not (isinstance(response, str) and "Rate exceeded" in response):
+                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response)):
                     break
             return response
     except Exception as e:

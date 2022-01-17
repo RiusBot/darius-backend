@@ -1,20 +1,31 @@
+import os
+import time
+import enum
 import ccxt
 import json
 import logging
+import requests
 from collections import defaultdict
 from datetime import datetime, timedelta
+from typing import List, Dict
+import concurrent.futures
+from concurrent.futures import Future
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
-from typing import List, Dict
-from concurrent.futures import Future
+from tortoise.models import Model
+from tortoise.queryset import QuerySet
+from tortoise.fields.relational import ReverseRelation
 
+from main.src.config import app_config
 from main.src.models import Trade, User, BotConfig
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.core.cipher import decrypt
+from main.src.core.auth import fetch_secret_token_firestore
 
 
 logger = logging.getLogger(__name__)
+usingProjectId = os.getenv('project_id', 'local')
 
 
 @atomic()
@@ -44,12 +55,16 @@ async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
 
 @atomic()
 async def _clean_limit_order() -> int:
-    logger.info(f"Clean limit order")
+    logger.info("Clean limit order")
 
     one_hour_ago = datetime.now() - timedelta(minutes=70)
     config_list = []
     trade_dict = {}
-    async for trade in Trade.filter(created_at__gt=one_hour_ago, status__not="error", bot__config__order_type="LIMIT").prefetch_related("bot__config__api"):
+    async for trade in Trade.filter(
+        created_at__gt=one_hour_ago,
+        status="success",
+        bot__config__order_type="LIMIT"
+    ).prefetch_related("bot__config__api"):
         if trade.open_order:
             config_dict = process_bot_config(trade.bot.config)
             config_dict["open_order"] = trade.open_order
@@ -57,19 +72,13 @@ async def _clean_limit_order() -> int:
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    import pdb
-    pdb.set_trace()
-    result_dict = send_bot_executor(config_list, {'type': 'limit'})
+    result_dict = await send_bot_executor(config_list, {'type': 'limit'})
 
     stats = defaultdict(int)
     for trade_id, result in result_dict.items():
         if isinstance(result, dict):
             status = result.get("status", "no_status")
             stats[status] += 1
-            if status == "canceled":
-                trade = trade_dict[trade_id]
-                trade.status = status
-                await trade.save()
         else:
             stats['error'] += 1
 
@@ -78,30 +87,33 @@ async def _clean_limit_order() -> int:
 
 @atomic()
 async def _clean_oco_order() -> int:
-    logger.info(f"Clean oco order")
-    
-    one_day_ago = datetime.now() - timedelta(days=1, minutes=10)
+    logger.info("Clean oco order")
+
+    start_date = datetime.now() - timedelta(days=7)
     config_list = []
     trade_dict = {}
-    async for trade in Trade.filter(created_at__gt=one_day_ago, status__not="error", bot__config__order_type="LIMIT").prefetch_related("bot__config__api"):
+    async for trade in Trade.filter(
+        created_at__gt=start_date,
+        status="success",
+        bot__config__api__exchange="binance"
+    ).prefetch_related("bot__config__api", "message"):
         if trade.sl_order or trade.tp_order:
             config_dict = process_bot_config(trade.bot.config)
+            config_dict["symbol"] = trade.message.symbol
             config_dict["sl_order"] = trade.sl_order
             config_dict["tp_order"] = trade.tp_order
             config_dict["trade_id"] = trade.id
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    import pdb
-    pdb.set_trace()
-    result_dict = send_bot_executor(config_list, {'type': 'limit'})
+    result_dict = await send_bot_executor(config_list, {'type': 'oco'})
 
     stats = defaultdict(int)
     for trade_id, result in result_dict.items():
         if isinstance(result, dict):
-            status = result.get("status", "no_status")
+            status = result.get("status")
             stats[status] += 1
-            if status != "no_status":
+            if status:
                 trade = trade_dict[trade_id]
                 trade.status = status
                 await trade.save()
@@ -153,7 +165,7 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict = {}, worke
             config.update(data_dict)
             task = executor.submit(send_to_execute, config)
             task_dict[task] = config["trade_id"]
-            time.sleep(1)
+            # time.sleep(0.5)
         logger.info(f"All {len(config_list)} submitted.")
 
     result_dict = dict()

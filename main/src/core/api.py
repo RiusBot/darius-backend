@@ -151,16 +151,17 @@ async def _delete_user_api(user: User, api_id: int) -> int:
 
 @atomic()
 async def _clean_api() -> int:
-    logger.info(f"Clean api")
+    logger.info("Clean api")
     remove_bot_count = 0
     remove_api_count = 0
+    api_count = await Api.filter(is_del=False).count()
 
+    logger.info(f"All {api_count} api")
     async for api in Api.filter(is_del=False).all():
         try:
             api_secret = decrypt(api.api_key, api.api_secret)
             validate_api_permission(api.api_key, api_secret, api.exchange, api.subaccount)
-        except Exception as e:
-
+        except Exception:
             # remove running bot
             async for config in api.config_api.filter(is_del=False).prefetch_related('bot'):
                 config.is_del = True
