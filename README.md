@@ -20,5 +20,11 @@ python -m main.src.server.service
 # Swagger UI
 http://localhost:8080/api/v1/ui
 
-# TODO
+# TASK LIST
 https://www.notion.so/1aaab7908e7d47dd9a49b516b12df4e9?v=de8f485cabdc455292b3e089ed014754
+
+# Sceduler
+* clean api - every day
+* clean subscription - every day
+* clean limit - every hour
+* clean oco - every hour

@@ -1260,6 +1260,8 @@ components:
         - expired
         - error
         - success
+        - SL
+        - TP
 
     User:
       type: object
