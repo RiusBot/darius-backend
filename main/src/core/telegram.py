@@ -73,7 +73,7 @@ async def _check_tg_user_valid(tg_user_id: str, channel: str):
 
 @atomic()
 @permission_validator("create_user_telegram")
-async def _create_user_telegram(user: User, telegram_id: int, token: str):
+async def _create_user_telegram(user: User, telegram_id: int):
     uid = user.uid
     logger.info(f"Bind telegram for user [{uid}]")
 

@@ -3,11 +3,10 @@ import json
 import requests
 import logging
 import functools
-from firebase_admin import auth
+from firebase_admin import auth, firestore
 from jose import JWTError
 from werkzeug.exceptions import Unauthorized
 from google.cloud import secretmanager
-from firebase_admin import firestore
 
 
 usingProjectId = os.getenv('project_id', 'local')
@@ -98,7 +97,7 @@ def check_client_access(json_payload):
         if json_payload.get('uid') != decoded_token.get('uid'):
             return False
         uid = decoded_token.get('uid')
-        return (uid is not None)
+        return uid
     except Exception:
         logger.error("exception when dealing with check_client_access token")
         return False

@@ -791,6 +791,44 @@ paths:
                       - plan
         default:
           $ref: '#/components/responses/Unexpected'
+          
+  /get_tg_user_subscription:
+    get:
+      tags:
+      - subscription
+      summary: get telegram user subscription.
+      operationId: main.src.controllers.v1.subscription.get_tg_user_subscription
+      security:
+        - bearerAuthBackendOnly: []
+      parameters:
+        - in: query
+          name: telegram_id
+          schema:
+            type: string
+            maxLength: 16
+          description: telegram ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Subscription'
+                    - type: object
+                      properties:
+                        subscription_id:
+                          type: integer
+                        plan:
+                          $ref: '#/components/schemas/Plan'
+                      required:
+                      - subscription_id
+                      - plan
+        default:
+          $ref: '#/components/responses/Unexpected'
 
   /delete_user_subscription:
     delete:
@@ -969,12 +1007,8 @@ paths:
                 telegram_id:
                   type: integer
                   minimum: 0
-                token:
-                  type: string
-                  maxLength: 32
               required:
               - uid
-              - token
               - telegram_id
       responses:
         '200':

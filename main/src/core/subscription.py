@@ -5,7 +5,7 @@ from dateutil.parser import parse as parse_date
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
-from main.src.models import Subscription, User, Plan
+from main.src.models import Subscription, User, Plan, Telegram
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.core.telegram_bot import create_invite_link, revoke_invite_link
@@ -50,6 +50,36 @@ async def _clean_subscription() -> List[Subscription]:
 async def _get_user_subscription(user: User) -> List[Subscription]:
     uid = user.uid
     logger.info(f"Get subscription for user {uid}")
+
+    subscription_Pydantic_List = pydantic_queryset_creator(
+        Subscription,
+        include=["expire_date", "status", "id", "plan", "plan_id", "invite_link"]
+    )
+
+    subscription_list = await subscription_Pydantic_List.from_queryset(
+        user.subscription_user.filter(is_del=False).prefetch_related("plan")
+    )
+    subscription_list = json.loads(subscription_list.json())
+    for subscription in subscription_list:
+        subscription["subscription_id"] = subscription.pop("id")
+        if subscription["expire_date"] is None:
+            subscription["expire_date"] = "Life Time"
+
+    logger.info(f"Get user [{uid}] {len(subscription_list)} subscription")
+    return subscription_list
+
+
+@atomic()
+async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
+    logger.info(f"Get subscription for tg user {telegram_id}")
+    
+    # validate user
+    tg = await Telegram.filter(is_del=False, telegram_id=telegram_id).prefetch_related("user").first()
+    if tg is None:
+        raise BackendException(f"Invalid telegram_id [{telegram_id}]")
+    else:
+        user = tg.user
+        uid = user.uid
 
     subscription_Pydantic_List = pydantic_queryset_creator(
         Subscription,

@@ -1,6 +1,6 @@
 import logging
 from aiohttp.web import json_response
-from main.src.core.subscription import _get_user_subscription, _create_user_subscription, _delete_user_subscription, _update_user_subscription, _clean_subscription
+from main.src.core.subscription import _get_user_subscription, _create_user_subscription, _delete_user_subscription, _update_user_subscription, _clean_subscription, _get_tg_user_subscription
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -43,6 +43,31 @@ async def get_user_subscription(request):
         )
     except Exception as e:
         logger.error("Get subscription error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+
+
+async def get_tg_user_subscription(request):
+
+    json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        telegram_id = json_payload["telegram_id"]
+        subscribe_list = await _get_tg_user_subscription(telegram_id)
+        return json_response(
+            status=200,
+            data=subscribe_list
+        )
+    except Exception as e:
+        logger.error("Get tg subscription error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(

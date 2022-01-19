@@ -68,9 +68,8 @@ async def create_user_telegram(request):
 
     try:
         uid = json_payload["uid"]
-        token = json_payload['token']
         telegram_id = json_payload['telegram_id']
-        telegram_id = await _create_user_telegram(uid, telegram_id, token)
+        telegram_id = await _create_user_telegram(uid, telegram_id)
         return json_response(
             status=200,
             data={
