@@ -9,6 +9,7 @@ class Subscription(BaseModel):
     user = fields.ForeignKeyField("darius.User", related_name="subscription_user")
     plan = fields.ForeignKeyField("darius.Plan", related_name="subscription_plan")
     expire_date = fields.DatetimeField(null=True)
+    invite_link = fields.CharField(50, null=True, unique=True)
 
     class Meta:
         table = "subscription"

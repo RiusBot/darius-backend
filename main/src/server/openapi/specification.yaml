@@ -1459,6 +1459,9 @@ components:
         expire_date:
           type: string
           nullable: true
+        invite_link:
+          type: string
+          nullable: true
 
     Trade:
       type: object

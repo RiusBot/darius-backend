@@ -73,6 +73,7 @@ CREATE TABLE `subscription` (
   `user_id` int(11) NOT NULL,
   `plan_id` int(11) NOT NULL,
   `expire_date` DATETIME(6),
+  `invite_link` varchar(50) UNIQUE,
   KEY (`user_id`),
   KEY (`plan_id`),
   KEY (`expire_date`),

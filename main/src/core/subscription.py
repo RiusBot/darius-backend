@@ -8,6 +8,7 @@ from typing import List
 from main.src.models import Subscription, User, Plan
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
+from main.src.core.telegram_bot import create_invite_link, revoke_invite_link
 
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ async def _clean_subscription() -> List[Subscription]:
         expire_date__lt=datetime.now()
     ).prefetch_related("user", "plan"):
         expire_subscription_count += 1
+        revoke_invite_link(subscription.plna.channel, subscription.invite_link)
         async for bot in subscription.user.bot_user.filter(
             is_del=False,
             channel=subscription.plan.channel
@@ -51,7 +53,7 @@ async def _get_user_subscription(user: User) -> List[Subscription]:
 
     subscription_Pydantic_List = pydantic_queryset_creator(
         Subscription,
-        include=["expire_date", "status", "id", "plan", "plan_id"]
+        include=["expire_date", "status", "id", "plan", "plan_id", "invite_link"]
     )
 
     subscription_list = await subscription_Pydantic_List.from_queryset(
@@ -99,7 +101,8 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     subscription, create = await Subscription.get_or_create(
         defaults={
             "expire_date": expire_date,
-            "plan": plan
+            "plan": plan,
+            "invite_link": create_invite_link(channel)
         },
         plan__channel=channel,
         is_del=False,
@@ -166,10 +169,11 @@ async def _delete_user_subscription(user: User, subscription_id: int):
     logger.info(f"Delete subscription [{subscription_id}] for user [{uid}]")
 
     # validate subscription
-    subscription = await user.subscription_user.filter(id=subscription_id, is_del=False).first()
+    subscription = await user.subscription_user.filter(id=subscription_id, is_del=False).prefetch_related("plan").first()
     if subscription is None:
         raise BackendException("Invalid subscription_id")
 
     # delete subscription
     subscription.is_del = True
     await subscription.save()
+    revoke_invite_link(subscription.plan.channel, subscription.invite_link)
