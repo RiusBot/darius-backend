@@ -106,6 +106,10 @@ paths:
                 user_name:
                   type: string
                   maxLength: 16
+                referrer:
+                  type: string
+                  maxLength: 8
+                  nullable: true
               required:
                 - uid
                 - user_name

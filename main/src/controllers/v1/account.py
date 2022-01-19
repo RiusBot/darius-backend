@@ -17,7 +17,8 @@ async def update_user_profile(request):
         logger.info("Update user profile %s", json_payload)
         uid = json_payload["uid"]
         user_name = json_payload["user_name"]
-        await _update_user_profile(uid, user_name)
+        referrer = json_payload.get("referrer")
+        await _update_user_profile(uid, user_name, referrer)
         return json_response(status=200, data={})
     except Exception as e:
         logger.exception("Unexpected error when updating user profile, due to: %s", e)

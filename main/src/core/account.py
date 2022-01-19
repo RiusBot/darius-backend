@@ -39,9 +39,17 @@ def generate_referral_code(k=8):
 
 @atomic()
 @permission_validator("update_user_profile")
-async def _update_user_profile(user: User, user_name: str):
+async def _update_user_profile(user: User, user_name: str, referrer: str):
     logger.info(f"Update profile user {user.uid}")
     user.user_name = user_name
+
+    if referrer:
+        if user.referrer is not None:
+            raise BackendException("Referrer exists")
+        if user.referral_code == referrer:
+            raise BackendException("Don't referrer yourself")
+        user.referrer = referrer
+
     await user.save()
 
 
