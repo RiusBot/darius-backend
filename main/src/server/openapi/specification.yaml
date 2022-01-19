@@ -1020,7 +1020,7 @@ paths:
   /get_user_telegram:
     get:
       tags:
-      - transaction
+      - telegram
       summary: get user telegram
       operationId: main.src.controllers.v1.telegram.get_user_telegram
       parameters:
@@ -1071,6 +1071,43 @@ paths:
       responses:
         '200':
           description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /check_tg_user_valid:
+    post:
+      tags:
+      - telegram
+      summary: check if telegram user has subscription
+      operationId: main.src.controllers.v1.telegram.check_tg_user_valid
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  maxLength: 28
+                channel:
+                  $ref: '#/components/schemas/Channel'
+              required:
+              - user_id
+              - channel
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    default: false
         default:
           $ref: '#/components/responses/Unexpected'
 

@@ -84,6 +84,7 @@ def get_app_config() -> dict:
     if usingProjectId != "local":
         firestore_conf = get_config_from_firestore()
         dict_conf.update(firestore_conf)
+
     return dict_conf
 
 

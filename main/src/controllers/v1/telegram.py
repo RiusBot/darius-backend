@@ -1,6 +1,6 @@
 import logging
 from aiohttp.web import json_response
-from main.src.core.telegram import _get_user_telegram, _create_user_telegram, _delete_user_telegram, _update_user_telegram
+from main.src.core.telegram import _get_user_telegram, _create_user_telegram, _delete_user_telegram, _update_user_telegram, _check_tg_user_valid
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -33,6 +33,34 @@ async def get_user_telegram(request):
         )
 
 
+async def check_tg_user_valid(request):
+
+    json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        user_id = json_payload["user_id"]
+        channel = json_payload["channel"]
+        valid = await _check_tg_user_valid(user_id, channel)
+        return json_response(
+            status=200,
+            data={
+                "valid": valid
+            }
+        )
+    except Exception as e:
+        logger.error("Create telegram error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+    
+    
 async def create_user_telegram(request):
 
     json_payload = await request.json()

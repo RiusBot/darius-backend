@@ -26,7 +26,7 @@ def create_invite_link(channel: str) -> str:
         chat_id = getattr(ChannelID, channel, None)
         if chat_id is None:
             raise BackendException(f"{channel} channel has no chat_id")
-        invite_link = TGBot.create_chat_invite_link(chat_id, member_limit=1)
+        invite_link = TGBot.create_chat_invite_link(chat_id, creates_join_request=True)
         return invite_link.invite_link
     except Exception:
         raise BackendException("Create invite link failed")

@@ -59,6 +59,18 @@ async def _get_user_telegram(user: User):
     return telegram_info
 
 
+async def _check_tg_user_valid(tg_user_id: str, channel: str):
+    logger.info(f"Check telegram user_id: {tg_user_id}")
+
+    # get user with this user_id
+    tg = await Telegram.filter(telegram_id=tg_user_id).prefetch_related("user").first()
+    if tg is None:
+        raise BackendException(f"{tg_user_id} not found.")
+    
+    valid = await tg.user.subscription_user.filter(plan__channel=channel, is_del=False).exists()
+    return valid
+
+
 @atomic()
 @permission_validator("create_user_telegram")
 async def _create_user_telegram(user: User, telegram_id: int, token: str):
