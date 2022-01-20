@@ -3,6 +3,7 @@ from functools import wraps
 from tortoise.transactions import atomic
 from main.src.models import Permission, User, Role
 from main.src.exception import BackendException
+from main.src.core.account import _create_user
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,8 @@ def permission_validator(service):
             # validate user
             user = await User.filter(is_del=False, uid=uid).prefetch_related("role").first()
             if user is None:
-                raise BackendException(f"Invalid uid [{uid}]")
+                # raise BackendException(f"Invalid uid [{uid}]")
+                await _create_user(uid)
 
             # validate permission
             permission = await user.role.permission_role.filter(is_del=False, service=service).first()

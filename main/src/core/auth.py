@@ -97,7 +97,7 @@ def check_client_access(json_payload):
         if json_payload.get('uid') != decoded_token.get('uid'):
             return False
         uid = decoded_token.get('uid')
-        return uid
+        return (uid is not None)
     except Exception:
         logger.error("exception when dealing with check_client_access token")
         return False
