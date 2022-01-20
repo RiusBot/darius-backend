@@ -407,8 +407,8 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         raise BackendException("Maximum 5 bot per user")
 
     # validate channel no duplicate
-    if channel in set([bot.channel for bot in bot_list]):
-        raise BackendException("Channel duplicate")
+    # if channel in set([bot.channel for bot in bot_list]):
+    #     raise BackendException("Channel duplicate")
 
     # validate trailing
     validate_trailing(api, config)

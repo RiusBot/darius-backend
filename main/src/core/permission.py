@@ -17,6 +17,7 @@ def permission_validator(service):
             if user is None:
                 # raise BackendException(f"Invalid uid [{uid}]")
                 from main.src.core.account import _create_user
+                assert len(uid) == 28
                 await _create_user(uid)
 
             # validate permission
