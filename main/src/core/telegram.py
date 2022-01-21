@@ -57,6 +57,7 @@ async def _get_user_telegram(user: User):
     except Exception:
         chat = {}
     telegram_info["username"] = chat.get("username")
+    telegram_info["name"] = chat.get("first_name", "") + " " + chat.get("last_name", "")
     return telegram_info
 
 

@@ -1083,7 +1083,12 @@ paths:
                     minimum: 0
                   username:
                     type: string
-                    maxLength: 64
+                    maxLength: 32
+                    nullable: true
+                  name:
+                    type: string
+                    maxLength: 32
+                    nullable: true
         default:
           $ref: '#/components/responses/Unexpected'
 
