@@ -8,6 +8,7 @@ from main.src.models import User, Telegram
 from main.src.models.telegram import TelegramSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
+from main.src.models.channel import ChannelID
 
 
 logger = logging.getLogger(__name__)
@@ -59,16 +60,20 @@ async def _get_user_telegram(user: User):
     return telegram_info
 
 
-async def _check_tg_user_valid(tg_user_id: str, channel: str):
-    logger.info(f"Check telegram user_id: {tg_user_id}")
+async def _check_tg_user_valid(telegram_id: str, chat_id: str):
+    logger.info(f"Check telegram user_id: {telegram_id}")
 
     # get user with this user_id
-    tg = await Telegram.filter(telegram_id=tg_user_id).prefetch_related("user").first()
+    tg = await Telegram.filter(telegram_id=telegram_id).prefetch_related("user").first()
     if tg is None:
-        raise BackendException(f"{tg_user_id} not found.")
+        raise BackendException(f"{telegram_id} not found.")
     
-    valid = await tg.user.subscription_user.filter(plan__channel=channel, is_del=False).exists()
-    return valid
+    try:
+        channel = ChannelID(chat_id).name
+        valid = await tg.user.subscription_user.filter(plan__channel=channel, is_del=False).exists()
+        return valid
+    except Exception:
+        raise BackendException(f"Invalid chat_id {chat_id}")
 
 
 @atomic()

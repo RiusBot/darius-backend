@@ -48,7 +48,10 @@ async def _update_user_profile(user: User, user_name: str, referrer: str):
             raise BackendException("Referrer exists")
         if user.referral_code == referrer:
             raise BackendException("Don't referrer yourself")
-        user.referrer = referrer
+        if (await User.filter(referrer=referrer, is_del=False).exists()):
+            user.referrer = referrer
+        else:
+            raise BackendException(f"Referrer code {referrer} not exists")
 
     await user.save()
 
@@ -83,6 +86,10 @@ async def _create_user(uid: str, referrer: str = None):
             continue
     if referral_code is None:
         raise BackendException("Cannot generate referral_code")
+
+    if not (await User.filter(referrer=referrer, is_del=False).exists()):
+        logger.error(f"Referrer code {referrer} not exists")
+        referrer = None
 
     role = await Role.filter(is_del=False).filter(name="user").first()
     user = await User.create(

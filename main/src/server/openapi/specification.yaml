@@ -1127,14 +1127,15 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
+                telegram_id:
                   type: string
-                  maxLength: 28
-                channel:
-                  $ref: '#/components/schemas/Channel'
+                  maxLength: 16
+                chat_id:
+                  type: string
+                  maxLength: 16
               required:
-              - user_id
-              - channel
+              - telegram_id
+              - chat_id
       responses:
         '200':
           description: success

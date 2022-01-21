@@ -39,9 +39,9 @@ async def check_tg_user_valid(request):
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        user_id = json_payload["user_id"]
-        channel = json_payload["channel"]
-        valid = await _check_tg_user_valid(user_id, channel)
+        telegram_id = json_payload["telegram_id"]
+        chat_id = json_payload["chat_id"]
+        valid = await _check_tg_user_valid(telegram_id, chat_id)
         return json_response(
             status=200,
             data={
