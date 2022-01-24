@@ -23,9 +23,11 @@ TGBot = telegram.Bot(token=fetch_secret_token_firestore())
 
 def create_invite_link(channel: str) -> str:
     try:
-        chat_id = getattr(ChannelID, channel, None)
-        if chat_id is None:
-            raise BackendException(f"{channel} channel has no chat_id")
+        chat_id = getattr(ChannelID, channel, "")
+        if chat_id == "":
+            logger.info(f"{channel} channel has no chat_id")
+            return
+            # raise BackendException(f"{channel} channel has no chat_id")
         invite_link = TGBot.create_chat_invite_link(chat_id, creates_join_request=True)
         return invite_link.invite_link
     except Exception:
