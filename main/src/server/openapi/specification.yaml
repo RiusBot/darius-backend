@@ -1294,6 +1294,7 @@ components:
         - WHALE
         - DAILYSCALP
         - VEGAS
+        - JUSTIN
     
     Exchange:
       type: string

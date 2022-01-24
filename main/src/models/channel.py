@@ -10,6 +10,7 @@ class ChannelType(str, Enum):
     TEST = "test"
     DARIUS = "darius"
     VEGAS = "VEGAS"
+    JUSTIN = "JUSTIN"
     
 
 class ChannelID(str, Enum):
@@ -19,3 +20,4 @@ class ChannelID(str, Enum):
     DAILYSCALP = "-1001527819844"
     VEGAS = "-1001676864542"
     SENTIMENT = "-1001653050413"
+    JUSTIN = "-1001378498357"
