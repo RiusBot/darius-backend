@@ -344,7 +344,7 @@ async def execute_webhook(
     content: str,
     symbol: str,
     action: str,
-    token: str,
+    uid: str,
     message_timestamp: float,
     recieve_timestamp: float,
     entry: float = None,
@@ -353,7 +353,7 @@ async def execute_webhook(
     price: float = None,
 ):
     try:
-        uid = token[::-1]
+        uid = uid[::-1]
         bot_dict, message = None, None
 
         try:
@@ -523,7 +523,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 
     # validate bot number
     bot_list = await user.bot_user.filter(is_del=False)
-    if bot_list and len(bot_list) >= 5:
+    if bot_list and len(bot_list) >= 5 and user.role.name != "admin":
         raise BackendException("Maximum 5 bot per user")
 
     # validate channel no duplicate

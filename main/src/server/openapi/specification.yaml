@@ -252,12 +252,12 @@ paths:
                 - $ref: '#/components/schemas/Message'
                 - type: object
                   properties:
-                    token:
+                    uid:
                       type: string
                       maxLength: 28
                       minLength: 28
                   required:
-                  - token
+                  - uid
       responses:
         '200':
           description: received
