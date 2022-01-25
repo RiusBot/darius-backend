@@ -345,6 +345,7 @@ async def execute_webhook(
     symbol: str,
     action: str,
     uid: str,
+    bot_id: int,
     message_timestamp: float,
     recieve_timestamp: float,
     entry: float = None,
@@ -367,6 +368,9 @@ async def execute_webhook(
                 "user",
             ).first()
             bot_dict = {bot.id: bot}
+            if bot_id != bot.id:
+                raise BackendException(f"Bot ID not match")
+
             message = await write_message(
                 channel,
                 content,

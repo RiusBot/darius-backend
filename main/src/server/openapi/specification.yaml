@@ -241,7 +241,14 @@ paths:
       - bot
       summary: recieve webhook signal info and make orders
       operationId: main.src.controllers.v1.bot.execute_webhook_signal
-      security: [] 
+      security: []
+      parameters:
+        - in: path
+          name: bot_id
+          required: true
+          schema:
+            type: number
+          description: bot ID
       requestBody:
         required: true
         content:

@@ -69,12 +69,13 @@ async def execute_bot_signal(request):
         )
 
 
-async def execute_webhook_signal(request):
+async def execute_webhook_signal(request, bot_id: int):
     json_payload = await request.json()
     json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Start webhook signal")
+        json_payload["bot_id"] = bot_id
         json_payload["uid"] = json_payload.pop('token')[::-1]
         json_payload["message_timestamp"] = datetime.now().timestamp()
         json_payload["recieve_timestamp"] = datetime.now().timestamp()
