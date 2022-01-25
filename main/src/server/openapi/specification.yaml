@@ -235,29 +235,38 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
-  /execute_webhook_signal:
+  /execute_webhook_signal/{uid}:
     post:
       tags:
       - bot
       summary: recieve webhook signal info and make orders
       operationId: main.src.controllers.v1.bot.execute_webhook_signal
-      security:
-        - bearerAuthBackendOnly: []
+      security: []
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/Message'
-                - type: object
-                  properties:
-                    uid:
-                      type: string
-                      maxLength: 28
-                      minLength: 28
-                  required:
-                  - uid
+              type: object
+              properties:
+                symbol:
+                  type: string
+                  maxLength: 8
+                action:
+                  $ref: '#/components/schemas/Action'
+              required:
+              - symbol
+              - action
       responses:
         '200':
           description: received

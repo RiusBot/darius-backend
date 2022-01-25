@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import threading
+from datetime import datetime
 from collections import defaultdict
 from aiohttp.web import json_response
 from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot, _execute_webhook_signal
@@ -68,16 +69,21 @@ async def execute_bot_signal(request):
         )
 
 
-async def execute_webhook_signal(request):
+async def execute_webhook_signal(request, uid: str):
     json_payload = await request.json()
     json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Start webhook signal")
-        result = await _execute_webhook_signal(**json_payload)
+        json_payload["uid"] = uid[::-1]
+        json_payload["message_timestamp"] = datetime.now().timestamp()
+        json_payload["recieve_timestamp"] = datetime.now().timestamp()
+        json_payload["content"] = ""
+        json_payload["channel"] = "WEBHOOK"
+        await _execute_webhook_signal(**json_payload)
         return json_response(
             status=200,
-            data=result
+            data={}
         )
     except Exception as e:
         logger.error("webhook singal error.")

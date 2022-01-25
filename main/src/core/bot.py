@@ -353,7 +353,6 @@ async def execute_webhook(
     price: float = None,
 ):
     try:
-        uid = uid[::-1]
         bot_dict, message = None, None
 
         try:
