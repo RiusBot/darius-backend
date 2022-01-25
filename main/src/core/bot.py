@@ -33,12 +33,18 @@ def _execute_bot_signal(loop, *args, **kwargs):
     logger.info("execute bot signal complete.")
 
 
+async def _execute_webhook_signal(*args, **kwargs):
+    result = await execute_webhook(*args, **kwargs)
+    logger.info("execute webhook signal complete.")
+    return result
+
+
 @atomic()
 async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     logger.info("Get all bot")
     try:
         bot_dict = {}
-        async for bot in BotOrder.filter(is_del=False).filter(status="RUNNING").filter(channel=channel).prefetch_related(
+        async for bot in BotOrder.filter(is_del=False, status="RUNNING", channel=channel).prefetch_related(
             "config__api",
             "user",
         ).order_by("config__order_type"):
@@ -333,6 +339,120 @@ async def execute(
         BotStatus.pop(thread_id)
 
 
+async def execute_webhook(
+    channel: str,
+    content: str,
+    symbol: str,
+    action: str,
+    token: str,
+    message_timestamp: float,
+    recieve_timestamp: float,
+    entry: float = None,
+    stop_loss: float = None,
+    take_profit: float = None,
+    price: float = None,
+):
+    try:
+        uid = token[::-1]
+        bot_dict, message = None, None
+
+        try:
+            logger.info("Get all bot and write message.")
+            bot = await BotOrder.filter(
+                is_del=False,
+                status="RUNNING",
+                channel=channel,
+                user__uid=uid,
+            ).prefetch_related(
+                "config__api",
+                "user",
+            ).first()
+            bot_dict = {bot.id: bot}
+            message = await write_message(
+                channel,
+                content,
+                symbol,
+                action,
+                datetime.fromtimestamp(message_timestamp),
+                datetime.fromtimestamp(recieve_timestamp),
+                entry,
+                stop_loss,
+                take_profit
+            )
+        except Exception as e:
+            error_msg = f"get all bot and write message error. {e}"
+            logger.error(
+                json.dumps(
+                    {
+                        "error": error_msg,
+                        "traceback": traceback.format_exc()
+                    },
+                    indent=4
+                ),
+                "error"
+            )
+
+        if bot_dict is not None and message is not None and action is not None:
+            try:
+                logger.info("Prepare data")
+                config_list = get_all_bot_config(bot_dict)
+                data_dict = {
+                    "symbol": symbol,
+                    "action": action,
+                    "scalp_entry": entry,
+                    "scalp_stop_loss": stop_loss,
+                    "scalp_take_profit": take_profit,
+                    "price": price,
+                }
+                logger.info(json.dumps(data_dict, indent=4))
+                task_dict = await send_bot_executor(config_list, data_dict)
+                result_dict = await recieve_execute_result(task_dict)
+            except Exception as e:
+                error_msg = f"send and receive data error. {e}"
+                logger.error(
+                    json.dumps(
+                        {
+                            "error": error_msg,
+                            "traceback": traceback.format_exc()
+                        },
+                        indent=4
+                    ),
+                    "error"
+                )
+                result_dict = {bot_id: 'EXECUTE ERROR' for bot_id in bot_dict}
+
+            try:
+                logger.info("write trade result.")
+                await write_trade_result(message, result_dict, bot_dict)
+            except Exception as e:
+                error_msg = f"write trade result error. {e}"
+                logger.error(
+                    json.dumps(
+                        {
+                            "error": error_msg,
+                            "traceback": traceback.format_exc()
+                        },
+                        indent=4
+                    ),
+                    "error"
+                )
+
+    except Exception as e:
+        error_msg = f"Unexpected error. {e}"
+        logger.error(
+            json.dumps(
+                {
+                    "error": error_msg,
+                    "traceback": traceback.format_exc()
+                },
+                indent=4
+            ),
+            "error"
+        )
+    finally:
+        logger.info("Complete")
+
+
 @atomic()
 @permission_validator("get_user_bots")
 async def _get_user_bots(user: User) -> List[BotOrder]:
@@ -415,19 +535,40 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 
     # create bot
     config["api"] = api
-    bot_config = await BotConfig.create(
-        **config
-    )
+    if channel == ChannelType.WEBHOOK:
 
-    bot_order = await BotOrder.create(
-        channel=channel,
-        user=user,
-        config=bot_config,
-        status="RUNNING"
-    )
+        bot_config = await BotConfig.create(
+            **config
+        )
 
-    bot_config.bot = bot_order
-    await bot_config.save()
+        bot_order, create = await BotOrder.get_or_create(
+            defaults={
+                "config": bot_config,
+                "status": "RUNNING"
+            },
+            channel=channel,
+            is_del=False,
+            user=user,
+        )
+        if create:
+            bot_config.bot = bot_order
+            await bot_config.save()
+        else:
+            raise BackendException(f"Webhook bot exists !! One per account.")
+    else:
+        bot_config = await BotConfig.create(
+            **config
+        )
+
+        bot_order = await BotOrder.create(
+            channel=channel,
+            user=user,
+            config=bot_config,
+            status="RUNNING"
+        )
+
+        bot_config.bot = bot_order
+        await bot_config.save()
 
     bot_id = bot_order.id
     logger.info(f"Create bot [{bot_id}]")

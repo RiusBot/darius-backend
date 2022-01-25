@@ -235,6 +235,35 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /execute_webhook_signal:
+    post:
+      tags:
+      - bot
+      summary: recieve webhook signal info and make orders
+      operationId: main.src.controllers.v1.bot.execute_webhook_signal
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Message'
+                - type: object
+                  properties:
+                    token:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                  required:
+                  - token
+      responses:
+        '200':
+          description: received
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /get_user_bots:
     get:
       tags:
@@ -1288,6 +1317,7 @@ components:
 
     Channel:
       type: string
+      maxLength: 16
       enum:
         - ROSE
         - PERPETUAL
@@ -1295,6 +1325,7 @@ components:
         - DAILYSCALP
         - VEGAS
         - JUSTIN
+        - WEBHOOK
     
     Exchange:
       type: string

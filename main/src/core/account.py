@@ -91,7 +91,7 @@ async def _create_user(uid: str, referrer: str = None):
         logger.error(f"Referrer code {referrer} not exists")
         referrer = None
 
-    role = await Role.filter(is_del=False).filter(name="user").first()
+    role = await Role.filter(is_del=False, name="user").first()
     user = await User.create(
         uid=uid,
         role=role,
