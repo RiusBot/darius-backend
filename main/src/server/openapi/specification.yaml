@@ -235,23 +235,13 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
-  /execute_webhook_signal/{uid}:
+  /execute_webhook_signal:
     post:
       tags:
       - bot
       summary: recieve webhook signal info and make orders
       operationId: main.src.controllers.v1.bot.execute_webhook_signal
-      security: []
-      parameters:
-        - in: path
-          name: uid
-          required: true
-          schema:
-            type: string
-            maxLength: 28
-            minLength: 28
-          description: user ID
-          
+      security: [] 
       requestBody:
         required: true
         content:
@@ -259,6 +249,10 @@ paths:
             schema:
               type: object
               properties:
+                token:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
                 symbol:
                   type: string
                   maxLength: 8
