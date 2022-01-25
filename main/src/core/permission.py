@@ -19,6 +19,7 @@ def permission_validator(service):
                 from main.src.core.account import _create_user
                 assert len(uid) == 28
                 await _create_user(uid)
+                user = await User.filter(is_del=False, uid=uid).prefetch_related("role").first()
 
             # validate permission
             permission = await user.role.permission_role.filter(is_del=False, service=service).first()
