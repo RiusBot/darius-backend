@@ -526,8 +526,8 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 
     # validate bot number
     bot_list = await user.bot_user.filter(is_del=False)
-    if bot_list and len(bot_list) >= 5 and user.role.name != "admin":
-        raise BackendException("Maximum 5 bot per user")
+    if bot_list and len(bot_list) >= 7 and user.role.name != "admin":
+        raise BackendException("Maximum 7 bot per user")
 
     # validate channel no duplicate
     # if channel in set([bot.channel for bot in bot_list]):
