@@ -1,6 +1,13 @@
 import logging
 from aiohttp.web import json_response
-from main.src.core.subscription import _get_user_subscription, _create_user_subscription, _delete_user_subscription, _update_user_subscription, _clean_subscription, _get_tg_user_subscription
+from main.src.core.subscription import (
+    _get_user_subscription,
+    _create_user_subscription,
+    _delete_user_subscription,
+    _update_user_subscription,
+    _clean_subscription,
+    _get_tg_user_subscription
+)
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 

@@ -68,7 +68,7 @@ async def _check_tg_user_valid(telegram_id: str, chat_id: str):
     tg = await Telegram.filter(telegram_id=telegram_id).prefetch_related("user").first()
     if tg is None:
         raise BackendException(f"{telegram_id} not found.")
-    
+
     try:
         channel = ChannelID(chat_id).name
         valid = await tg.user.subscription_user.filter(plan__channel=channel, is_del=False).exists()

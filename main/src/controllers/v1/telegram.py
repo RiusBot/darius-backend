@@ -59,8 +59,8 @@ async def check_tg_user_valid(request):
                 'message': error_message
             }
         )
-    
-    
+
+
 async def create_user_telegram(request):
 
     json_payload = await request.json()

@@ -369,7 +369,7 @@ async def execute_webhook(
             ).first()
             bot_dict = {bot.id: bot}
             if bot_id != bot.id:
-                raise BackendException(f"Bot ID not match")
+                raise BackendException("Bot ID not match")
 
             message = await write_message(
                 channel,
@@ -557,7 +557,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
             bot_config.bot = bot_order
             await bot_config.save()
         else:
-            raise BackendException(f"Webhook bot exists !! One per account.")
+            raise BackendException("Webhook bot exists !! One per account.")
     else:
         bot_config = await BotConfig.create(
             **config

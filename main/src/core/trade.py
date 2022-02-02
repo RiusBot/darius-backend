@@ -1,7 +1,5 @@
 import os
-import time
 import enum
-import ccxt
 import json
 import logging
 import requests

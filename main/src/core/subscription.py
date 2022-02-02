@@ -8,7 +8,7 @@ from typing import List
 from main.src.models import Subscription, User, Plan, Telegram
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
-from main.src.core.telegram_bot import create_invite_link, revoke_invite_link
+from main.src.core.telegram_bot import create_invite_link, revoke_invite_link, kick_user
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,13 @@ async def _clean_subscription() -> List[Subscription]:
         expire_date__lt=datetime.now()
     ).prefetch_related("user", "plan"):
         expire_subscription_count += 1
-        revoke_invite_link(subscription.plna.channel, subscription.invite_link)
+
+        # clean telegram
+        revoke_invite_link(subscription.plan.channel, subscription.invite_link)
+        telegram = await subscription.user.telegram_user.all().first()
+        kick_user(subscription.plan.channel, telegram)
+
+        # clean bot
         async for bot in subscription.user.bot_user.filter(
             is_del=False,
             channel=subscription.plan.channel
@@ -72,7 +78,7 @@ async def _get_user_subscription(user: User) -> List[Subscription]:
 @atomic()
 async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
     logger.info(f"Get subscription for tg user {telegram_id}")
-    
+
     # validate user
     tg = await Telegram.filter(is_del=False, telegram_id=telegram_id).prefetch_related("user").first()
     if tg is None:
@@ -128,11 +134,12 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     # create subscription
     channel = plan.channel
     expire_date = None if (float(plan.day) == 0 or plan.day is None) else datetime.now() + timedelta(days=int(plan.day))
+    user_telegram = await user.telegram_user.filter(user=user).first()
     subscription, create = await Subscription.get_or_create(
         defaults={
             "expire_date": expire_date,
             "plan": plan,
-            "invite_link": create_invite_link(channel)
+            "invite_link": create_invite_link(channel, user_telegram)
         },
         plan__channel=channel,
         is_del=False,
