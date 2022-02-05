@@ -367,6 +367,11 @@ async def execute_webhook(
                 "config__api",
                 "user",
             ).first()
+            
+            if bot is None:
+                logger.info(f"No such webhook Bot {channel} {uid}")
+                return
+            
             bot_dict = {bot.id: bot}
             if bot_id != bot.id:
                 raise BackendException("Bot ID not match")
