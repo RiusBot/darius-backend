@@ -273,8 +273,7 @@ async def execute(
                         "traceback": traceback.format_exc()
                     },
                     indent=4
-                ),
-                "error"
+                )
             )
 
         if bot_dict is not None and message is not None and action is not None:
@@ -301,8 +300,7 @@ async def execute(
                             "traceback": traceback.format_exc()
                         },
                         indent=4
-                    ),
-                    "error"
+                    )
                 )
                 result_dict = {bot_id: 'EXECUTE ERROR' for bot_id in bot_dict}
 
@@ -318,8 +316,7 @@ async def execute(
                             "traceback": traceback.format_exc()
                         },
                         indent=4
-                    ),
-                    "error"
+                    )
                 )
 
     except Exception as e:
@@ -331,8 +328,7 @@ async def execute(
                     "traceback": traceback.format_exc()
                 },
                 indent=4
-            ),
-            "error"
+            )
         )
     finally:
         status_logger.log("Complete")
@@ -388,7 +384,7 @@ async def execute_webhook(
                 take_profit
             )
         except Exception as e:
-            error_msg = f"get all bot and write message error. {e}"
+            error_msg = f"get webhook bot and write message error. {e}"
             logger.error(
                 json.dumps(
                     {
@@ -396,8 +392,7 @@ async def execute_webhook(
                         "traceback": traceback.format_exc()
                     },
                     indent=4
-                ),
-                "error"
+                )
             )
 
         if bot_dict is not None and message is not None and action is not None:
@@ -424,8 +419,7 @@ async def execute_webhook(
                             "traceback": traceback.format_exc()
                         },
                         indent=4
-                    ),
-                    "error"
+                    )
                 )
                 result_dict = {bot_id: 'EXECUTE ERROR' for bot_id in bot_dict}
 
@@ -441,8 +435,7 @@ async def execute_webhook(
                             "traceback": traceback.format_exc()
                         },
                         indent=4
-                    ),
-                    "error"
+                    )
                 )
 
     except Exception as e:
@@ -454,8 +447,7 @@ async def execute_webhook(
                     "traceback": traceback.format_exc()
                 },
                 indent=4
-            ),
-            "error"
+            )
         )
     finally:
         logger.info("Complete")
