@@ -31,7 +31,10 @@ async def _clean_subscription() -> List[Subscription]:
         # clean telegram
         revoke_invite_link(subscription.plan.channel, subscription.invite_link)
         telegram = await subscription.user.telegram_user.all().first()
-        kick_user(subscription.plan.channel, telegram)
+        try:
+            kick_user(subscription.plan.channel, telegram)
+        except Exception:
+            continue
 
         # clean bot
         async for bot in subscription.user.bot_user.filter(
