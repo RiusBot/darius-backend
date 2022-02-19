@@ -369,7 +369,7 @@ paths:
                 config:
                   $ref: '#/components/schemas/BotConfig'
                 channel:
-                  type: string
+                  $ref: '#/components/schemas/Channel'
               required:
               - uid
               - config
@@ -386,7 +386,48 @@ paths:
                     type: integer
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
+  /update_user_bot:
+    patch:
+      tags:
+      - bot
+      summary: update bot
+      operationId: main.src.controllers.v1.bot.update_user_bot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                config:
+                  $ref: '#/components/schemas/BotConfig'
+                status:
+                  $ref: '#/components/schemas/BotStatus'
+                  nullable: true
+                bot_id:
+                  type: integer
+              required:
+              - uid
+              - config
+              - bot_id
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bot_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /delete_user_bot:
     delete:
       tags:
@@ -1498,8 +1539,7 @@ components:
       type: object
       properties:
         channel:
-          type: string
-          maxLength: 32
+          $ref: '#/components/schemas/Channel'
         content:
           type: string
           nullable: true
@@ -1565,8 +1605,7 @@ components:
           type: string
           maxLength: 32
         channel:
-          type: string
-          maxLength: 32
+          $ref: '#/components/schemas/Channel'
         price:
           type: number
           minimum: 0

@@ -575,6 +575,34 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     return bot_id
 
 
+@atomic()
+@permission_validator("update_user_bot")
+async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
+    uid = user.uid
+    logger.info(f"Update bot [{bot_id}]")
+
+    # validate api belongs to user
+    api_id = config["api_id"]
+    api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
+    if api is None:
+        raise BackendException("Invalid api_id")
+
+    # validate trailing
+    validate_trailing(api, config)
+
+    # update bot
+    config["api"] = api
+    bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
+    if bot_order is None:
+        raise BackendException(f"No Bot {bot_id}")
+    if status:
+        bot_order.status = status
+    for key, value in config.items():
+        setattr(bot_order.config, key, value)
+    await bot_order.save()
+    await bot_order.config.save()
+
+
 def validate_trailing(api, config):
 
     params = {}

@@ -43,7 +43,7 @@ CREATE TABLE `user` (
 CREATE TABLE IF NOT EXISTS `telegram` (
     `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `created_at` DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6),
-    `telegram_id` INT(16) UNIQUE NOT NULL,
+    `telegram_id` INT UNIQUE NOT NULL,
     `user_id` INT UNIQUE NOT NULL,
     KEY (`user_id`),
     KEY (`telegram_id`),
@@ -161,6 +161,40 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
 
 ALTER TABLE `bot_order` ADD CONSTRAINT FOREIGN KEY(`config_id`) REFERENCES `bot_config`(id) ON DELETE CASCADE;
 
+-- hyperopt
+CREATE TABLE IF NOT EXISTS `hyperopt` (
+    `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    `created_at` DATETIME(6) NOT NULL  DEFAULT CURRENT_TIMESTAMP(6),
+    `start_at` DATETIME(6) NOT NULL,
+    `end_at` DATETIME(6) NOT NULL,
+    `channel` VARCHAR(32) NOT NULL,
+    `params` VARCHAR(4096) NOT NULL,
+    `days` INT NOT NULL,
+    `loss` VARCHAR(32) NOT NULL,
+    KEY (`channel`),
+    KEY (`end_at`),
+    KEY (`start_at`),
+    KEY (`loss`)
+) CHARACTER SET utf8;
+
+-- performance
+CREATE TABLE IF NOT EXISTS `performance` (
+    `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    `created_at` DATETIME(6) NOT NULL  DEFAULT CURRENT_TIMESTAMP(6),
+    `channel` VARCHAR(32) NOT NULL,
+    `start_at` DATETIME(6) NOT NULL,
+    `end_at` DATETIME(6) NOT NULL,
+    `breakdown` VARCHAR(8) NOT NULL,
+    `result` VARCHAR(4096) NOT NULL,
+    `hyper_id` INT NOT NULL,
+    FOREIGN KEY(hyper_id) REFERENCES hyperopt(id),
+    KEY (`channel`),
+    KEY (`created_at`),
+    KEY (`start_at`),
+    KEY (`end_at`),
+    KEY (`breakdown`)
+) CHARACTER SET utf8;
+
 -- message
 CREATE TABLE IF NOT EXISTS `message` (
     `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -215,3 +249,5 @@ ALTER TABLE message add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE subscription add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE transaction add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE telegram add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE performance add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE hyperopt add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;

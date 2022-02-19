@@ -4,7 +4,7 @@ import threading
 from datetime import datetime
 from collections import defaultdict
 from aiohttp.web import json_response
-from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot, _execute_webhook_signal
+from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot, _execute_webhook_signal, _update_user_bot
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -171,6 +171,35 @@ async def create_user_bot(request):
         )
     except Exception as e:
         logger.error("Create bot error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+
+
+async def update_user_bot(request):
+
+    json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        logger.info("Update bot")
+        uid = json_payload["uid"]
+        bot_id = json_payload["bot_id"]
+        config = json_payload["config"]
+        status = json_payload.get("status")
+        await _update_user_bot(uid, bot_id, config, status)
+        return json_response(
+            status=200,
+            data={}
+        )
+    except Exception as e:
+        logger.error("Update bot error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(

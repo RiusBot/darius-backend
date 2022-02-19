@@ -44,7 +44,7 @@ async def get_stats(request):
 
 
 async def create_test_data(request):
-    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription
+    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message
 
     @atomic()
     async def create():
@@ -111,9 +111,22 @@ async def create_test_data(request):
         #     plan=plan,
         #     is_del=False
         # )
+
+        from tortoise.contrib.pydantic import pydantic_queryset_creator
+        Message_Pydantic_List = pydantic_queryset_creator(
+            Message,
+            exclude=["id", 'content', 'trade_message']
+        )
+
+        message_list = await Message_Pydantic_List.from_queryset(Message.filter(symbol__not_isnull=True, action__not_isnull=True))
+        message_list = message_list.dict()['__root__']
+        for message in message_list:
+            message["message_timestamp"] = message["message_timestamp"].timestamp()
+            message["recieve_timestamp"] = message["recieve_timestamp"].timestamp()
+
         return json_response(
             status=200,
-            data={},
+            data=message_list,
         )
     except Exception as e:
         logger.error("create test data error.")
