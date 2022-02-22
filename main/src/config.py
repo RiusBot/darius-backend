@@ -21,8 +21,8 @@ class ProdConfig(BaseConfig):
     ENV = 'prod'
     LOGGING_LEVEL = 'INFO'
     CORS_ALLOW_ORIGIN = ['*']
-    RECAPTCHA_SITE_KEY = '6Ldlk7UdAAAAAGIchxvhR5nUajO6aPE0xlZ7h-dg'  # TODO, need updated after register new key
-    G_CLOUD_PROJECT_ID = 'darius-332003'  # TODO, need updated
+    RECAPTCHA_SITE_KEY = '6LcTDJUeAAAAAMejTn0wFGdafjTTgBDYQ0CGgRiR'
+    G_CLOUD_PROJECT_ID = 'darius-prod'
 
 class DevConfig(BaseConfig):
     ENV = 'dev'
