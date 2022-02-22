@@ -8,7 +8,6 @@ class User(BaseModel):
 
     user_name = fields.CharField(16, null=True)
     email = fields.CharField(32, null=True, unique=True)
-    password = fields.CharField(50, null=True)
     role = fields.ForeignKeyField("darius.Role", related_name="user_role")
     uid = fields.CharField(28, null=False)
     balance = fields.FloatField(null=False, default=0.0)
