@@ -21,8 +21,8 @@ CREATE TABLE `role` (
 CREATE TABLE `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
-  `user_name` varchar(16) NOT NULL,
-  `email` varchar(32) UNIQUE NOT NULL,
+  `user_name` varchar(16),
+  `email` varchar(32) UNIQUE,
   `uid` varchar(28) UNIQUE NOT NULL,
   `role_id` int(11) NOT NULL,
   `balance` DOUBLE NOT NULL DEFAULT 0,
