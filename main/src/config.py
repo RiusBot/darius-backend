@@ -4,19 +4,9 @@ import yaml
 import logging
 
 
-ENVIRON_KEYS = [
-    'DARIUSDB_HOST',
-    'DARIUSDB_USER',
-    'DARIUSDB_PASSWD',
-    'DARIUSDB_DB',
-    'DARIUSDB_PORT',
-]
-
-
 class BaseConfig:
-    ENV = 'development'
     DEBUG = True
-    LOG_LEVEL = 'DEBUG'
+    LOGGING_LEVEL = 'DEBUG'
     LOG_FILENAME = 'darius_backend.log'
     EVENT_LOG_FILENAME = 'darius_backend.event.log'
     DARIUSDB_HOST = ""
@@ -25,73 +15,67 @@ class BaseConfig:
     DARIUSDB_PORT = 3306
     DARIUSDB_PASSWD = ''
     PORT = 8080
-    CORS_ALLOW_ORIGIN = ['*']
-    G_CLOUD_PROJECT_ID = 'darius-332003'
-    RECAPTCHA_SITE_KEY = '6Ldlk7UdAAAAAGIchxvhR5nUajO6aPE0xlZ7h-dg'
     RECAPTCHA_VALID_ACTIONS = ['LOGIN', 'REGISTER']
 
+class ProdConfig(BaseConfig):
+    ENV = 'prod'
+    LOGGING_LEVEL = 'INFO'
+    CORS_ALLOW_ORIGIN = ['*']
+    RECAPTCHA_SITE_KEY = '6Ldlk7UdAAAAAGIchxvhR5nUajO6aPE0xlZ7h-dg'  # TODO, need updated after register new key
+    G_CLOUD_PROJECT_ID = 'darius-332003'  # TODO, need updated
 
-ENV = os.environ.get('ENV', 'development')
+class DevConfig(BaseConfig):
+    ENV = 'dev'
+    LOGGING_LEVEL = 'DEBUG'
+    CORS_ALLOW_ORIGIN = ['*']
+    RECAPTCHA_SITE_KEY = '6Ldlk7UdAAAAAGIchxvhR5nUajO6aPE0xlZ7h-dg'
+    G_CLOUD_PROJECT_ID = 'darius-332003'
+
+
 usingProjectId = os.getenv('project_id', 'local')
 
 ENV_CONFIGS = {
-    'development': BaseConfig,
+    'dev': DevConfig,
+    'prod': ProdConfig
 }
 
-
-def get_config_from_environ(env=None) -> Type[BaseConfig]:
-    env = env or os.environ.get('ENV', 'development')
-    env_config = ENV_CONFIGS[env]
-
-    for environ_key in ENVIRON_KEYS:
-        if environ_key in os.environ:
-            setattr(env_config, environ_key, os.environ[environ_key])
-
-    return env_config
-
-
-def overwrite_config_from_yaml(env_config: Type[BaseConfig]) -> Type[BaseConfig]:
-    new_config = env_config
+def get_config_from_yaml() -> Type[BaseConfig]:
     yaml_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config/config.yaml')
     try:
-        new_config = _read_yaml(new_config, yaml_file_path)
+        yaml_conf = _read_yaml(yaml_file_path)
     except (IOError, OSError):
         logging.exception("")
-    return new_config
+    return yaml_conf
 
 
-def _read_yaml(new_config: Type[BaseConfig], yaml_file_path: str) -> Type[BaseConfig]:
+def _read_yaml(yaml_file_path: str) -> Type[BaseConfig]:
+    yaml_conf = {}
     with open(yaml_file_path) as yaml_file:
         data = yaml.safe_load(yaml_file)
         for key in data:
-            if key == 'ENV':
-                os.environ[key] = data[key]
-                new_config = get_config_from_environ(data[key])
-            elif key.isupper():
-                setattr(new_config, key, data[key])
-    return new_config
+            if key.isupper():
+                yaml_conf[key] = data[key]
+    return yaml_conf
 
 
 def get_app_config() -> dict:
-    env_config = get_config_from_environ()
-    obj_conf = overwrite_config_from_yaml(env_config)
+    if usingProjectId == "local":
+        secret_conf = get_config_from_yaml()
+    else:
+        secret_conf = get_config_from_firestore()
+    env = secret_conf.get('ENV', 'dev')
+    env_conf = ENV_CONFIGS[env]
     dict_conf = {}
-
-    for key in dir(obj_conf):
-        if not key.startswith("_"):
-            dict_conf[key] = getattr(obj_conf, key)
-
-    if usingProjectId != "local":
-        firestore_conf = get_config_from_firestore()
-        dict_conf.update(firestore_conf)
-
+    for key in dir(env_conf):
+        dict_conf[key] = getattr(env_conf, key)
+    dict_conf.update(secret_conf)
     return dict_conf
 
 
 def get_config_from_firestore():
     from firebase_admin import firestore
     db = firestore.Client()
-    sql_config = db.collection("config").document("sql").get().to_dict()
+    sql_config = db.collection("config").document("darius-backend").get().to_dict()
     return sql_config
 
 
