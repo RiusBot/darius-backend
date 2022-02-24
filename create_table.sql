@@ -135,7 +135,8 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
     `bot_id` INT,
     `api_id` INT NOT NULL,
     `created_at` DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6),
-    `test` BOOLEAN  DEFAULT FALSE,
+    `test` BOOLEAN  DEFAULT FALSE  NOT NULL,
+    `hyperopt` BOOLEAN  DEFAULT FALSE  NOT NULL,
     `target` VARCHAR(16) NOT NULL,
     `quantity` DOUBLE NOT NULL,
     `leverage` DOUBLE NOT NULL DEFAULT 1,
@@ -184,15 +185,13 @@ CREATE TABLE IF NOT EXISTS `performance` (
     `channel` VARCHAR(32) NOT NULL,
     `start_at` DATETIME(6) NOT NULL,
     `end_at` DATETIME(6) NOT NULL,
-    `breakdown` VARCHAR(8) NOT NULL,
-    `result` VARCHAR(4096) NOT NULL,
-    `hyper_id` INT NOT NULL,
-    FOREIGN KEY(hyper_id) REFERENCES hyperopt(id),
+    `result` LONGTEXT NOT NULL,
+    `hyperopt_id` INT NOT NULL,
+    FOREIGN KEY(hyperopt_id) REFERENCES hyperopt(id),
     KEY (`channel`),
     KEY (`created_at`),
     KEY (`start_at`),
     KEY (`end_at`),
-    KEY (`breakdown`)
 ) CHARACTER SET utf8;
 
 -- message

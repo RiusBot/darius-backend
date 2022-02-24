@@ -15,7 +15,7 @@ from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
-from main.src.models import BotOrder, BotConfig, Trade, Message, User
+from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt
 from main.src.models.channel import ChannelType
 from main.src.config import app_config
 from main.src.exception import BackendException
@@ -81,14 +81,22 @@ def process_bot_config(config: BotConfig):
     return parse(config)
 
 
-def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
+async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> List[dict]:
     logger.info("Get all bot config")
+    
+    import pdb
+    pdb.set_trace()
+    hyperopt = await get_hyperopt(channel)
+
     config_list = []
     for bot in bot_dict.values():
         config_dict = process_bot_config(bot.config)
+        config_dict = fill_hyperopt(hyperopt, config_dict)
         config_list.append(config_dict)
 
+    
     logger.info(f"{len(config_list)} bot configs")
+    pdb.set_trace()
     return config_list
 
 
@@ -279,7 +287,7 @@ async def execute(
         if bot_dict is not None and message is not None and action is not None:
             try:
                 status_logger.log("Prepare data")
-                config_list = get_all_bot_config(bot_dict)
+                config_list = await get_all_bot_config(channel, bot_dict)
                 data_dict = {
                     "symbol": symbol,
                     "action": action,
@@ -398,7 +406,7 @@ async def execute_webhook(
         if bot_dict is not None and message is not None and action is not None:
             try:
                 logger.info("Prepare data")
-                config_list = get_all_bot_config(bot_dict)
+                config_list = await get_all_bot_config(channel, bot_dict)
                 data_dict = {
                     "symbol": symbol,
                     "action": action,
@@ -496,6 +504,28 @@ async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
     # trade_list = json.loads(trade_list.json())
     logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
     return trade_list
+
+
+@atomic()
+async def get_hyperopt(channel: str) -> dict:
+    hyperopt = await Hyperopt.filter(
+        is_del=False,
+        channel=channel,
+        loss="SharpeHyperOptLoss"
+    ).first()
+    if hyperopt is None:
+        hyperopt = await Hyperopt.filter(is_del=False, channel="DEFAULT").first()
+
+    return json.loads(hyperopt.params)
+
+
+def fill_hyperopt(hyperopt: dict, config: dict):
+    if config.get('hyperopt'):
+        import pdb
+        pdb.set_trace()
+        config["take_profit"] = float(hyperopt["take_profit"])
+        config["stop_loss"] = float(hyperopt["stop_loss"])
+    return config
 
 
 @atomic()

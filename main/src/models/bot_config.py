@@ -23,6 +23,7 @@ class BotConfig(BaseModel):
     # api = fields.OneToOneField("darius.Api", related_name="config_api")
     api = fields.ForeignKeyField("darius.Api", related_name="config_api")
     test = fields.BooleanField(null=False, default=False)
+    hyperopt = fields.BooleanField(null=False, default=False)
     duplicate = fields.BooleanField(null=True, default=False)
     target = fields.CharEnumField(TargetType, null=False, max_length=16)
     quantity = fields.FloatField(null=False)

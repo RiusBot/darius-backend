@@ -11,6 +11,7 @@ tags:
 - name: api
 - name: account
 - name: plan
+- name: performance
 - name: subscription
 - name: transaction
 - name: telegram
@@ -755,6 +756,40 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /get_performance:
+    get:
+      tags:
+      - performance
+      summary: get performance
+      operationId: main.src.controllers.v1.performance.get_performance
+      security: []
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+        - in: query
+          name: channel
+          schema:
+            $ref: '#/components/schemas/Channel'
+          description: channel
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Performance'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /clean_subscription:
     delete:
       tags:
@@ -1485,6 +1520,9 @@ components:
           type: integer
         test:
           type: boolean
+        hyperopt:
+          type: boolean
+          nullable: true
         duplicate:
           type: boolean
         target:
@@ -1576,6 +1614,19 @@ components:
       - symbol
       - action
 
+    Performance:
+      type: object
+      properties:
+        date:
+          type: string
+          maxLength: 10
+          example:
+            value: "2022-01-01"
+        result:
+          type: string
+        channel:
+          $ref: '#/components/schemas/Channel'
+    
     Transaction:
       type: object
       properties:

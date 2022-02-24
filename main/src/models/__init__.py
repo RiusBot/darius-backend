@@ -11,6 +11,8 @@ from .plan import Plan
 from .subscription import Subscription
 from .transaction import Transaction
 from .telegram import Telegram
+from .performance import Performance
+from .hyperopt import Hyperopt
 
 
 __all__ = [
@@ -27,4 +29,6 @@ __all__ = [
     "Subscription",
     "Transaction",
     "Telegram",
+    "Performance",
+    "Hyperopt",
 ]
