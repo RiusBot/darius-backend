@@ -37,13 +37,9 @@ async def get_hyperopt(request):
 
 async def create_hyperopt(request):
 
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
     try:
         thread = threading.Thread(
             target=_create_hyperopt,
-            kwargs=json_payload,
             daemon=True
         )
         thread.start()

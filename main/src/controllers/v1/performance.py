@@ -36,13 +36,9 @@ async def get_performance(request):
 
 async def create_performance(request):
 
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
     try:
         thread = threading.Thread(
             target=_create_performance,
-            kwargs=json_payload,
             daemon=True
         )
         thread.start()

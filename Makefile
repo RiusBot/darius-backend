@@ -1,15 +1,15 @@
 ENV ?= $(firstword $(MAKECMDGOALS))
 ifeq ($(ENV), prod)
-	CLOUDBUILD = cloudbuild-prod.yml
+	CLOUDBUILD = cloudbuild-prod.yaml
 	PROJECT_ID = darius-prod
-	APP = app-prod.yml
+	APP = app-prod.yaml
 	CREDENTIAL = darius-prod-5bed36160a65.json
-	IMAGE_NAME = darius-prod-backend
+	IMAGE_NAME = darius-backend
 else
 	CREDENTIAL = darius-332003-6391a8358dec.json
-	CLOUDBUILD = cloudbuild-dev.yml
+	CLOUDBUILD = cloudbuild-dev.yaml
 	PROJECT_ID = darius-332003
-	APP = app-dev.yml
+	APP = app-dev.yaml
 	IMAGE_NAME = darius-backend
 endif
 
