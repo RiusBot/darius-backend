@@ -38,14 +38,12 @@ def _create_hyperopt() -> dict:
         'timerange': f'{start}-{end}',
         'token': fetch_secret_token_firestore()
     }
-    
-    import pdb
-    pdb.set_trace()
+
     response = requests.post(
         url,
         json=data
     )
-    
+
     msg = ""
     try:
         msg += f"{response.json()}"
