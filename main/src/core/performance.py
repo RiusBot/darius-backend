@@ -1,5 +1,8 @@
+import os
 import json
 import logging
+import requests
+import calendar
 from datetime import datetime
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
@@ -7,14 +10,16 @@ from main.src.models import Performance, User
 from main.src.models.performance import PerformanceSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
+from main.src.config import app_config
+from main.src.core.auth import fetch_secret_token_firestore
 
 
 logger = logging.getLogger(__name__)
+usingProjectId = os.getenv('project_id', 'local')
 
 
 @atomic()
-@permission_validator("get_performance")
-async def _get_performance(user: User, channel: str) -> dict:
+async def _get_performance(channel: str) -> dict:
     logger.info(f"Get {channel} Performance")
     Performance_Pydantic_List = pydantic_queryset_creator(
         Performance,
@@ -39,6 +44,39 @@ async def _get_performance(user: User, channel: str) -> dict:
         })
 
     return performance_list
+
+
+def _create_performance():
+    logger.info(f"Create performance")
+    date = datetime.now()
+    y, m, d = date.year, date.month, date.day
+    start = datetime(y, m, 1)
+    _, last_day = calendar.monthrange(y, m)
+    end = datetime(y, m, last_day)
+
+    start = start.strftime("%Y%m%d")
+    end = end.strftime("%Y%m%d")
+    url = f'{app_config["BOT_OPTIMIZER_URL"]}/backtest'
+    data = {
+        'timeframe': '1h',
+        'timerange': f'{start}-{end}',
+        'token': fetch_secret_token_firestore()
+    }
+
+    response = requests.post(
+        url,
+        json=data
+    )
+
+    msg = ""
+    try:
+        msg += f"{response.json()}"
+    except Exception:
+        msg += f"{response.text}"
+    if response.status_code != 200:
+        logging.error(f"create performance failed. {msg}")
+    else:
+        logging.info(f"create performance success.")
 
 
 @atomic()

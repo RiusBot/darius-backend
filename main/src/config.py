@@ -2,6 +2,7 @@ from typing import Type
 import os
 import yaml
 import logging
+from firebase_admin import firestore
 
 
 ENVIRON_KEYS = [
@@ -89,7 +90,6 @@ def get_app_config() -> dict:
 
 
 def get_config_from_firestore():
-    from firebase_admin import firestore
     db = firestore.Client()
     sql_config = db.collection("config").document("sql").get().to_dict()
     return sql_config

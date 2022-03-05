@@ -12,6 +12,7 @@ tags:
 - name: account
 - name: plan
 - name: performance
+- name: hyperopt
 - name: subscription
 - name: transaction
 - name: telegram
@@ -765,6 +766,50 @@ paths:
       security: []
       parameters:
         - in: query
+          name: channel
+          schema:
+            $ref: '#/components/schemas/Channel'
+          description: channel
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Performance'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /create_performance:
+    post:
+      tags:
+      - performance
+      summary: create performance
+      operationId: main.src.controllers.v1.performance.create_performance
+      security:
+        - bearerAuthBackendOnly: []
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_hyperopt:
+    get:
+      tags:
+      - hyperopt
+      summary: get hyperopt
+      operationId: main.src.controllers.v1.hyperopt.get_hyperopt
+      security: []
+      parameters:
+        - in: query
           name: uid
           schema:
             type: string
@@ -784,11 +829,28 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Performance'
+                $ref: '#/components/schemas/Hyperopt'
         default:
           $ref: '#/components/responses/Unexpected'
+
+  /create_hyperopt:
+    post:
+      tags:
+      - hyperopt
+      summary: create hyperopt
+      operationId: main.src.controllers.v1.hyperopt.create_hyperopt
+      security:
+        - bearerAuthBackendOnly: []
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
 
   /clean_subscription:
     delete:
@@ -1513,6 +1575,14 @@ components:
       - exchange
       - api_secret
 
+    Hyperopt:
+      type: object
+      properties:
+        take_profit:
+          type: number
+        stop_loss:
+          type: number
+    
     BotConfig:
       type: object
       properties:
