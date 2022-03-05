@@ -1,6 +1,18 @@
-PROJECT_ID=darius-332003
-CREDENTIAL=darius-332003-6391a8358dec.json
-IMAGE_NAME = darius-backend
+ENV ?= $(firstword $(MAKECMDGOALS))
+ifeq ($(ENV), prod)
+	CLOUDBUILD = cloudbuild-prod.yml
+	PROJECT_ID = darius-prod
+	APP = app-prod.yml
+	CREDENTIAL = darius-prod-5bed36160a65.json
+	IMAGE_NAME = darius-prod-backend
+else
+	CREDENTIAL = darius-332003-6391a8358dec.json
+	CLOUDBUILD = cloudbuild-dev.yml
+	PROJECT_ID = darius-332003
+	APP = app-dev.yml
+	IMAGE_NAME = darius-backend
+endif
+
 
 ###########################
 # General
@@ -138,10 +150,10 @@ build-docker: set-project
 	gcloud builds submit --config cloudbuild.yaml  --timeout=60m
 
 deploy: set-project
-	gcloud app deploy
+	gcloud app deploy --appyaml $(APP)
     
 deploy-docker: set-project
-	gcloud app deploy --image-url=gcr.io/$(PROJECT_ID)/darius-backend:latest
+	gcloud app deploy --image-url=gcr.io/$(PROJECT_ID)/darius-backend:latest --appyaml $(APP)
 
 browse: set-project
 	gcloud app browse --project=$(PROJECT_ID)
