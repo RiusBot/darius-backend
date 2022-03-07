@@ -94,7 +94,6 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
 
     
     logger.info(f"{len(config_list)} bot configs")
-    pdb.set_trace()
     return config_list
 
 
@@ -519,8 +518,6 @@ async def get_hyperopt(channel: str) -> dict:
 
 def fill_hyperopt(hyperopt: dict, config: dict):
     if config.get('hyperopt'):
-        import pdb
-        pdb.set_trace()
         config["take_profit"] = float(hyperopt["take_profit"])
         config["stop_loss"] = float(hyperopt["stop_loss"])
     return config
