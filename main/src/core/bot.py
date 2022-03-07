@@ -83,9 +83,7 @@ def process_bot_config(config: BotConfig):
 
 async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> List[dict]:
     logger.info("Get all bot config")
-    
-    import pdb
-    pdb.set_trace()
+
     hyperopt = await get_hyperopt(channel)
 
     config_list = []
