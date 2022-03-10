@@ -13,6 +13,18 @@ else
 	IMAGE_NAME = darius-backend
 endif
 
+ifeq ($(words $(MAKECMDGOALS)), 1)
+prod: build deploy
+dev: build deploy
+pilot: build deploy
+else
+dev: nan
+pilot: nan
+prod: nan
+nan:
+	@:
+endif
+
 
 ###########################
 # General

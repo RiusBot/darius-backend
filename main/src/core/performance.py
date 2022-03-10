@@ -4,7 +4,7 @@ import logging
 import requests
 import calendar
 from datetime import datetime, timedelta
-from cachetools import cached, TTLCache
+from aiocache import cached
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import Performance, User
@@ -46,9 +46,8 @@ async def _get_performance(channel: str) -> dict:
 
     return performance_list
 
-
+@cached(ttl=43200)
 @atomic()
-@cached(cache=TTLCache(maxsize=3, ttl=43200))
 async def _get_performances() -> dict:
     logger.info(f"Get all Performance")
 
