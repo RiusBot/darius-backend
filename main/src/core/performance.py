@@ -3,7 +3,8 @@ import json
 import logging
 import requests
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta
+from cachetools import cached, TTLCache
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import Performance, User
@@ -35,15 +36,50 @@ async def _get_performance(channel: str) -> dict:
         sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
 
         keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
-        performance["result"] = json.dumps({
+        performance["result"] = {
             'wins': buy_result["wins"] + sell_result['losses'],
             'losses': buy_result["losses"] + sell_result['wins'],
             'draws': buy_result["draws"] + sell_result['draws'],
             'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
             'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
-        })
+        }
 
     return performance_list
+
+
+@atomic()
+@cached(cache=TTLCache(maxsize=3, ttl=43200))
+async def _get_performances() -> dict:
+    logger.info(f"Get all Performance")
+
+    channel_list = await Performance.filter(is_del=False).distinct().values_list('channel', flat=True)
+    Performance_Pydantic_List = pydantic_queryset_creator(
+        Performance,
+        include=["channel", "start_at", "result"]
+    )
+    performance_result = {}
+
+    for channel in channel_list:
+        performance_list = await Performance_Pydantic_List.from_queryset(
+            Performance.filter(is_del=False, channel=channel).limit(12)
+        )
+        performance_list = json.loads(performance_list.json())
+        for performance in performance_list:
+            performance["date"] = performance.pop("start_at")[:7]
+            buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
+            sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
+
+            keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+            performance["result"] = {
+                'wins': buy_result["wins"] + sell_result['losses'],
+                'losses': buy_result["losses"] + sell_result['wins'],
+                'draws': buy_result["draws"] + sell_result['draws'],
+                'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
+                'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
+            }
+        performance_result[channel] = performance_list
+
+    return performance_result
 
 
 def _create_performance():

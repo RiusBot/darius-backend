@@ -761,11 +761,28 @@ paths:
     get:
       tags:
       - performance
+      summary: get all channel performance
+      operationId: main.src.controllers.v1.performance.get_performances
+      security: []
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_performance/{channel}:
+    get:
+      tags:
+      - performance
       summary: get performance
       operationId: main.src.controllers.v1.performance.get_performance
       security: []
       parameters:
-        - in: query
+        - in: path
           name: channel
           schema:
             $ref: '#/components/schemas/Channel'
@@ -1693,7 +1710,7 @@ components:
           example:
             value: "2022-01-01"
         result:
-          type: string
+          type: object
         channel:
           $ref: '#/components/schemas/Channel'
     
