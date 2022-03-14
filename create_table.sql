@@ -13,7 +13,7 @@ CREATE TABLE `role` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `name` varchar(50) UNIQUE NOT NULL,
-    KEY (`name`),
+    KEY (`name`)
 ) CHARACTER SET utf8;
 
 
@@ -21,8 +21,8 @@ CREATE TABLE `role` (
 CREATE TABLE `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `created_at` DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
-  `user_name` varchar(16) NOT NULL,
-  `email` varchar(32) UNIQUE NOT NULL,
+  `user_name` varchar(16),
+  `email` varchar(32) UNIQUE,
   `uid` varchar(28) UNIQUE NOT NULL,
   `role_id` int(11) NOT NULL,
   `balance` DOUBLE NOT NULL DEFAULT 0,
@@ -56,7 +56,7 @@ CREATE TABLE `plan` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   `price` decimal(19, 4) NOT NULL,
-  `day` decimal(10, 0) NOT NULL -- should modify the term, available_day
+  `day` decimal(10, 0) NOT NULL, -- should modify the term, available_day
   `name` varchar(50) UNIQUE NOT NULL,
   `channel` varchar(50) NOT NULL,
   KEY (`name`),
@@ -245,7 +245,6 @@ ALTER TABLE bot_order add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE bot_config add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE trade_history add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE message add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
-ALTER TABLE subscription add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE transaction add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE telegram add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE performance add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
