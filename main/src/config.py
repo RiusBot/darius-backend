@@ -60,12 +60,15 @@ def _read_yaml(yaml_file_path: str) -> Type[BaseConfig]:
 
 
 def get_app_config() -> dict:
+
     if usingProjectId == "local":
         secret_conf = get_config_from_yaml()
     else:
         secret_conf = get_config_from_firestore()
+
     env = secret_conf.get('ENV', 'dev')
     env_conf = ENV_CONFIGS[env]
+
     dict_conf = {}
     for key in dir(env_conf):
         dict_conf[key] = getattr(env_conf, key)
