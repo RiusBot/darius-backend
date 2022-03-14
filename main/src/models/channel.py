@@ -12,6 +12,7 @@ class ChannelType(str, Enum):
     VEGAS = "VEGAS"
     JUSTIN = "JUSTIN"
     WEBHOOK = "WEBHOOK"
+    COURAGE = "COURAGE"
 
 
 class ChannelID(str, Enum):
