@@ -162,7 +162,7 @@ build-docker: set-project
 	gcloud builds submit --config cloudbuild.yaml  --timeout=60m
 
 deploy: set-project
-	gcloud app deploy --appyaml $(APP)
+	gcloud app deploy --appyaml $(APP) --quiet
     
 deploy-docker: set-project
 	gcloud app deploy --image-url=gcr.io/$(PROJECT_ID)/darius-backend:latest --appyaml $(APP)

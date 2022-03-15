@@ -79,6 +79,8 @@ def get_app_config() -> dict:
 def get_config_from_firestore():
     db = firestore.Client()
     sql_config = db.collection("config").document("darius-backend").get().to_dict()
+    backend_config = db.collection("config").document("backend").get().to_dict()
+    sql_config.update(backend_config)
     return sql_config
 
 
