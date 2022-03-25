@@ -358,7 +358,7 @@ async def execute_webhook(
         bot_dict, message = None, None
 
         try:
-            logger.info("Get all bot and write message.")
+            logger.info("Get webhook bot and write message.")
             bot = await BotOrder.filter(
                 is_del=False,
                 status="RUNNING",

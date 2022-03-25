@@ -13,6 +13,7 @@ class ChannelType(str, Enum):
     JUSTIN = "JUSTIN"
     WEBHOOK = "WEBHOOK"
     COURAGE = "COURAGE"
+    DEFAULT = "DEFAULT"
 
 
 class ChannelID(str, Enum):
@@ -24,3 +25,5 @@ class ChannelID(str, Enum):
     SENTIMENT = "-1001653050413"
     JUSTIN = ""  # "-1001378498357"
     WEBHOOK = ""
+    COURAGE = ""
+    DEFAULT = ""

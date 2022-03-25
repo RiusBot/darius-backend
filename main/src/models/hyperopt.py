@@ -10,6 +10,7 @@ class LossType(str, Enum):
     OnlyProfitHyperOptLoss = 'OnlyProfitHyperOptLoss',
     SharpeHyperOptLoss = 'SharpeHyperOptLoss',
     MaxDrawDownHyperOptLoss = 'MaxDrawDownHyperOptLoss'
+    DEFAULT = 'default'
 
 
 class Hyperopt(BaseModel):
