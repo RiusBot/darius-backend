@@ -642,22 +642,22 @@ def validate_trailing(api, config):
             if config["target"] != "FUTURE":
                 raise BackendException("Binance can only use trailing stop in future trading.")
 
-            if config["stop_loss_type"] == "TRAILING":
+        if config["stop_loss_type"] == "TRAILING":
 
-                if float(config["stop_loss"]) < 0.001 or float(config["stop_loss"]) > 0.05:
-                    raise BackendException(" 0.1 < stop_loss < 5 %")
+            if float(config["stop_loss"]) < 0.001 or float(config["stop_loss"]) > 0.05:
+                raise BackendException(" 0.1 < stop_loss < 5 %")
 
-            if config["take_profit_type"] == "TRAILING":
+        if config["take_profit_type"] == "TRAILING":
 
-                if float(config["take_profit"]) < 0.001 or float(config["take_profit"]) > 0.05:
-                    raise BackendException(" 0.1 < take_profit < 5 %")
+            if float(config["take_profit"]) < 0.001 or float(config["take_profit"]) > 0.05:
+                raise BackendException(" 0.1 < take_profit < 5 %")
 
     if config['stop_loss_type'] != "TRAILING":
-        if config['stop_loss'] < 0:
+        if config['stop_loss'] < 0 or config['stop_loss'] > 1:
             raise BackendException(" 0 < stop loss < 100 %")
 
     if config['take_profit_type'] != "TRAILING":
-        if config['take_profit'] < 0:
+        if config['take_profit'] < 0 or config['take_profit'] > 5:
             raise BackendException(" 0 < take profit < 500 %")
 
     return params
