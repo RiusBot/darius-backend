@@ -28,12 +28,9 @@ logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
-def _execute_bot_signal(*args, **kwargs):
-    loop = asyncio.new_event_loop()
-    task = loop.create_task(execute(*args, **kwargs))
-    result = loop.run_until_complete(task)
+def _execute_bot_signal(loop, *args, **kwargs):
+    loop.create_task(execute(*args, **kwargs))
     logger.info("execute bot signal complete.")
-    loop.close()
 
 
 async def _execute_webhook_signal(*args, **kwargs):
