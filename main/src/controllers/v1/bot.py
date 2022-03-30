@@ -1,5 +1,4 @@
 import logging
-import asyncio
 import threading
 from datetime import datetime
 from collections import defaultdict
@@ -45,7 +44,7 @@ async def execute_bot_signal(request):
         logger.info("Start bot signal thread")
         thread = threading.Thread(
             target=_execute_bot_signal,
-            args=(asyncio.get_event_loop(), ThreadID, BotStatus),
+            args=(ThreadID, BotStatus),
             kwargs=json_payload,
             daemon=True
         )
