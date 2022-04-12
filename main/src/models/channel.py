@@ -13,6 +13,8 @@ class ChannelType(str, Enum):
     JUSTIN = "JUSTIN"
     WEBHOOK = "WEBHOOK"
     COURAGE = "COURAGE"
+    MOON = "MOON"
+    ARBITRAGE = "ARBITRAGE"
     DEFAULT = "DEFAULT"
 
 
@@ -27,3 +29,5 @@ class ChannelID(str, Enum):
     WEBHOOK = ""
     COURAGE = ""
     DEFAULT = ""
+    MOON = "-1001526810375"
+    ARBITRAGE = "-1001636005084"

@@ -1493,6 +1493,8 @@ components:
         - JUSTIN
         - WEBHOOK
         - COURAGE
+        - MOON
+        - ARBITRAGE
     
     Exchange:
       type: string
