@@ -172,6 +172,8 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
             raise BackendException("Life Time cannot expand expire date")
         subscription.expire_date = subscription.expire_date + timedelta(days=int(plan.day))
         await subscription.save()
+
+        # renew (expand) refund
         user.balance += float(plan.price) * 0.15
 
     await user.save()

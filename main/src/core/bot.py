@@ -8,7 +8,7 @@ import requests
 import traceback
 import concurrent.futures
 from concurrent.futures import Future
-from datetime import datetime
+from datetime import datetime, timedelta
 from tortoise.transactions import atomic
 from tortoise.queryset import QuerySet
 from tortoise.models import Model
@@ -535,27 +535,32 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     if api is None:
         raise BackendException("Invalid api_id")
 
-    # validate channel subscription
-    # subscription = await user.subscription_user.filter(
-    #     is_del=False, plan__channel__in=[channel, "DARIUS"]
-    # ).exists()
-    # if not subscription:
-    #     raise BackendException("Invalid channel")
-
-    # remove this check after activate above validation
+    # check channel from code base
     if channel not in ChannelType._value2member_map_:
         raise BackendException("Invalid channel")
 
-    # validate bot number
-    bot_list = await user.bot_user.filter(is_del=False)
-    if bot_list and len(bot_list) >= 7 and user.role.name != "admin":
-        raise BackendException("Maximum 7 bot per user")
+    # validate channel subscription
+    subscription = await user.subscription_user.filter(
+        is_del=False, plan__channel__in=[channel, "DARIUS"]
+    ).exists()
+    if not subscription:
 
-    # validate channel no duplicate
-    # if channel in set([bot.channel for bot in bot_list]):
-    #     raise BackendException("Channel duplicate")
+        # check if trial
+        telegram = await user.telegram_user.filter(is_del=False)
+        if telegram and (telegram.created_at + timedelta(days=30)).timestamp() < datetime.now().timestamp():
+            # not trial period
+            raise BackendException("No subscription")
+        else:
+            # no subscription, but trial period
+            config["quantity"] = 30
+            config["leverage"] = 1
 
-    # validate trailing
+    # validate bot number (2 per channel)
+    bot_list = await user.bot_user.filter(is_del=False, channel=channel)
+    if bot_list and len(bot_list) >= 2 and user.role.name != "admin":
+        raise BackendException("Maximum 2 bot per subscription")
+
+    # validate trailing order
     validate_trailing(api, config)
 
     # create bot
