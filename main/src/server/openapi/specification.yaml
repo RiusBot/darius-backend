@@ -1546,6 +1546,13 @@ components:
         referrer_count:
           type: integer
           minimum: 0
+        is_trial:
+          type: boolean
+        trial_period:
+          type: string
+          nullable: True
+          example:
+            value: "%Y-%m-%d"
       required:
         - uid
         - user_name
@@ -1553,6 +1560,8 @@ components:
         - balance
         - referrer
         - referral_code
+        - is_trial
+        - trial_period
     
     API_READ:
       type: object
