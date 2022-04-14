@@ -69,11 +69,18 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: 
     uid = user.uid
     logger.info(f"Create new api for user [{uid}]")
 
+    api_number_limit = 1
+
+    # validate if trial
+    has_subscription = await user.subscription_user.filter(is_del=False).exists()
+    if has_subscription:
+        api_number_limit = 3
+
     # validate api number
     api_list = await user.api_user.filter(is_del=False)
     valid_api_list = [api for api in api_list if not api.is_del]
-    if valid_api_list and len(valid_api_list) >= 3:
-        raise BackendException("Maximum 3 api per user")
+    if valid_api_list and len(valid_api_list) >= api_number_limit and user.role.name != "admin":
+        raise BackendException(f"Maximum {api_number_limit} api")
 
     # validate api permission
     validate_api_permission(api_key, api_secret, exchange, subaccount)
