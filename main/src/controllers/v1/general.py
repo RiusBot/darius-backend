@@ -43,6 +43,31 @@ async def get_stats(request):
         )
 
 
+async def clean_no_subscription_bot(request):
+
+    from datetime import datetime, timedelta
+    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message
+
+    async for bot in BotOrder.filter(is_del=False).prefetch_related("user__telegram_user"):
+
+        user = bot.user
+        has_subscription = await user.subscription_user.filter(is_del=False, plan__channel=bot.channel).exists()
+        if has_subscription:
+            continue
+
+        telegram = await bot.user.telegram_user.filter(is_del=False).first()
+        if telegram and (telegram.created_at + timedelta(days=30)).timestamp() < datetime.now().timestamp():
+            # not trial period
+            # bot.is_del = True
+            # await bot.save()
+            break
+    
+    return json_response(
+        status=200,
+        data={},
+    )
+
+    
 async def create_test_data(request):
     from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message
 

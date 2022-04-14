@@ -87,6 +87,18 @@ paths:
           description: received
         default:
           $ref: '#/components/responses/Unexpected'
+          
+  /clean_no_subscription_bot:
+    delete:
+      tags:
+      - general
+      summary: delete no subscription bot
+      operationId: main.src.controllers.v1.general.clean_no_subscription_bot
+      responses:
+        '200':
+          description: received
+        default:
+          $ref: '#/components/responses/Unexpected'
 
   /update_user_profile:
     patch:
