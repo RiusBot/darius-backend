@@ -546,7 +546,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     if not subscription:
 
         # check if trial
-        telegram = await user.telegram_user.filter(is_del=False)
+        telegram = await user.telegram_user.filter(is_del=False).first()
         if telegram and (telegram.created_at + timedelta(days=30)).timestamp() < datetime.now().timestamp():
             # not trial period
             raise BackendException("No subscription")

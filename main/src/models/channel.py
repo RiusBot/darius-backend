@@ -8,7 +8,7 @@ class ChannelType(str, Enum):
     DAILYSCALP = "DAILYSCALP"
     TEST2 = "test2"
     TEST = "test"
-    DARIUS = "darius"
+    DARIUS = "DARIUS"
     VEGAS = "VEGAS"
     JUSTIN = "JUSTIN"
     WEBHOOK = "WEBHOOK"
@@ -31,3 +31,4 @@ class ChannelID(str, Enum):
     DEFAULT = ""
     MOON = "-1001526810375"
     ARBITRAGE = "-1001636005084"
+    DARIUS = ""
