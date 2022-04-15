@@ -16,7 +16,7 @@ class BaseConfig:
     DARIUSDB_PORT = 3306
     DARIUSDB_PASSWD = ''
     PORT = 8080
-    RECAPTCHA_VALID_ACTIONS = ['LOGIN', 'REGISTER']
+    RECAPTCHA_VALID_ACTIONS = ['LOGIN', 'REGISTER', 'FORGET', 'RESET']
 
 class ProdConfig(BaseConfig):
     ENV = 'prod'
