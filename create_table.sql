@@ -120,11 +120,15 @@ CREATE TABLE IF NOT EXISTS `bot_order` (
     `status` VARCHAR(16) NOT NULL,
     `config_id` INT NOT NULL,
     `user_id` INT NOT NULL,
+    `is_trial` BOOLEAN  DEFAULT FALSE  NOT NULL,
+    `trial_expired_at` DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6),
     KEY (`user_id`),
     KEY (`status`),
     KEY (`channel`),
     KEY (`created_at`),
     KEY (`config_id`),
+    KEY (`is_trial`),
+    KEY (`trial_expired_at`),
     FOREIGN KEY(user_id) REFERENCES user(id)
 ) CHARACTER SET utf8;
 

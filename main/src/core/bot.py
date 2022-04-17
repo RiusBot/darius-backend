@@ -465,7 +465,7 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
     logger.info(f"Get bots for user {uid}")
     Bot_Pydantic_List = pydantic_queryset_creator(
         BotOrder,
-        include=["id", "config", "status", "channel", "config_id"]
+        include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
     bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False))
     bot_list = json.loads(bot_list.json())
@@ -527,6 +527,8 @@ def fill_hyperopt(hyperopt: dict, config: dict):
 @permission_validator("create_user_bot")
 async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     uid = user.uid
+    is_trial = False
+    trial_expired_at = None
     logger.info(f"Create new bot for user [{uid}]")
 
     # validate api belongs to user
@@ -547,18 +549,26 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 
         # check if trial
         telegram = await user.telegram_user.filter(is_del=False).first()
-        if telegram and (telegram.created_at + timedelta(days=30)).timestamp() < datetime.now().timestamp():
+        trial_expired_at = telegram.created_at + timedelta(days=30)
+        if telegram and trial_expired_at.timestamp() < datetime.now().timestamp():
             # not trial period
             raise BackendException("No subscription")
         else:
             # no subscription, but trial period
             config["quantity"] = 30
             config["leverage"] = 1
+            is_trial = True
 
-    # validate bot number (2 per channel)
-    bot_list = await user.bot_user.filter(is_del=False, channel=channel)
-    if bot_list and len(bot_list) >= 2 and user.role.name != "admin":
-        raise BackendException("Maximum 2 bot per subscription")
+            # validate bot number (1 per channel)
+            bot_list = await user.bot_user.filter(is_del=False, channel=channel)
+            if bot_list and len(bot_list) >= 1 and user.role.name != "admin":
+                raise BackendException("Maximum 1 bot per subscription when trial")
+
+    else:
+        # validate bot number (2 per channel)
+        bot_list = await user.bot_user.filter(is_del=False, channel=channel)
+        if bot_list and len(bot_list) >= 2 and user.role.name != "admin":
+            raise BackendException("Maximum 2 bot per subscription")
 
     # validate trailing order
     validate_trailing(api, config)
@@ -574,7 +584,9 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         bot_order, create = await BotOrder.get_or_create(
             defaults={
                 "config": bot_config,
-                "status": "RUNNING"
+                "status": "RUNNING",
+                "is_trial": is_trial,
+                "trial_expired_at": trial_expired_at
             },
             channel=channel,
             is_del=False,
