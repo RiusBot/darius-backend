@@ -58,6 +58,7 @@ async def _get_user_telegram(user: User):
         chat = {}
     telegram_info["username"] = chat.get("username")
     telegram_info["name"] = chat.get("first_name", "") + " " + chat.get("last_name", "")
+    telegram_info.pop("created_at")
     return telegram_info
 
 

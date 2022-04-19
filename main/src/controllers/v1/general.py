@@ -56,11 +56,14 @@ async def clean_no_subscription_bot(request):
             continue
 
         telegram = await bot.user.telegram_user.filter(is_del=False).first()
-        if telegram and (telegram.created_at + timedelta(days=30)).timestamp() < datetime.now().timestamp():
+
+        if not telegram:
+            bot.is_del = True
+            await bot.save()
+        elif (telegram.created_at + timedelta(days=30)).timestamp() < datetime.now().timestamp():
             # not trial period
-            # bot.is_del = True
-            # await bot.save()
-            break
+            bot.is_del = True
+            await bot.save()
     
     return json_response(
         status=200,
