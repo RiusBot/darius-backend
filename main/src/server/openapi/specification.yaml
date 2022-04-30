@@ -1644,7 +1644,7 @@ components:
           minimum: 30
         leverage:
           type: number
-          minimum: 0
+          minimum: 1
         margin:
           type: number
           minimum: 0

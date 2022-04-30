@@ -683,12 +683,12 @@ async def _delete_user_bot(user: User, bot_id: int) -> int:
     uid = user.uid
     logger.info(f"Delete bot[{bot_id}] for user {uid}")
 
-    user = await User.filter(uid=uid).filter(is_del=False).first()
+    user = await User.filter(uid=uid, is_del=False).first()
     if user is None:
         raise BackendException("Invalid uid")
 
     # validate bot
-    bot = await user.bot_user.filter(id=bot_id).filter(is_del=False).prefetch_related("config").first()
+    bot = await user.bot_user.filter(id=bot_id, is_del=False).prefetch_related("config").first()
     if bot is None:
         raise BackendException("Invalid bot_id")
 
