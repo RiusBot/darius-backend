@@ -1507,6 +1507,8 @@ components:
         - COURAGE
         - MOON
         - ARBITRAGE
+        - AIRFORCE7
+        - ACDC
     
     Exchange:
       type: string

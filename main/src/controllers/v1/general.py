@@ -139,22 +139,64 @@ async def create_test_data(request):
         #     plan=plan,
         #     is_del=False
         # )
-
-        from tortoise.contrib.pydantic import pydantic_queryset_creator
-        Message_Pydantic_List = pydantic_queryset_creator(
-            Message,
-            exclude=["id", 'content', 'trade_message']
-        )
-
-        message_list = await Message_Pydantic_List.from_queryset(Message.filter(symbol__not_isnull=True, action__not_isnull=True))
-        message_list = message_list.dict()['__root__']
-        for message in message_list:
-            message["message_timestamp"] = message["message_timestamp"].timestamp()
-            message["recieve_timestamp"] = message["recieve_timestamp"].timestamp()
-
+        
+        async for msg in Message.filter(channel="ACDC"):
+            msg.symbol = msg.symbol.replace("USDT", "")
+            await msg.save()
+        
         return json_response(
             status=200,
-            data=message_list,
+            data={},
+        )
+        
+        import pickle
+        with open("../black/chats/✈️ACDC策略快訊✈️.pkl", "rb") as f:
+            message_list = pickle.load(f)
+            
+        def parse(text: str):
+            try:
+                text = text.split('\n')
+                info = {i.split(':')[0]: i.split(':')[1] for i in text}
+
+                action = info["買/賣"].upper()
+                symbol = info["標的"]
+                entry = float(info.get('當前價位', 0))
+                stop_loss = float(info.get('止損', 0))
+
+                if action and symbol:
+                    return {
+                        'action': action,
+                        'symbol': symbol,
+                        'date': date,
+                        'entry': entry,
+                        'stop_loss': stop_loss,
+                        'take_profit': entry + entry - stop_loss
+                    }
+            except Exception as e:
+                pass
+        
+        message_bulk = []
+        for text, date in message_list:
+            
+            signal = parse(text)
+            if signal:
+                msg = Message(
+                    channel="ACDC",
+                    content=text,
+                    symbol=signal["symbol"],
+                    action=signal["action"],
+                    message_timestamp=date,
+                    recieve_timestamp=date,
+                    entry=signal["entry"],
+                    stop_loss=signal["stop_loss"],
+                    take_profit=signal["take_profit"],
+                )
+                message_bulk.append(msg)
+                
+        # await Message.bulk_create(message_bulk)
+        return json_response(
+            status=200,
+            data={},
         )
     except Exception as e:
         logger.error("create test data error.")

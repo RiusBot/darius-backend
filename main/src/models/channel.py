@@ -16,6 +16,8 @@ class ChannelType(str, Enum):
     MOON = "MOON"
     ARBITRAGE = "ARBITRAGE"
     DEFAULT = "DEFAULT"
+    AIRFORCE7 = "AIRFORCE7"
+    ACDC = "ACDC"
 
 
 class ChannelID(str, Enum):
@@ -32,3 +34,5 @@ class ChannelID(str, Enum):
     MOON = "-1001526810375"
     ARBITRAGE = "-1001636005084"
     DARIUS = ""
+    AIRFORCE7 = ""
+    ACDC = ""
