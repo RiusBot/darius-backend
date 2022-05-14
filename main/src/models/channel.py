@@ -18,6 +18,7 @@ class ChannelType(str, Enum):
     DEFAULT = "DEFAULT"
     AIRFORCE7 = "AIRFORCE7"
     ACDC = "ACDC"
+    SPACEFORCE = "SPACEFORCE"
 
 
 class ChannelID(str, Enum):
@@ -36,3 +37,4 @@ class ChannelID(str, Enum):
     DARIUS = ""
     AIRFORCE7 = ""
     ACDC = ""
+    SPACEFORCE = ""

@@ -1509,6 +1509,7 @@ components:
         - ARBITRAGE
         - AIRFORCE7
         - ACDC
+        - SPACEFORCE
     
     Exchange:
       type: string

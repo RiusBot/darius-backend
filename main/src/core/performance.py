@@ -8,6 +8,7 @@ from aiocache import cached
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import Performance, User
+from main.src.models.channel import ChannelType
 from main.src.models.performance import PerformanceSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
@@ -52,6 +53,9 @@ async def _get_performances() -> dict:
     logger.info(f"Get all Performance")
 
     channel_list = await Performance.filter(is_del=False).distinct().values_list('channel', flat=True)
+    # remove channel in db if not define in models.channel
+    channel_list = [i for i in channel_list if i in ChannelType]
+
     Performance_Pydantic_List = pydantic_queryset_creator(
         Performance,
         include=["channel", "start_at", "result"]
