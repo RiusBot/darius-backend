@@ -43,6 +43,10 @@ async def _get_plans(user: User) -> Plan:
 @permission_validator("create_plan")
 async def _create_plan(user: User, name: str, channel: str, price: float, day: int) -> int:
     logger.info("Create plan")
+
+    if Plan.filter(channel=channel, day=day).exists():
+        raise BackendException(f"{channel} {day} plan exists")
+
     plan = await Plan.create(
         name=name,
         channel=channel,
