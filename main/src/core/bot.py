@@ -92,7 +92,6 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
         config_dict = fill_hyperopt(hyperopt, config_dict)
         config_list.append(config_dict)
 
-    
     logger.info(f"{len(config_list)} bot configs")
     return config_list
 
@@ -368,11 +367,11 @@ async def execute_webhook(
                 "config__api",
                 "user",
             ).first()
-            
+
             if bot is None:
                 logger.info(f"No such webhook Bot {channel} {uid}")
                 return
-            
+
             bot_dict = {bot.id: bot}
             if bot_id != bot.id:
                 raise BackendException("Bot ID not match")
@@ -620,7 +619,6 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 @atomic()
 @permission_validator("update_user_bot")
 async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
-    uid = user.uid
     logger.info(f"Update bot [{bot_id}]")
 
     # validate api belongs to user

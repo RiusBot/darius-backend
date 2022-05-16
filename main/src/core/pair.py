@@ -1,4 +1,3 @@
-import ccxt
 import json
 import logging
 from tortoise.transactions import atomic
@@ -6,7 +5,6 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
 from main.src.models import Pair, User
 from main.src.exception import BackendException
-from main.src.core.cipher import encrypt, decrypt
 from main.src.core.permission import permission_validator
 
 
@@ -54,7 +52,7 @@ async def validate_pair(lists: List[str]):
 
 @atomic()
 @permission_validator("create_user_pair")
-async def _create_user_pair(user: User, name :str, types: str, lists: List[str]) -> int:
+async def _create_user_pair(user: User, name: str, types: str, lists: List[str]) -> int:
     uid = user.uid
     logger.info(f"Create new pair for user [{uid}]")
 
@@ -81,7 +79,7 @@ async def _create_user_pair(user: User, name :str, types: str, lists: List[str])
 
 @atomic()
 @permission_validator("update_user_pair")
-async def _update_user_pair(user: User, pair_id, name :str, types: str, lists: List[str]) -> int:
+async def _update_user_pair(user: User, pair_id: int, name: str, types: str, lists: List[str]) -> int:
     uid = user.uid
     logger.info(f"Update pair [{pair_id}] for user [{uid}]")
 
@@ -94,7 +92,7 @@ async def _update_user_pair(user: User, pair_id, name :str, types: str, lists: L
     duplicate = await user.pair_user.filter(is_del=False, name=name).exists()
     if duplicate:
         raise BackendException("Name duplicate.")
-    
+
     # validate pair
     lists = await validate_pair(lists)
 

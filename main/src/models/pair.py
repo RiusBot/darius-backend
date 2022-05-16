@@ -4,6 +4,7 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models import BaseModel
 
+
 class PairType(str, Enum):
     WHITE = "WHITE"
     BLACK = "BLACK"
