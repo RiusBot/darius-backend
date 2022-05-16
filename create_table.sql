@@ -112,6 +112,22 @@ CREATE TABLE `api` (
     CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id)
 ) CHARACTER SET utf8;
 
+-- pair
+CREATE TABLE `pair` (
+    `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `user_id` int(11) NOT NULL,
+    `name` varchar(64) NOT NULL,
+    `types` varchar(16) NOT NULL,
+    `lists` LONGTEXT NOT NULL,
+    KEY (`user_id`),
+    KEY (`type`),
+    KEY (`name`),
+    UNIQUE KEY `user_name` (`user_id`,`name`),
+    CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id)
+) CHARACTER SET utf8;
+
 -- bot order
 CREATE TABLE IF NOT EXISTS `bot_order` (
     `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -138,6 +154,7 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
     `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `bot_id` INT,
     `api_id` INT NOT NULL,
+    `pair_id` INT,
     `created_at` DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6),
     `test` BOOLEAN  DEFAULT FALSE  NOT NULL,
     `hyperopt` BOOLEAN  DEFAULT FALSE  NOT NULL,
@@ -154,6 +171,8 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
     `minimum_volume` DOUBLE,
     `others` VARCHAR(64),
     KEY (`bot_id`),
+    KEY (`api_id`),
+    KEY (`pair_id`),
     CHECK(quantity >= 50),
     CHECK(leverage > 0),
     CHECK(margin > 0),
@@ -161,7 +180,8 @@ CREATE TABLE IF NOT EXISTS `bot_config` (
     CHECK(take_profit > 0),
     CHECK(stop_loss > 0 AND stop_loss < 1),
     FOREIGN KEY(bot_id) REFERENCES bot_order(id),
-    FOREIGN KEY(api_id) REFERENCES api(id)
+    FOREIGN KEY(api_id) REFERENCES api(id),
+    FOREIGN KEY(pair_id) REFERENCES pair(id)
 ) CHARACTER SET utf8;
 
 ALTER TABLE `bot_order` ADD CONSTRAINT FOREIGN KEY(`config_id`) REFERENCES `bot_config`(id) ON DELETE CASCADE;
@@ -253,3 +273,4 @@ ALTER TABLE transaction add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE telegram add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE performance add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE hyperopt add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE pair add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;

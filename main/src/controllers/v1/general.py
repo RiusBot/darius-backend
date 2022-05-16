@@ -140,48 +140,42 @@ async def create_test_data(request):
         #     is_del=False
         # )
         
-        async for msg in Message.filter(channel="ACDC"):
-            msg.symbol = msg.symbol.replace("USDT", "")
-            await msg.save()
-        
-        return json_response(
-            status=200,
-            data={},
-        )
-        
         import pickle
-        with open("../black/chats/✈️ACDC策略快訊✈️.pkl", "rb") as f:
+        with open("../black/chats/空軍司令部(F).pkl", "rb") as f:
             message_list = pickle.load(f)
             
         def parse(text: str):
             try:
                 text = text.split('\n')
-                info = {i.split(':')[0]: i.split(':')[1] for i in text}
+                title = text[0]
+                info = {i.split(':')[0]: i.split(':')[1] for i in text[1:]}
 
-                action = info["買/賣"].upper()
-                symbol = info["標的"]
-                entry = float(info.get('當前價位', 0))
-                stop_loss = float(info.get('止損', 0))
+                action = None
+                if "開倉" in title:
+                    action = "SELL"
+                elif "平倉" in title:
+                    action = "BUY"
+                symbol = info["標的"].replace("USDT", "")
 
                 if action and symbol:
                     return {
+                        'title': title,
                         'action': action,
                         'symbol': symbol,
                         'date': date,
-                        'entry': entry,
-                        'stop_loss': stop_loss,
-                        'take_profit': entry + entry - stop_loss
+                        'stop_loss': float(info.get('止損', 0)),
+                        'take_profit': float(info.get('止盈', 0)),
+                        'entry': float(info.get('當前價位', 0)),
                     }
             except Exception as e:
                 pass
         
         message_bulk = []
         for text, date in message_list:
-            
             signal = parse(text)
             if signal:
                 msg = Message(
-                    channel="ACDC",
+                    channel="AIRFORCE7",
                     content=text,
                     symbol=signal["symbol"],
                     action=signal["action"],
@@ -193,7 +187,7 @@ async def create_test_data(request):
                 )
                 message_bulk.append(msg)
                 
-        # await Message.bulk_create(message_bulk)
+        await Message.bulk_create(message_bulk)
         return json_response(
             status=200,
             data={},

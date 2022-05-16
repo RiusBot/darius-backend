@@ -9,6 +9,7 @@ tags:
 - name: bot
 - name: general
 - name: api
+- name: pair
 - name: account
 - name: plan
 - name: performance
@@ -597,6 +598,125 @@ paths:
       operationId: main.src.controllers.v1.api.clean_api
       security:
         - bearerAuthBackendOnly: []
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /create_user_pair:
+    post:
+      tags:
+      - pair
+      summary: create new pair. 3 for each user.
+      operationId: main.src.controllers.v1.pair.create_user_pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Pair'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                  required:
+                  - uid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /update_user_pair:
+    patch:
+      tags:
+      - pair
+      summary: update user pair.
+      operationId: main.src.controllers.v1.pair.update_user_pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Pair'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                    api_id:
+                      type: integer
+                  required:
+                  - uid
+                  - pair_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /get_user_pair:
+    get:
+      tags:
+      - pair
+      summary: get user pair.
+      operationId: main.src.controllers.v1.pair.get_user_pair
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pair'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_user_pair:
+    delete:
+      tags:
+      - pair
+      summary: delete pair
+      operationId: main.src.controllers.v1.pair.delete_user_pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                api_id:
+                  type: integer
+              required:
+              - uid
+              - pair_id
       responses:
         '200':
           description: success
@@ -1579,6 +1699,26 @@ components:
         - is_trial
         - trial_period
     
+    Pair:
+      type: object
+      properties:
+        pair_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 64
+        lists:
+          type: array
+          items:
+            type: string
+        types:
+          type: string
+          enum: [WHITE, BLACK]
+      required:
+      - name
+      - lists
+      - types
+    
     API_READ:
       type: object
       properties:
@@ -1633,6 +1773,9 @@ components:
       properties:
         api_id:
           type: integer
+        pair_id:
+          type: integer
+          nullable: True
         test:
           type: boolean
         hyperopt:

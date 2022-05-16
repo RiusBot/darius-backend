@@ -22,6 +22,7 @@ class BotConfig(BaseModel):
     bot = fields.OneToOneField("darius.BotOrder", related_name="config_bot")
     # api = fields.OneToOneField("darius.Api", related_name="config_api")
     api = fields.ForeignKeyField("darius.Api", related_name="config_api")
+    pair = fields.ForeignKeyField("darius.Pair", related_name="config_pair")
     test = fields.BooleanField(null=False, default=False)
     hyperopt = fields.BooleanField(null=False, default=False)
     duplicate = fields.BooleanField(null=True, default=False)
