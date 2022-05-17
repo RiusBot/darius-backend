@@ -44,8 +44,13 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     logger.info("Get all bot")
     try:
         bot_dict = {}
-        async for bot in BotOrder.filter(is_del=False, status="RUNNING", channel=channel).prefetch_related(
+        async for bot in BotOrder.filter(
+            is_del=False,
+            status="RUNNING",
+            channel=channel
+        ).prefetch_related(
             "config__api",
+            "config__pair",
             "user",
         ).order_by("config__order_type"):
             bot_dict[bot.id] = bot
@@ -72,6 +77,8 @@ def process_bot_config(config: BotConfig):
         for key, value in model:
             if isinstance(value, (QuerySet, ReverseRelation)):
                 continue
+            elif key == "lists":
+                config_dict[key] = json.loads(value) if value is not None else None
             elif isinstance(value, Model):
                 config_dict.update(parse(value))
             else:
@@ -97,6 +104,7 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
 
 
 def send_to_execute(config: dict):
+    return
     try:
         url = app_config["BOT_EXECUTOR_ENDPOINT"]
         if usingProjectId != "local":
@@ -130,16 +138,29 @@ def send_to_execute(config: dict):
         return "EXECUTE ERROR"
 
 
-async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = 1) -> Dict[Future, int]:
+def black_white_list_filter(config_dict):
+    types = config_dict.get('types')
+    lists = config_dict.get('lists')
+    if lists and types:
+        symbol = config_dict['symbol']
+        if types == "WHITE" and symbol not in lists:
+            return False
+        elif types == "BLACK" and symbol in lists:
+            return False
+    return True
+
+
+async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = None) -> Dict[Future, int]:
     logger.info("Start activate bot executor")
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         task_dict = dict()
         for config in config_list:
             config.update(data_dict)
-            task = executor.submit(send_to_execute, config)
-            task_dict[task] = config["bot_id"]
-            # await asyncio.sleep(1)
-            time.sleep(1)
+            if black_white_list_filter(config):
+                task = executor.submit(send_to_execute, config)
+                task_dict[task] = config["bot_id"]
+                # await asyncio.sleep(1)
+                time.sleep(0.2)
         logger.info(f"All {len(config_list)} submitted.")
     return task_dict
 

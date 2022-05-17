@@ -123,7 +123,7 @@ async def _delete_user_pair(user: User, pair_id: int) -> int:
                 config_using_this_pair.is_del = True
                 await config_using_this_pair.save()
         else:
-            raise BackendException("API still in use.")
+            raise BackendException("Pair still in use by Bot.")
 
     # delete pair
     pair.is_del = True
