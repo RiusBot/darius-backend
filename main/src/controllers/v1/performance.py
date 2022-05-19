@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 async def get_performance(request, channel: str):
 
+    channel = filter_illegal_char({'channel': channel})['channel']
+
     try:
         performance = await _get_performance(channel)
         return json_response(
