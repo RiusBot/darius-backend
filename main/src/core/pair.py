@@ -89,7 +89,7 @@ async def _update_user_pair(user: User, pair_id: int, name: str, types: str, lis
         raise BackendException("Invalid pair.")
 
     # validate name duplicate
-    duplicate = await user.pair_user.filter(is_del=False, name=name).exists()
+    duplicate = await user.pair_user.filter(is_del=False, name=name, id__not=pair_id).exists()
     if duplicate:
         raise BackendException("Name duplicate.")
 
@@ -126,5 +126,6 @@ async def _delete_user_pair(user: User, pair_id: int) -> int:
             raise BackendException("Pair still in use by Bot.")
 
     # delete pair
-    pair.is_del = True
-    await pair.save()
+    # pair.is_del = True
+    # await pair.save()
+    await pair.delete()
