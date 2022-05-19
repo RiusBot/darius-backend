@@ -544,18 +544,35 @@ def fill_hyperopt(hyperopt: dict, config: dict):
 
 
 @atomic()
-@permission_validator("create_user_bot")
-async def _create_user_bot(user: User, channel: str, config: dict) -> int:
-    uid = user.uid
-    is_trial = False
-    trial_expired_at = None
-    logger.info(f"Create new bot for user [{uid}]")
+async def validate_config(user: User, config: dict):
 
     # validate api belongs to user
     api_id = config["api_id"]
     api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
     if api is None:
         raise BackendException("Invalid api_id")
+
+    # validate trailing order
+    validate_trailing(api, config)
+
+    # validate pair belongs to user
+    pair_id = config.get('pair_id')
+    if pair_id is not None:
+        pair = await user.pair_user.filter(id=pair_id).filter(is_del=False).first()
+        if pair is None:
+            raise BackendException("Invalid pair_id")
+    else:
+        config.pop("pair_id", None)
+        pair = None
+
+    return api, pair
+
+
+@atomic()
+async def validate_subscription(user: User, channel: str, config: dict):
+
+    is_trial = False
+    trial_expired_at = None
 
     # check channel from code base
     if channel not in ChannelType._value2member_map_:
@@ -590,11 +607,21 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         if bot_list and len(bot_list) >= 2 and user.role.name != "admin":
             raise BackendException("Maximum 2 bot per subscription")
 
-    # validate trailing order
-    validate_trailing(api, config)
+    return subscription, is_trial, trial_expired_at
+
+
+@atomic()
+@permission_validator("create_user_bot")
+async def _create_user_bot(user: User, channel: str, config: dict) -> int:
+    uid = user.uid
+    logger.info(f"Create new bot for user [{uid}]")
+
+    subscription, is_trial, trial_expired_at = await validate_subscription(user, channel, config)
+    api, pair = await validate_config(user, config)
 
     # create bot
     config["api"] = api
+    config["pair"] = pair
     if channel == ChannelType.WEBHOOK:
 
         bot_config = await BotConfig.create(
@@ -642,17 +669,11 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
     logger.info(f"Update bot [{bot_id}]")
 
-    # validate api belongs to user
-    api_id = config["api_id"]
-    api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
-    if api is None:
-        raise BackendException("Invalid api_id")
-
-    # validate trailing
-    validate_trailing(api, config)
+    api, pair = await validate_config(user, config)
 
     # update bot
     config["api"] = api
+    config["pair"] = pair
     bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
     if bot_order is None:
         raise BackendException(f"No Bot {bot_id}")
@@ -660,6 +681,7 @@ async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -
         bot_order.status = status
     for key, value in config.items():
         setattr(bot_order.config, key, value)
+
     await bot_order.save()
     await bot_order.config.save()
 
