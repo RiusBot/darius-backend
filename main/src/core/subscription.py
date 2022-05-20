@@ -119,7 +119,7 @@ async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
 @permission_validator("create_user_subscription")
 async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     uid = user.uid
-    logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
+    # logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
 
     # acquire lock
     user = await user.filter(id=user.id).select_for_update().first()
@@ -146,11 +146,6 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     expire_date = None if (float(plan.day) == 0 or plan.day is None) else datetime.now() + timedelta(days=int(plan.day))
     user_telegram = await user.telegram_user.filter(user=user).first()
     subscription, create = await Subscription.get_or_create(
-        defaults={
-            "expire_date": expire_date,
-            "plan": plan,
-            "invite_link": create_invite_link(channel, user_telegram)
-        },
         plan__channel=channel,
         is_del=False,
         user=user
@@ -158,7 +153,13 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     subscription_id = subscription.id
 
     if create:
-        logger.info(f"Create subscription [{subscription_id}]")
+        logger.info(f"Create subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}]")
+
+        # dont use default param for get_or_create because it will create invite link first
+        subscription.invite_link = create_invite_link(channel, user_telegram)
+        subscription.expire_date = expire_date
+        subscription.plan = plan
+        await subscription.save()
 
         # if first time create subscription, referrer get credit
         subscription_count = await user.subscription_user.all().count()
@@ -174,7 +175,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
                 referrer.balance += float(plan.day) / 10
                 await referrer.save()
     else:
-        logger.info(f"Expand subscription [{subscription_id}]")
+        logger.info(f"Expand subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}]")
         if subscription.expire_date is None:
             raise BackendException("Life Time cannot expand expire date")
         subscription.expire_date = subscription.expire_date + timedelta(days=int(plan.day))
