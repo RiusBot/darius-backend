@@ -12,6 +12,7 @@ class Subscription(BaseModel):
     channel = fields.CharEnumField(ChannelType, max_length=32, null=False)
     expire_date = fields.DatetimeField(null=True)
     invite_link = fields.CharField(50, null=True, unique=True)
+    is_del = fields.BooleanField(null=True, default=False)
 
     class Meta:
         table = "subscription"

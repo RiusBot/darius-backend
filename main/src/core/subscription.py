@@ -115,7 +115,7 @@ async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
     return subscription_list
 
 
-
+@atomic()
 @permission_validator("create_user_subscription")
 async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     uid = user.uid
@@ -233,7 +233,7 @@ async def _delete_user_subscription(user: User, subscription_id: int):
     subscription.is_del = None
     await subscription.save()
     revoke_invite_link(subscription.plan.channel, subscription.invite_link)
-    
+
     # is_del = None
     # so that unique constraint (user, channel, is_del) will not trigger after deleted
     # only is_del=True will be constrainted
