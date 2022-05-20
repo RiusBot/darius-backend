@@ -127,14 +127,16 @@ async def get_user_bots(request):
 
 async def get_bot_trades(request):
 
-    json_payload = json_payload = dict(request.rel_url.query)
+    json_payload = dict(request.rel_url.query)
     json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Get bot trades")
         uid = json_payload["uid"]
         bot_id = json_payload["bot_id"]
-        trade_list = await _get_bot_trades(uid, bot_id)
+        page = int(json_payload.get("page", 0))
+        pagesize = int(json_payload.get("pagesize", 20))
+        trade_list = await _get_bot_trades(uid, bot_id, page, pagesize)
         return json_response(
             status=200,
             data=trade_list

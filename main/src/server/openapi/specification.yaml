@@ -352,6 +352,16 @@ paths:
             minLength: 28
           description: user ID
           required: true
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: page number
+        - in: query
+          name: pagesize
+          schema:
+            type: integer
+          description: page size
       responses:
         '200':
           description: success

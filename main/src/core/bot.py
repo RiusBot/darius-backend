@@ -500,7 +500,7 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
 
 @atomic()
 @permission_validator("get_bot_trades")
-async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
+async def _get_bot_trades(user: User, bot_id: int, page: int, pagesize: int) -> List[Trade]:
     uid = user.uid
     logger.info(f"Get trades from bot {bot_id} for user {uid}")
     Trade_Pydantic_List = pydantic_queryset_creator(
@@ -512,7 +512,15 @@ async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
     if bot is None:
         raise BackendException("Invalid bot_id")
 
-    trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(message__is_del=False, is_del=False).offset(0).limit(20))
+    offset = page * pagesize
+    limit = pagesize
+
+    trade_list = await Trade_Pydantic_List.from_queryset(
+        bot.trade_bot.filter(
+            message__is_del=False,
+            is_del=False
+        ).offset(offset).limit(limit)
+    )
     trade_list = trade_list.dict()['__root__']
     for trade in trade_list:
         trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
