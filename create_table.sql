@@ -73,10 +73,13 @@ CREATE TABLE `subscription` (
   `user_id` int(11) NOT NULL,
   `plan_id` int(11) NOT NULL,
   `expire_date` DATETIME(6),
+  `channel` varchar(50) NOT NULL,
   `invite_link` varchar(50) UNIQUE,
   KEY (`user_id`),
   KEY (`plan_id`),
   KEY (`expire_date`),
+  KEY (`channel`),
+  UNIQUE KEY `user_channel` (`user_id`, `channel`,`is_del`),
   CONSTRAINT FOREIGN KEY (`user_id`) REFERENCES `user`(`id`),
   CONSTRAINT FOREIGN KEY (`plan_id`) REFERENCES `plan`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -261,7 +264,7 @@ CREATE TABLE IF NOT EXISTS `trade_history` (
 
 ALTER TABLE role add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE permission add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
-ALTER TABLE subscription add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
+ALTER TABLE subscription add COLUMN is_del BOOLEAN DEFAULT False;
 ALTER TABLE plan add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE user add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE api add COLUMN is_del BOOLEAN NOT NULL DEFAULT False;

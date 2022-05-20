@@ -115,7 +115,7 @@ async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
     return subscription_list
 
 
-@atomic()
+
 @permission_validator("create_user_subscription")
 async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     uid = user.uid
@@ -146,19 +146,24 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     expire_date = None if (float(plan.day) == 0 or plan.day is None) else datetime.now() + timedelta(days=int(plan.day))
     user_telegram = await user.telegram_user.filter(user=user).first()
     subscription, create = await Subscription.get_or_create(
-        plan__channel=channel,
+        defaults={
+            "expire_date": expire_date,
+            "plan": plan,
+        },
+        channel=channel,
         is_del=False,
         user=user
     )
     subscription_id = subscription.id
+
+    # acquire lock
+    subscription = await Subscription.filter(id=subscription_id).select_for_update().first()
 
     if create:
         logger.info(f"Create subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}]")
 
         # dont use default param for get_or_create because it will create invite link first
         subscription.invite_link = create_invite_link(channel, user_telegram)
-        subscription.expire_date = expire_date
-        subscription.plan = plan
         await subscription.save()
 
         # if first time create subscription, referrer get credit
@@ -175,10 +180,11 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
                 referrer.balance += float(plan.day) / 10
                 await referrer.save()
     else:
-        logger.info(f"Expand subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}]")
+        new_expire_date = subscription.expire_date + timedelta(days=int(plan.day))
+        logger.info(f"Expand subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}] to {new_expire_date}")
         if subscription.expire_date is None:
             raise BackendException("Life Time cannot expand expire date")
-        subscription.expire_date = subscription.expire_date + timedelta(days=int(plan.day))
+        subscription.expire_date = new_expire_date
         await subscription.save()
 
         # renew (expand) refund
@@ -224,6 +230,11 @@ async def _delete_user_subscription(user: User, subscription_id: int):
         raise BackendException("Invalid subscription_id")
 
     # delete subscription
-    subscription.is_del = True
+    subscription.is_del = None
     await subscription.save()
     revoke_invite_link(subscription.plan.channel, subscription.invite_link)
+    
+    # is_del = None
+    # so that unique constraint (user, channel, is_del) will not trigger after deleted
+    # only is_del=True will be constrainted
+    # to avoid duplicate subscription created
