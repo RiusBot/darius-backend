@@ -95,7 +95,11 @@ async def _clean_oco_order() -> int:
         created_at__gt=start_date,
         status="success",
         bot__config__api__exchange="binance"
-    ).prefetch_related("bot__config__api", "message"):
+    ).prefetch_related(
+        "bot__config__api",
+        "bot__config__pair",
+        "message"
+    ):
         if trade.sl_order or trade.tp_order:
             config_dict = process_bot_config(trade.bot.config)
             config_dict["symbol"] = trade.message.symbol
