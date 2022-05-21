@@ -106,8 +106,7 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
 def send_to_execute(config: dict):
     try:
         url = app_config["BOT_EXECUTOR_ENDPOINT"]
-        if usingProjectId != "local":
-            config["token"] = fetch_secret_token_firestore()
+        config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
 
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
