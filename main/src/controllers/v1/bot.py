@@ -10,48 +10,15 @@ from main.src.core.validator import filter_illegal_char
 
 
 logger = logging.getLogger(__name__)
-ThreadID = 0
-BotStatus = defaultdict(dict)
-
-
-async def get_executing_status(request):
-    try:
-        logger.info("Get execution thread status")
-        return json_response(
-            status=200,
-            data={
-                "bot_status": BotStatus
-            }
-        )
-    except Exception as e:
-        logger.error("Get bot status error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
 
 
 async def execute_bot_signal(request):
-    global ThreadID, BotStatus
     json_payload = await request.json()
     json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Start bot signal thread")
-        thread = threading.Thread(
-            target=_execute_bot_signal,
-            args=(asyncio.get_event_loop(), ThreadID, BotStatus),
-            kwargs=json_payload,
-            daemon=True
-        )
-        thread.start()
-        ThreadID += 1
-
+        asyncio.create_task(_execute_bot_signal(**json_payload))
         return json_response(
             status=200,
             data={}
@@ -81,7 +48,7 @@ async def execute_webhook_signal(request, bot_id: int):
         json_payload["recieve_timestamp"] = datetime.now().timestamp()
         json_payload["content"] = ""
         json_payload["channel"] = "WEBHOOK"
-        await _execute_webhook_signal(**json_payload)
+        asyncio.create_task(_execute_webhook_signal(**json_payload))
         return json_response(
             status=200,
             data={}

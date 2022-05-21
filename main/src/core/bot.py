@@ -28,17 +28,6 @@ logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
-def _execute_bot_signal(loop, *args, **kwargs):
-    loop.create_task(execute(*args, **kwargs))
-    logger.info("execute bot signal complete.")
-
-
-async def _execute_webhook_signal(*args, **kwargs):
-    result = await execute_webhook(*args, **kwargs)
-    logger.info("execute webhook signal complete.")
-    return result
-
-
 @atomic()
 async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     logger.info("Get all bot")
@@ -252,9 +241,7 @@ async def write_message(
         logger.exception("")
 
 
-async def execute(
-    thread_id: int,
-    BotStatus: dict,
+async def _execute_bot_signal(
     channel: str,
     content: str,
     symbol: str,
@@ -267,12 +254,11 @@ async def execute(
     price: float = None,
 ):
     try:
-        status_logger = ThreadStatusLogger(thread_id, BotStatus)
-        status_logger.log("Starting execute bot signal")
+        logger.info("Starting execute bot signal")
         bot_dict, message = None, None
 
         try:
-            status_logger.log("Get all bot and write message.")
+            logger.info("Get all bot and write message.")
             bot_dict, message = await asyncio.gather(
                 get_all_bot(channel),
                 write_message(
@@ -289,7 +275,7 @@ async def execute(
             )
         except Exception as e:
             error_msg = f"get all bot and write message error. {e}"
-            status_logger.log(
+            logger.error(
                 json.dumps(
                     {
                         "error": error_msg,
@@ -301,7 +287,7 @@ async def execute(
 
         if bot_dict is not None and message is not None and action is not None:
             try:
-                status_logger.log("Prepare data")
+                logger.info("Prepare data")
                 config_list = await get_all_bot_config(channel, bot_dict)
                 data_dict = {
                     "symbol": symbol,
@@ -311,12 +297,12 @@ async def execute(
                     "scalp_take_profit": take_profit,
                     "price": price,
                 }
-                status_logger.log_data(data_dict)
+                logger.info(json.dumps(data_dict))
                 task_dict = await send_bot_executor(config_list, data_dict)
                 result_dict = await recieve_execute_result(task_dict)
             except Exception as e:
                 error_msg = f"send and receive data error. {e}"
-                status_logger.log(
+                logger.error(
                     json.dumps(
                         {
                             "error": error_msg,
@@ -328,11 +314,11 @@ async def execute(
                 result_dict = {bot_id: 'EXECUTE ERROR' for bot_id in bot_dict}
 
             try:
-                status_logger.log("write trade result.")
+                logger.info("write trade result.")
                 await write_trade_result(message, result_dict, bot_dict)
             except Exception as e:
                 error_msg = f"write trade result error. {e}"
-                status_logger.log(
+                logger.error(
                     json.dumps(
                         {
                             "error": error_msg,
@@ -344,7 +330,7 @@ async def execute(
 
     except Exception as e:
         error_msg = f"Unexpected error. {e}"
-        status_logger.log(
+        logger.error(
             json.dumps(
                 {
                     "error": error_msg,
@@ -354,11 +340,10 @@ async def execute(
             )
         )
     finally:
-        status_logger.log("Complete")
-        BotStatus.pop(thread_id)
+        logger.info("Complete")
 
 
-async def execute_webhook(
+async def _execute_webhook_signal(
     channel: str,
     content: str,
     symbol: str,
@@ -384,6 +369,7 @@ async def execute_webhook(
                 user__uid=uid,
             ).prefetch_related(
                 "config__api",
+                "config__pair",
                 "user",
             ).first()
 
@@ -744,19 +730,3 @@ async def _delete_user_bot(user: User, bot_id: int) -> int:
     bot.config.is_del = True
     await bot.config.save()
     await bot.save()
-
-
-class ThreadStatusLogger():
-    def __init__(self, thread_id: int, BotStatus: dict):
-        self.id = thread_id
-        self.status_dict = BotStatus[thread_id]
-        self.status_dict["log"] = []
-        self.status_dict["data"] = {}
-
-    def log(self, msg: str, level: str = "info"):
-        log_func = getattr(logger, level)
-        log_func(msg)
-        self.status_dict["log"].append(msg)
-
-    def log_data(self, data: dict):
-        self.status_dict["data"] = data
