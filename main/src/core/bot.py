@@ -104,7 +104,6 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
 
 
 def send_to_execute(config: dict):
-    return
     try:
         url = app_config["BOT_EXECUTOR_ENDPOINT"]
         if usingProjectId != "local":
