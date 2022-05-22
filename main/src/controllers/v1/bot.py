@@ -1,8 +1,6 @@
 import logging
 import asyncio
-import threading
 from datetime import datetime
-from collections import defaultdict
 from aiohttp.web import json_response
 from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot, _execute_webhook_signal, _update_user_bot
 from main.src.exception import BackendException
