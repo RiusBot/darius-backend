@@ -152,6 +152,60 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: i
     return task_dict
 
 
+async def fetch(session, config: dict):
+    try:
+        response = "EXECUTE ERROR"
+        url = app_config["BOT_EXECUTOR_ENDPOINT"]
+        config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
+
+        try:
+            config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
+        except Exception:
+            logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
+            logger.exception("")
+
+        max_retry = 3
+        for i in range(max_retry):
+            async with session.post(url, json=config, timeout=600) as response:
+                response = await response.text()
+                try:
+                    response = json.loads(response)
+                    if "error_message" in response:
+                        response = str(response["error_message"])
+                    elif "error_messages" in response:
+                        response = str(response["error_messages"])
+                except Exception:
+                    # return text if json parse failed
+                    pass
+                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response)):
+                    break
+        return response
+
+    except Exception as e:
+        logger.exception("")
+        # return str(e)
+        # logger.error(str(e))
+        return "EXECUTE ERROR"
+
+
+async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = None) -> Dict[Future, int]:
+    import aiohttp
+
+    logger.info("Start async activate bot executor")
+    task_dict = dict()
+
+    async with aiohttp.ClientSession() as session:
+        for config in config_list:
+            config.update(data_dict)
+            if black_white_list_filter(config):
+                task = fetch(session, config)
+                task_dict[task] = config["bot_id"]
+
+        responses = await asyncio.gather(**task_dict)
+        for res in responses:
+            pass
+
+
 async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, list]:
     logger.info("Receive execute result")
     result_dict = dict()
