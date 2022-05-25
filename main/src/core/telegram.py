@@ -86,17 +86,19 @@ async def fetch_alphashark(telegram_id: int):
         params = {'tg_id': telegram_id}
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, pamras=params) as response:
+            async with session.get(url, params=params) as response:
                 resp_text = await response.text()
                 resp_json = json.loads(resp_text)
                 return resp_json.get("has_shark", False)
     except Exception:
+        logger.exception("")
         logger.error("Fetch alphashark error")
 
 
 @atomic()
 async def alphashark_campaign(user: User, telegram_id: int):
     if await fetch_alphashark(telegram_id):
+        logger.info(f"user [{user.id}] is alphashark holder !")
         # acquire lock
         user = await user.filter(id=user.id).select_for_update().first()
         user.balance += 100
