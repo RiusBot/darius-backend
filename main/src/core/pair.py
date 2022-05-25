@@ -1,5 +1,7 @@
+import ccxt
 import json
 import logging
+from cachetools import cached, TTLCache
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
@@ -28,6 +30,75 @@ async def _get_user_pair(user: User) -> List[Pair]:
         pair["lists"] = json.loads(pair["lists"])
     logger.info(f"Get user [{uid}] {len(pair_list)} pair")
     return pair_list
+
+
+@cached(cache=TTLCache(maxsize=256, ttl=86400))
+def load_all_token():
+    binance_spot = ccxt.binance({
+        "enableRateLimit": True,
+        'options': {
+            "defaultType": 'spot',
+            "adjustForTimeDifference": True,
+        }
+    })
+    binance_future = ccxt.binance({
+        "enableRateLimit": True,
+        'options': {
+            "defaultType": 'future',
+            "adjustForTimeDifference": True,
+        }
+    })
+    ftx = ccxt.ftx({
+        "enableRateLimit": True,
+        'options': {
+            "adjustForTimeDifference": True,
+        }
+    })
+
+    binance_markets = set()
+    binance_markets.update(binance_spot.loadMarkets().keys())
+    binance_markets.update(binance_future.loadMarkets().keys())
+    ftx_markets = ftx.loadMarkets().keys()
+
+    all_token = set()
+    for symbol in binance_markets:
+        try:
+            token, base = symbol.split('/')
+        except Exception:
+            continue
+        if base != "USDT":
+            continue
+        elif token[-4:] == "DOWN" or token[-2:] == "UP" or token[-4:] == "BULL" or token[-4:] == "BEAR":
+            continue
+        all_token.add(token)
+
+    for symbol in ftx_markets:
+        try:
+            if '-MOVE' in symbol:
+                continue
+            elif '/' in symbol:
+                token, base = symbol.split('/')
+            elif '-' in symbol:
+                token, base = symbol.split('-')
+            else:
+                continue
+        except Exception:
+            continue
+
+        if base != "USD":
+            continue
+        elif "BEAR" in token or "BULL" in token or "HEDGE" in token or 'HALF' in token:
+            continue
+        all_token.add(token)
+
+    logger.info(f'Get all binance/ftx market pair {len(all_token)}')
+    return list(all_token)
+
+
+@permission_validator("get_all_pair")
+async def _get_all_pair(user: User) -> List[Pair]:
+    logger.info(f"Get all pair for user {user.uid}")
+    return load_all_token()
 
 
 async def validate_pair_number(user: User, lists: List[str]):

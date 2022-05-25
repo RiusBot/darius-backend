@@ -692,6 +692,33 @@ paths:
                   $ref: '#/components/schemas/Pair'
         default:
           $ref: '#/components/responses/Unexpected'
+          
+  /get_all_pair:
+    get:
+      tags:
+      - pair
+      summary: get all pair.
+      operationId: main.src.controllers.v1.pair.get_all_pair
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        default:
+          $ref: '#/components/responses/Unexpected'
 
   /delete_user_pair:
     delete:
