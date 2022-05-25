@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from aiohttp.web import json_response
 from main.src.core.trade import _clean_limit_order, _clean_oco_order
@@ -11,7 +12,7 @@ async def clean_limit_order(request):
 
     try:
         logger.info("Clean limit order")
-        await _clean_limit_order()
+        asyncio.create_task(_clean_limit_order())
         return json_response(
             status=200,
             data={}
@@ -33,7 +34,7 @@ async def clean_oco_order(request):
 
     try:
         logger.info("Clean oco order")
-        await _clean_oco_order()
+        asyncio.create_task(_clean_oco_order())
         return json_response(
             status=200,
             data={}

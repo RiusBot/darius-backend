@@ -1,8 +1,6 @@
 import os
-import enum
 import json
 import logging
-import requests
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import List, Dict
@@ -10,16 +8,12 @@ import concurrent.futures
 from concurrent.futures import Future
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
-from tortoise.models import Model
-from tortoise.queryset import QuerySet
-from tortoise.fields.relational import ReverseRelation
 
 from main.src.config import app_config
-from main.src.models import Trade, User, BotConfig
+from main.src.models import Trade, User
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
-from main.src.core.cipher import decrypt
-from main.src.core.auth import fetch_secret_token_firestore
+from main.src.core.bot import process_bot_config, send_to_execute
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +48,6 @@ async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
 @atomic()
 async def _clean_limit_order() -> int:
     logger.info("Clean limit order")
-
     one_hour_ago = datetime.now() - timedelta(minutes=70)
     config_list = []
     trade_dict = {}
@@ -71,7 +64,7 @@ async def _clean_limit_order() -> int:
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    result_dict = await send_bot_executor(config_list, {'type': 'limit'})
+    result_dict = await send_bot_executor_clean(config_list, {'type': 'limit'})
 
     stats = defaultdict(int)
     for trade_id, result in result_dict.items():
@@ -81,7 +74,7 @@ async def _clean_limit_order() -> int:
         else:
             stats['error'] += 1
 
-    logger.info(f"{json.dumps(stats, indent=4)}")
+    logger.info(f"clean limit order stats: {json.dumps(stats)}")
 
 
 @atomic()
@@ -94,7 +87,6 @@ async def _clean_oco_order() -> int:
     async for trade in Trade.filter(
         created_at__gt=start_date,
         status="success",
-        bot__config__api__exchange="binance"
     ).prefetch_related(
         "bot__config__api",
         "bot__config__pair",
@@ -109,7 +101,7 @@ async def _clean_oco_order() -> int:
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    result_dict = await send_bot_executor(config_list, {'type': 'oco'})
+    result_dict = await send_bot_executor_clean(config_list, {'type': 'oco'})
 
     stats = defaultdict(int)
     for trade_id, result in result_dict.items():
@@ -123,50 +115,18 @@ async def _clean_oco_order() -> int:
         else:
             stats['error'] += 1
 
-    logger.info(f"{json.dumps(stats, indent=4)}")
+    logger.info(f"clean oco order stats: {json.dumps(stats)}")
 
 
-def send_to_execute(config: dict):
-    try:
-        url = app_config["BOT_EXECUTOR_CLEAN_ENDPOINT"]
-        if usingProjectId != "local":
-            config["token"] = fetch_secret_token_firestore()
-
-        try:
-            config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
-        except Exception:
-            logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
-            logger.exception("")
-
-        max_retry = 3
-        with requests.Session() as s:
-            for i in range(max_retry):
-                response = s.post(url, json=config, timeout=600)
-                try:
-                    response = response.json()
-                    if "error_message" in response:
-                        response = str(response["error_message"])
-                    elif "error_messages" in response:
-                        response = str(response["error_messages"])
-                except Exception:
-                    response = response.text
-                if not (isinstance(response, str) and ("Rate exceeded" in response or "Too many requests" in response)):
-                    break
-            return response
-    except Exception as e:
-        logger.exception("")
-        # return str(e)
-        # logger.error(str(e))
-        return "EXECUTE ERROR"
-
-
-async def send_bot_executor(config_list: List[dict], data_dict: dict = {}, workers: int = 1) -> Dict[Future, int]:
+async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 1) -> Dict[Future, int]:
     logger.info("Start activate bot executor")
+    url = app_config["BOT_EXECUTOR_CLEAN_ENDPOINT"]
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         task_dict = dict()
         for config in config_list:
             config.update(data_dict)
-            task = executor.submit(send_to_execute, config)
+            task = executor.submit(send_to_execute, url, config)
             task_dict[task] = config["trade_id"]
             # time.sleep(0.5)
         logger.info(f"All {len(config_list)} submitted.")
@@ -178,27 +138,3 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict = {}, worke
         result_dict[trade_id] = result
     logger.info(f"Recieve {len(result_dict)} results")
     return result_dict
-
-
-def process_bot_config(config: BotConfig):
-
-    def type_casting(value):
-        if isinstance(value, enum.Enum):
-            return value.value
-        elif isinstance(value, datetime):
-            return value.timestamp()
-        else:
-            return value
-
-    def parse(model: Model):
-        config_dict = {}
-        for key, value in model:
-            if isinstance(value, (QuerySet, ReverseRelation)):
-                continue
-            elif isinstance(value, Model):
-                config_dict.update(parse(value))
-            else:
-                config_dict[key] = type_casting(value)
-        return config_dict
-
-    return parse(config)

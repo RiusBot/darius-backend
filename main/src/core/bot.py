@@ -92,9 +92,8 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
     return config_list
 
 
-def send_to_execute(config: dict):
+def send_to_execute(url: str, config: dict):
     try:
-        url = app_config["BOT_EXECUTOR_ENDPOINT"]
         config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
 
         try:
@@ -115,7 +114,7 @@ def send_to_execute(config: dict):
                         response = str(response["error_messages"])
                 except Exception:
                     response = response.text
-                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response)):
+                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
                     break
             return response
     except Exception as e:
@@ -139,12 +138,14 @@ def black_white_list_filter(config_dict):
 
 async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = None) -> Dict[Future, int]:
     logger.info("Start activate bot executor")
+    url = app_config["BOT_EXECUTOR_ENDPOINT"]
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         task_dict = dict()
         for config in config_list:
             config.update(data_dict)
             if black_white_list_filter(config):
-                task = executor.submit(send_to_execute, config)
+                task = executor.submit(send_to_execute, url, config)
                 task_dict[task] = config["bot_id"]
                 # await asyncio.sleep(1)
                 time.sleep(0.2)
@@ -152,7 +153,7 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: i
     return task_dict
 
 
-async def fetch(session, config: dict):
+async def fetch(session, url: str, config: dict):
     try:
         response = "EXECUTE ERROR"
         url = app_config["BOT_EXECUTOR_ENDPOINT"]
@@ -177,7 +178,7 @@ async def fetch(session, config: dict):
                 except Exception:
                     # return text if json parse failed
                     pass
-                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response)):
+                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
                     break
         return response
 
@@ -193,12 +194,13 @@ async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: 
 
     logger.info("Start async activate bot executor")
     task_dict = dict()
+    url = app_config["BOT_EXECUTOR_ENDPOINT"]
 
     async with aiohttp.ClientSession() as session:
         for config in config_list:
             config.update(data_dict)
             if black_white_list_filter(config):
-                task = fetch(session, config)
+                task = fetch(session, url, config)
                 task_dict[task] = config["bot_id"]
 
         responses = await asyncio.gather(**task_dict)
@@ -470,7 +472,7 @@ async def _execute_webhook_signal(
                     "scalp_take_profit": take_profit,
                     "price": price,
                 }
-                logger.info(json.dumps(data_dict, indent=4))
+                logger.info(json.dumps(data_dict))
                 task_dict = await send_bot_executor(config_list, data_dict)
                 result_dict = await recieve_execute_result(task_dict)
             except Exception as e:
