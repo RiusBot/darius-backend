@@ -89,6 +89,7 @@ async def fetch_alphashark(telegram_id: int):
             async with session.get(url, params=params) as response:
                 resp_text = await response.text()
                 resp_json = json.loads(resp_text)
+                logger.info(f'{resp_json}')
                 return resp_json.get("has_shark", False)
     except Exception:
         logger.exception("")
