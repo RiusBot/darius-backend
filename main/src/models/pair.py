@@ -8,6 +8,7 @@ from main.src.models import BaseModel
 class PairType(str, Enum):
     WHITE = "WHITE"
     BLACK = "BLACK"
+    BUILTIN = "BUILTIN"
 
 
 class Pair(BaseModel):
