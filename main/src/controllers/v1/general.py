@@ -70,7 +70,29 @@ async def clean_no_subscription_bot(request):
         data={},
     )
 
-    
+
+async def check_rebate(api):
+    import ccxt.async_support as ccxt
+    from main.src.core.cipher import decrypt
+    try:
+        api_key = api.api_key
+        api_secret = decrypt(api.api_key, api.api_secret)
+    except:
+        return False
+    exchange = ccxt.binance({
+        'apiKey': api_key,
+        "secret": api_secret,
+        "options": {
+            "defaultType": 'spot',
+        }
+    })
+    ifNewUser = await exchange.sapi_get_apireferral_ifnewuser(params={'apiAgentCode': 'V9ZBVGB7'})
+    await exchange.close()
+    if ifNewUser['rebateWorking'] and ifNewUser['ifNewUser']:
+        return True
+    return False
+
+
 async def create_test_data(request):
     from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message
 
