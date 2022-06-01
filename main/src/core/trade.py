@@ -1,5 +1,4 @@
 import os
-import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -22,7 +21,7 @@ usingProjectId = os.getenv('project_id', 'local')
 
 @atomic()
 @permission_validator("get_bot_trades")
-async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
+async def _get_bot_trades(user: User, bot_id: int, page: int, pagesize: int) -> List[Trade]:
     uid = user.uid
     logger.info(f"Get trades from bot {bot_id} for user {uid}")
     Trade_Pydantic_List = pydantic_queryset_creator(
@@ -34,13 +33,20 @@ async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
     if bot is None:
         raise BackendException("Invalid bot_id")
 
-    trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).offset(0).limit(20))
+    offset = page * pagesize
+    limit = pagesize
+
+    trade_list = await Trade_Pydantic_List.from_queryset(
+        bot.trade_bot.filter(
+            message__is_del=False,
+            is_del=False
+        ).offset(offset).limit(limit)
+    )
     trade_list = trade_list.dict()['__root__']
     for trade in trade_list:
         trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
         trade["message"]["recieve_timestamp"] = trade["message"]["recieve_timestamp"].timestamp()
 
-    # trade_list = json.loads(trade_list.json())
     logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
     return trade_list
 
@@ -55,7 +61,11 @@ async def _clean_limit_order() -> int:
         created_at__gt=one_hour_ago,
         status="success",
         bot__config__order_type="LIMIT"
-    ).prefetch_related("bot__config__api", "message"):
+    ).prefetch_related(
+        "bot__config__api",
+        "bot__config__pair",
+        "message"
+    ):
         if trade.open_order:
             config_dict = process_bot_config(trade.bot.config)
             config_dict["open_order"] = trade.open_order
@@ -64,7 +74,8 @@ async def _clean_limit_order() -> int:
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    result_dict = await send_bot_executor_clean(config_list, {'type': 'limit'})
+    task_dict = await send_bot_executor_clean(config_list, {'type': 'limit'})
+    result_dict = await recieve_execute_clean_result(task_dict)
 
     stats = defaultdict(int)
     for trade_id, result in result_dict.items():
@@ -74,7 +85,7 @@ async def _clean_limit_order() -> int:
         else:
             stats['error'] += 1
 
-    logger.info(f"clean limit order stats: {json.dumps(stats)}")
+    logger.info(f"clean limit order stats: {stats}")
 
 
 @atomic()
@@ -87,6 +98,8 @@ async def _clean_oco_order() -> int:
     async for trade in Trade.filter(
         created_at__gt=start_date,
         status="success",
+    ).order_by(
+        "created_at"
     ).prefetch_related(
         "bot__config__api",
         "bot__config__pair",
@@ -101,7 +114,8 @@ async def _clean_oco_order() -> int:
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    result_dict = await send_bot_executor_clean(config_list, {'type': 'oco'})
+    task_dict = await send_bot_executor_clean(config_list, {'type': 'oco'})
+    result_dict = await recieve_execute_clean_result(task_dict)
 
     stats = defaultdict(int)
     for trade_id, result in result_dict.items():
@@ -115,11 +129,11 @@ async def _clean_oco_order() -> int:
         else:
             stats['error'] += 1
 
-    logger.info(f"clean oco order stats: {json.dumps(stats)}")
+    logger.info(f"clean oco order stats: {stats}")
 
 
-async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 1) -> Dict[Future, int]:
-    logger.info("Start activate bot executor")
+async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = None) -> Dict[Future, int]:
+    logger.info("Start activate bot executor clean")
     url = app_config["BOT_EXECUTOR_CLEAN_ENDPOINT"]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
@@ -128,13 +142,17 @@ async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {},
             config.update(data_dict)
             task = executor.submit(send_to_execute, url, config)
             task_dict[task] = config["trade_id"]
-            # time.sleep(0.5)
         logger.info(f"All {len(config_list)} submitted.")
 
+    return task_dict
+
+
+async def recieve_execute_clean_result(task_dict: Dict[Future, int]) -> dict:
+    logger.info("Receive execute clean result")
     result_dict = dict()
     for task in concurrent.futures.as_completed(task_dict, timeout=60):
-        trade_id = task_dict[task]
+        bot_id = task_dict[task]
         result = task.result()
-        result_dict[trade_id] = result
+        result_dict[bot_id] = result
     logger.info(f"Recieve {len(result_dict)} results")
     return result_dict

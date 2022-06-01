@@ -1,5 +1,4 @@
 import os
-import time
 import enum
 import json
 import asyncio
@@ -94,6 +93,15 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
 
 def send_to_execute(url: str, config: dict):
     try:
+        if config["test"]:
+            return {
+                "status": 'error',
+                "open_order": None,
+                "sl_order": None,
+                "tp_order": None,
+                "price": None
+            }
+
         config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
 
         try:
@@ -147,14 +155,22 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: i
             if black_white_list_filter(config):
                 task = executor.submit(send_to_execute, url, config)
                 task_dict[task] = config["bot_id"]
-                # await asyncio.sleep(1)
-                time.sleep(0.2)
+
         logger.info(f"All {len(config_list)} submitted.")
     return task_dict
 
 
 async def fetch(session, url: str, config: dict):
     try:
+        if config["test"]:
+            return {
+                "status": 'error',
+                "open_order": None,
+                "sl_order": None,
+                "tp_order": None,
+                "price": None
+            }
+
         response = "EXECUTE ERROR"
         url = app_config["BOT_EXECUTOR_ENDPOINT"]
         config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
@@ -167,7 +183,7 @@ async def fetch(session, url: str, config: dict):
 
         max_retry = 3
         for i in range(max_retry):
-            async with session.post(url, json=config, timeout=600) as response:
+            async with session.post(url, json=config, timeout=15) as response:
                 response = await response.text()
                 try:
                     response = json.loads(response)
@@ -196,7 +212,7 @@ async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: 
     task_dict = dict()
     url = app_config["BOT_EXECUTOR_ENDPOINT"]
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=600) as session:
         for config in config_list:
             config.update(data_dict)
             if black_white_list_filter(config):
@@ -536,39 +552,6 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
 
     logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
-
-
-@atomic()
-@permission_validator("get_bot_trades")
-async def _get_bot_trades(user: User, bot_id: int, page: int, pagesize: int) -> List[Trade]:
-    uid = user.uid
-    logger.info(f"Get trades from bot {bot_id} for user {uid}")
-    Trade_Pydantic_List = pydantic_queryset_creator(
-        Trade,
-        exclude=["bot"]
-    )
-
-    bot = await user.bot_user.filter(id=bot_id).first()
-    if bot is None:
-        raise BackendException("Invalid bot_id")
-
-    offset = page * pagesize
-    limit = pagesize
-
-    trade_list = await Trade_Pydantic_List.from_queryset(
-        bot.trade_bot.filter(
-            message__is_del=False,
-            is_del=False
-        ).offset(offset).limit(limit)
-    )
-    trade_list = trade_list.dict()['__root__']
-    for trade in trade_list:
-        trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
-        trade["message"]["recieve_timestamp"] = trade["message"]["recieve_timestamp"].timestamp()
-
-    # trade_list = json.loads(trade_list.json())
-    logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
-    return trade_list
 
 
 @atomic()

@@ -322,9 +322,9 @@ paths:
   /get_bot_trades:
     get:
       tags:
-      - bot
+      - trade
       summary: get bot trade history
-      operationId: main.src.controllers.v1.bot.get_bot_trades
+      operationId: main.src.controllers.v1.trade.get_bot_trades
       parameters:
         - in: query
           name: bot_id
@@ -344,11 +344,17 @@ paths:
           name: page
           schema:
             type: integer
+            default: 0
+            minimum: 0
+            maximum: 50
           description: page number
         - in: query
           name: pagesize
           schema:
             type: integer
+            default: 20
+            minimum: 5
+            maximum: 50
           description: page size
       responses:
         '200':
