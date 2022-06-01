@@ -31,10 +31,13 @@ async def _get_user_api(user: User) -> List[Api]:
     return api_list
 
 
-def validate_api_permission(api_key: str, api_secret: str, exchange: str, subaccount: str):
+def validate_api_permission(api_key: str, api_secret: str, password: str, exchange: str, subaccount: str):
 
     if exchange in ["ftx", "ftxus"]:
         if len(api_key) != 40 or len(api_secret) != 40:
+            raise BackendException("Invalid length")
+    elif exchange == "okx":
+        if len(api_key) != 36 or len(api_secret) != 32:
             raise BackendException("Invalid length")
     elif exchange == "binance":
         if len(api_key) != 64 or len(api_secret) != 64:
@@ -53,6 +56,7 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
         'enableRateLimit': True,
         'apiKey': api_key,
         "secret": api_secret,
+        "password": password,
         "headers": headers
     })
     if not exchange.checkRequiredCredentials():
@@ -65,7 +69,7 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
 
 @atomic()
 @permission_validator("create_user_api")
-async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
+async def _create_user_api(user: User, api_key: str, api_secret: str, password: str, exchange: str, subaccount: str) -> int:
     uid = user.uid
     logger.info(f"Create new api for user [{uid}]")
 
@@ -83,10 +87,11 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: 
         raise BackendException(f"Maximum {api_number_limit} api")
 
     # validate api permission
-    validate_api_permission(api_key, api_secret, exchange, subaccount)
+    validate_api_permission(api_key, api_secret, password, exchange, subaccount)
 
     # encrypt api_secret
     api_secret = encrypt(api_key, api_secret)
+    password = encrypt(api_key, password) if password else None
 
     # validate api duplicate
     for api in api_list:
@@ -104,6 +109,7 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: 
         user=user,
         api_key=api_key,
         api_secret=api_secret,
+        password=password,
         exchange=exchange,
         subaccount=subaccount
     )

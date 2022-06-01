@@ -129,6 +129,7 @@ CREATE TABLE `api` (
     `user_id` int(11) NOT NULL,
     `api_key` varchar(64) NOT NULL,
     `api_secret` varchar(400) NOT NULL,
+    `password` varchar(64),
     `exchange` varchar(16) NOT NULL,
     `subaccount` varchar(32),
     `is_del` BOOLEAN NOT NULL DEFAULT False,

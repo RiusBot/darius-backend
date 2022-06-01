@@ -1907,6 +1907,10 @@ components:
         api_secret:
           type: string
           maxLength: 64
+        password:
+          type: string
+          maxLength: 64
+          nullable: true
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:
@@ -1926,6 +1930,10 @@ components:
         api_secret:
           type: string
           maxLength: 64
+        password:
+          type: string
+          maxLength: 64
+          nullable: true
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:

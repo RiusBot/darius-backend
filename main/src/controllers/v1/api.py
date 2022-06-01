@@ -44,9 +44,10 @@ async def create_user_api(request):
         uid = json_payload["uid"]
         api_key = json_payload["api_key"]
         api_secret = json_payload["api_secret"]
+        password = json_payload.get("password")
         exchange = json_payload["exchange"]
         subaccount = json_payload.get("subaccount")
-        api_id = await _create_user_api(uid, api_key, api_secret, exchange, subaccount)
+        api_id = await _create_user_api(uid, api_key, api_secret, password, exchange, subaccount)
         return json_response(
             status=200,
             data={

@@ -106,6 +106,7 @@ def send_to_execute(url: str, config: dict):
 
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
+            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else None
         except Exception:
             logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
             logger.exception("")
@@ -177,6 +178,7 @@ async def fetch(session, url: str, config: dict):
 
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
+            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else None
         except Exception:
             logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
             logger.exception("")
