@@ -9,6 +9,7 @@ class Exchange(str, Enum):
     BINANCE = "binance"
     FTX = "ftx"
     FTXUS = "ftxus"
+    OKX = "okx"
 
 
 class Api(BaseModel):

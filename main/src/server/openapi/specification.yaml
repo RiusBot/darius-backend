@@ -1795,6 +1795,7 @@ components:
         - binance
         - ftx
         - ftxus
+        - okx
 
     TradeStatus:
       type: string
