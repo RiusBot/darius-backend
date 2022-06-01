@@ -1820,6 +1820,10 @@ components:
           type: string
           maxLength: 16
           nullable: True
+        role:
+          type: string
+          maxLength: 16
+          enum: [admin, user, guest, vip, test]
         email: 
           type: string
           maxLength: 32
@@ -1855,6 +1859,7 @@ components:
         - referral_code
         - is_trial
         - trial_period
+        - role
     
     Pair:
       type: object

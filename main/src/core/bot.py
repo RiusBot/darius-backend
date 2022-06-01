@@ -107,6 +107,7 @@ def send_to_execute(url: str, config: dict):
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
             config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else None
+            config["headers"] = {} if config["api_key"] != "9a53750a-5af4-4636-906c-c3e558801694" else {'x-simulated-trading': '1'}
         except Exception:
             logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
             logger.exception("")

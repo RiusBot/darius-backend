@@ -67,8 +67,10 @@ async def _get_user_profile(user: User):
     referral_cnt = await User.filter(is_del=False, referrer=referral_code).count()
     telegram = await user.telegram_user.filter(is_del=False).first()
 
+    role = user.role.name
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
+    user["role"] = role
     user["referral_count"] = referral_cnt
 
     user["is_trial"] = False

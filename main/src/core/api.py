@@ -59,7 +59,9 @@ def validate_api_permission(api_key: str, api_secret: str, password: str, exchan
         "password": password,
         "headers": headers
     })
-    if not exchange.checkRequiredCredentials():
+    try:
+        exchange.checkRequiredCredentials()
+    except Exception:
         raise BackendException("Invalid exchange credentials.")
     try:
         exchange.fetch_balance()

@@ -1,12 +1,21 @@
+from enum import Enum
 from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models import BaseModel
 
 
+class RoleType(str, Enum):
+    ADMIN = "admin"
+    TEST = "test"
+    USER = "user"
+    VIP = "vip"
+    GUEST = 'guest'
+
+
 class Role(BaseModel):
 
-    name = fields.CharField(50, null=False)
+    name = fields.CharEnumField(RoleType, max_length=50, null=False)
 
     class Meta:
         table = "role"
