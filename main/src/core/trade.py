@@ -60,7 +60,8 @@ async def _clean_limit_order() -> int:
     async for trade in Trade.filter(
         created_at__gt=one_hour_ago,
         status="success",
-        bot__config__order_type="LIMIT"
+        bot__config__order_type="LIMIT",
+        bot__config__api__is_del=False,
     ).prefetch_related(
         "bot__config__api",
         "bot__config__pair",
@@ -97,6 +98,8 @@ async def _clean_oco_order() -> int:
     trade_dict = {}
     async for trade in Trade.filter(
         created_at__gt=start_date,
+        bot__is_del=False,
+        bot__config__api__is_del=False,
         status="success",
     ).order_by(
         "created_at"

@@ -1,3 +1,4 @@
+
 -- permission
 CREATE TABLE `permission` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,

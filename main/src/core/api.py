@@ -159,9 +159,10 @@ async def _delete_user_api(user: User, api_id: int) -> int:
         if config_using_this_api.bot.is_del:
 
             # check if config is somehow not deleted
-            if config_using_this_api.is_del:
-                config_using_this_api.is_del = True
-                await config_using_this_api.save()
+            if not config_using_this_api.is_del:
+                logger.info(f"Bot {config_using_this_api.bot.id} is del, config {config_using_this_api.id} is not. delete now.")
+                # config_using_this_api.is_del = True
+                # await config_using_this_api.save()
         else:
             raise BackendException("API still in use.")
 
@@ -179,9 +180,12 @@ async def _clean_api() -> int:
 
     logger.info(f"All {api_count} api")
     async for api in Api.filter(is_del=False).all():
+        if api.id == 401:
+            continue
         try:
             api_secret = decrypt(api.api_key, api.api_secret)
-            validate_api_permission(api.api_key, api_secret, api.exchange, api.subaccount)
+            password = decrypt(api.api_key, api.password) if api.password else None
+            validate_api_permission(api.api_key, api_secret, password, api.exchange, api.subaccount)
         except Exception:
             # remove running bot
             async for config in api.config_api.filter(is_del=False).prefetch_related('bot'):

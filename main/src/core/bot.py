@@ -106,7 +106,7 @@ def send_to_execute(url: str, config: dict):
 
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
-            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else None
+            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else ""
             config["headers"] = {} if config["api_key"] != "9a53750a-5af4-4636-906c-c3e558801694" else {'x-simulated-trading': '1'}
         except Exception:
             logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
@@ -179,7 +179,7 @@ async def fetch(session, url: str, config: dict):
 
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
-            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else None
+            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else ""
         except Exception:
             logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
             logger.exception("")
@@ -582,7 +582,7 @@ async def validate_config(user: User, config: dict):
 
     # validate api belongs to user
     api_id = config["api_id"]
-    api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
+    api = await user.api_user.filter(id=api_id, is_del=False).first()
     if api is None:
         raise BackendException("Invalid api_id")
 
