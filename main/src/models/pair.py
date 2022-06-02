@@ -25,7 +25,7 @@ class Pair(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del", "user", "user_id"]
+        exclude = ["created_at", "updated_at", "is_del", "user", "user_id"]
 
     def __str__(self):
         return f"Pair [{self.id}] {self.name}"

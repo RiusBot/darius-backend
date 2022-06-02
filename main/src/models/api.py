@@ -28,7 +28,7 @@ class Api(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del", "user", "api_secret", "user_id", "password"]
+        exclude = ["created_at", "updated_at", "is_del", "user", "api_secret", "user_id", "password"]
 
     def __str__(self):
         return f"Api [{self.id}] {self.api_key} {self.api_secret} {self.subaccount}"
