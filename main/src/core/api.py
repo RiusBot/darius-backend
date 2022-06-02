@@ -1,6 +1,6 @@
-import ccxt
 import json
 import logging
+import ccxt.async_support as ccxt
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
@@ -31,7 +31,7 @@ async def _get_user_api(user: User) -> List[Api]:
     return api_list
 
 
-def validate_api_permission(api_key: str, api_secret: str, password: str, exchange: str, subaccount: str):
+async def validate_api_permission(api_key: str, api_secret: str, password: str, exchange: str, subaccount: str):
 
     if exchange in ["ftx", "ftxus"]:
         if len(api_key) != 40 or len(api_secret) != 40:
@@ -64,9 +64,11 @@ def validate_api_permission(api_key: str, api_secret: str, password: str, exchan
     except Exception:
         raise BackendException("Invalid exchange credentials.")
     try:
-        exchange.fetch_balance()
+        await exchange.fetch_balance()
     except Exception:
         raise BackendException("Invalid API Permission.")
+
+    await exchange.close()
 
 
 @atomic()
@@ -89,7 +91,7 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, password: 
         raise BackendException(f"Maximum {api_number_limit} api")
 
     # validate api permission
-    validate_api_permission(api_key, api_secret, password, exchange, subaccount)
+    await validate_api_permission(api_key, api_secret, password, exchange, subaccount)
 
     # encrypt api_secret
     api_secret = encrypt(api_key, api_secret)
@@ -133,7 +135,7 @@ async def _update_user_api(user: User, api_id: int, api_key: str, api_secret: st
         raise BackendException("Invalid api.")
 
     # validate api permission
-    validate_api_permission(api_key, api_secret, exchange, subaccount)
+    await validate_api_permission(api_key, api_secret, exchange, subaccount)
 
     # update api
     api.api_key = api_key
@@ -161,8 +163,8 @@ async def _delete_user_api(user: User, api_id: int) -> int:
             # check if config is somehow not deleted
             if not config_using_this_api.is_del:
                 logger.info(f"Bot {config_using_this_api.bot.id} is del, config {config_using_this_api.id} is not. delete now.")
-                # config_using_this_api.is_del = True
-                # await config_using_this_api.save()
+                config_using_this_api.is_del = True
+                await config_using_this_api.save()
         else:
             raise BackendException("API still in use.")
 
@@ -185,8 +187,8 @@ async def _clean_api() -> int:
         try:
             api_secret = decrypt(api.api_key, api.api_secret)
             password = decrypt(api.api_key, api.password) if api.password else None
-            validate_api_permission(api.api_key, api_secret, password, api.exchange, api.subaccount)
-        except Exception:
+            await validate_api_permission(api.api_key, api_secret, password, api.exchange, api.subaccount)
+        except ccxt.AuthenticationError:
             # remove running bot
             async for config in api.config_api.filter(is_del=False).prefetch_related('bot'):
                 config.is_del = True
@@ -199,5 +201,7 @@ async def _clean_api() -> int:
             api.is_del = True
             await api.save()
             remove_api_count += 1
+        except Exception:
+            logger.exception("")
 
     logger.info(f"Remove {remove_api_count} api, remove {remove_bot_count} bots.")
