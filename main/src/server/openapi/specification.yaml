@@ -1787,6 +1787,7 @@ components:
         - ACDC
         - SPACEFORCE
         - ARBITRAGE
+        - CTA
     
     Exchange:
       type: string
