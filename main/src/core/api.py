@@ -61,14 +61,11 @@ async def validate_api_permission(api_key: str, api_secret: str, password: str, 
     })
     try:
         exchange.checkRequiredCredentials()
-    except Exception:
-        raise BackendException("Invalid exchange credentials.")
-    try:
         await exchange.fetch_balance()
-    except Exception:
+    except ccxt.AuthenticationError:
         raise BackendException("Invalid API Permission.")
-
-    await exchange.close()
+    finally:
+        await exchange.close()
 
 
 @atomic()
@@ -188,7 +185,7 @@ async def _clean_api() -> int:
             api_secret = decrypt(api.api_key, api.api_secret)
             password = decrypt(api.api_key, api.password) if api.password else None
             await validate_api_permission(api.api_key, api_secret, password, api.exchange, api.subaccount)
-        except ccxt.AuthenticationError:
+        except BackendException:
             # remove running bot
             async for config in api.config_api.filter(is_del=False).prefetch_related('bot'):
                 config.is_del = True
