@@ -318,6 +318,63 @@ paths:
                   - bot_id
         default:
           $ref: '#/components/responses/Unexpected'
+          
+  /get_user_history_bots:
+    get:
+      tags:
+      - bot
+      summary: get user closed bot
+      operationId: main.src.controllers.v1.bot.get_user_history_bots
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 50
+          description: page number
+        - in: query
+          name: pagesize
+          schema:
+            type: integer
+            default: 20
+            minimum: 5
+            maximum: 50
+          description: page size
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    bot_id:
+                      type: integer
+                    config:
+                      $ref: '#/components/schemas/BotConfig'
+                    channel:
+                      $ref: '#/components/schemas/Channel'
+                    status:
+                      $ref: '#/components/schemas/BotStatus'
+                  required:
+                  - channel
+                  - status
+                  - config
+                  - bot_id
+        default:
+          $ref: '#/components/responses/Unexpected'
 
   /get_bot_trades:
     get:

@@ -558,6 +558,32 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
 
 
 @atomic()
+@permission_validator("get_user_history_bots")
+async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[BotOrder]:
+    uid = user.uid
+    logger.info(f"Get hisotry bots for user {uid}")
+    Bot_Pydantic_List = pydantic_queryset_creator(
+        BotOrder,
+        include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
+    )
+
+    offset = page * pagesize
+    limit = pagesize
+
+    bot_list = await Bot_Pydantic_List.from_queryset(
+        user.bot_user.filter(is_del=True).offset(offset).limit(limit)
+    )
+    bot_list = json.loads(bot_list.json())
+    for bot in bot_list:
+        bot["bot_id"] = bot.pop("id")
+        bot["config"]["api_id"] = bot["config"]["api"]["id"]
+        bot["config"].pop("api")
+
+    logger.info(f"Get user [{uid}] {len(bot_list)} bots")
+    return bot_list
+
+
+@atomic()
 async def get_hyperopt(channel: str) -> dict:
     hyperopt = await Hyperopt.filter(
         is_del=False,
@@ -769,6 +795,7 @@ async def _delete_user_bot(user: User, bot_id: int) -> int:
 
     # delete bot
     bot.is_del = True
+    bot.status = "STOPPED"
     bot.config.is_del = True
     await bot.config.save()
     await bot.save()

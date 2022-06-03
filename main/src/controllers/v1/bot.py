@@ -2,7 +2,7 @@ import logging
 import asyncio
 from datetime import datetime
 from aiohttp.web import json_response
-from main.src.core.bot import _execute_bot_signal, _get_user_bots, _create_user_bot, _delete_user_bot, _execute_webhook_signal, _update_user_bot
+from main.src.core.bot import _execute_bot_signal, _get_user_bots, _create_user_bot, _delete_user_bot, _execute_webhook_signal, _update_user_bot, _get_user_history_bots
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -73,6 +73,34 @@ async def get_user_bots(request):
         logger.info("Start get user bots")
         uid = json_payload["uid"]
         bot_list = await _get_user_bots(uid)
+        return json_response(
+            status=200,
+            data=bot_list
+        )
+    except Exception as e:
+        logger.error("Get user bots error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+
+
+async def get_user_history_bots(request):
+
+    json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        logger.info("Start get user bots")
+        uid = json_payload["uid"]
+        page = int(json_payload.get("page", 0))
+        pagesize = int(json_payload.get("pagesize", 20))
+        bot_list = await _get_user_history_bots(uid, page, pagesize)
         return json_response(
             status=200,
             data=bot_list
