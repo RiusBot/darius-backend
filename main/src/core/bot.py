@@ -94,13 +94,7 @@ async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> Lis
 def send_to_execute(url: str, config: dict):
     try:
         if config["test"]:
-            return {
-                "status": 'error',
-                "open_order": None,
-                "sl_order": None,
-                "tp_order": None,
-                "price": None
-            }
+            "Test only"
 
         config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
 
@@ -245,7 +239,6 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
     trade_list = []
     for bot_id, result in result_dict.items():
         bot = bot_dict[bot_id]
-        logger.info(json.dumps(result, indent=4))
 
         if isinstance(result, str):  # error
             trade = Trade(
@@ -628,6 +621,20 @@ async def validate_config(user: User, config: dict):
     return api, pair
 
 
+async def validate_bot_number(user: User, role: str, channel: str):
+
+    bot_number_limit = {
+        'admin': 10,
+        'subscriber': 2,
+        'vip': 2,
+        'trial': 1
+    }.get(role, 0)
+
+    bot_list = await user.bot_user.filter(is_del=False, channel=channel)
+    if bot_list and len(bot_list) >= bot_number_limit:
+        raise BackendException(f"Maximum {bot_number_limit} bot per subscription for {role}")
+
+
 @atomic()
 async def validate_subscription(user: User, channel: str, config: dict):
 
@@ -642,8 +649,10 @@ async def validate_subscription(user: User, channel: str, config: dict):
     subscription = await user.subscription_user.filter(
         is_del=False, plan__channel__in=[channel, "DARIUS"]
     ).exists()
-    if not subscription:
 
+    if subscription:
+        await validate_bot_number(user, 'subscriber', channel)
+    else:
         # check if trial
         telegram = await user.telegram_user.filter(is_del=False).first()
         trial_expired_at = telegram.created_at + timedelta(days=30)
@@ -656,16 +665,7 @@ async def validate_subscription(user: User, channel: str, config: dict):
             config["leverage"] = 1
             is_trial = True
 
-            # validate bot number (1 per channel)
-            bot_list = await user.bot_user.filter(is_del=False, channel=channel)
-            if bot_list and len(bot_list) >= 1 and user.role.name != "admin":
-                raise BackendException("Maximum 1 bot per subscription when trial")
-
-    else:
-        # validate bot number (2 per channel)
-        bot_list = await user.bot_user.filter(is_del=False, channel=channel)
-        if bot_list and len(bot_list) >= 2 and user.role.name != "admin":
-            raise BackendException("Maximum 2 bot per subscription")
+            await validate_bot_number(user, 'trial', channel)
 
     return subscription, is_trial, trial_expired_at
 

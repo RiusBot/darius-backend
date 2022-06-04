@@ -69,23 +69,42 @@ async def validate_api_permission(api_key: str, api_secret: str, password: str, 
 
 
 @atomic()
+async def validate_api_number(user: User, api_list: list):
+
+    # basic & trial
+    role = 'trial'
+
+    if user.role.name == "vip":
+        role = 'vip'
+    elif user.role.name == "admin":
+        role = 'admin'
+    else:
+        # subscriber
+        has_subscription = await user.subscription_user.filter(is_del=False).exists()
+        if has_subscription:
+            role = 'subscriber'
+
+    api_number_limit = {
+        'trial': 1,
+        'vip': 3,
+        'admin': 100,
+        'subscriber': 3
+    }.get(role, 0)
+
+    valid_api_list = [api for api in api_list if not api.is_del]
+    if valid_api_list and len(valid_api_list) >= api_number_limit:
+        raise BackendException(f"Maximum {api_number_limit} api for {role}")
+
+
+@atomic()
 @permission_validator("create_user_api")
 async def _create_user_api(user: User, api_key: str, api_secret: str, password: str, exchange: str, subaccount: str) -> int:
     uid = user.uid
     logger.info(f"Create new api for user [{uid}]")
-
-    api_number_limit = 1
-
-    # validate if trial
-    has_subscription = await user.subscription_user.filter(is_del=False).exists()
-    if has_subscription:
-        api_number_limit = 3
+    api_list = await user.api_user.filter()
 
     # validate api number
-    api_list = await user.api_user.filter(is_del=False)
-    valid_api_list = [api for api in api_list if not api.is_del]
-    if valid_api_list and len(valid_api_list) >= api_number_limit and user.role.name != "admin":
-        raise BackendException(f"Maximum {api_number_limit} api")
+    await validate_api_number(user, api_list)
 
     # validate api permission
     await validate_api_permission(api_key, api_secret, password, exchange, subaccount)

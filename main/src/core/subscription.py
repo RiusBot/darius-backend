@@ -134,12 +134,13 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     # if duplicate_subscription:
     #     raise BackendException(f"{plan.channel} channel already subscribed")
 
-    # validate balance
-    if float(user.balance) < float(plan.price):
-        raise BackendException("Insufficient balance")
+    if user.name.role != 'vip':
+        # validate balance
+        if float(user.balance) < float(plan.price):
+            raise BackendException("Insufficient balance")
 
-    # update balance
-    user.balance = float(user.balance) - float(plan.price)
+        # update balance
+        user.balance = float(user.balance) - float(plan.price)
 
     # create subscription
     channel = plan.channel
@@ -170,15 +171,16 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         subscription_count = await user.subscription_user.all().count()
         if subscription_count == 1:
 
-            # first subscription refund
-            user.balance += float(plan.price) * 0.3
+            if user.role.name != 'vip':
+                # first subscription refund
+                user.balance += float(plan.price) * 0.3
 
-            # referrer credit
-            referrer = await User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
-            if referrer is not None:
-                referrer.referrer_count += 1
-                referrer.balance += float(plan.day) / 10
-                await referrer.save()
+                # referrer credit
+                referrer = await User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
+                if referrer is not None:
+                    referrer.referrer_count += 1
+                    referrer.balance += float(plan.day) / 10
+                    await referrer.save()
     else:
         new_expire_date = subscription.expire_date + timedelta(days=int(plan.day))
         logger.info(f"Expand subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}] to {new_expire_date}")
@@ -187,8 +189,9 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         subscription.expire_date = new_expire_date
         await subscription.save()
 
-        # renew (expand) refund
-        user.balance += float(plan.price) * 0.15
+        if user.role.name != 'vip':
+            # renew (expand) refund
+            user.balance += float(plan.price) * 0.15
 
     await user.save()
     return subscription_id

@@ -83,18 +83,32 @@ async def _get_all_pair(user: User) -> List[Pair]:
 
 
 async def validate_pair_number(user: User, lists: List[str]):
-    # inf for admin, 3 apir for each user, 1 for trial
 
-    pair_number_limit = 1
-    has_subscription = await user.subscription_user.filter(is_del=False).exists()
-    if has_subscription:
-        pair_number_limit = 3
+    # basic & trial
+    role = 'trial'
+
+    if user.role.name == "vip":
+        role = 'vip'
+    elif user.role.name == "admin":
+        role = 'admin'
+    else:
+        # subscriber
+        has_subscription = await user.subscription_user.filter(is_del=False).exists()
+        if has_subscription:
+            role = 'subscriber'
+
+    pair_number_limit = {
+        'trial user': 1,
+        'vip': 3,
+        'admin': 100,
+        'subscriber': 3
+    }.get(role, 0)
 
     # validate pair number
     pair_list = await user.pair_user.filter(is_del=False)
     valid_pair_list = [pair for pair in pair_list if not pair.is_del]
-    if valid_pair_list and len(valid_pair_list) >= pair_number_limit and user.role.name != "admin":
-        raise BackendException(f"Maximum {pair_number_limit} pair")
+    if valid_pair_list and len(valid_pair_list) >= pair_number_limit:
+        raise BackendException(f"Maximum {pair_number_limit} pair for {role}")
 
 
 async def validate_pair(lists: List[str]):
