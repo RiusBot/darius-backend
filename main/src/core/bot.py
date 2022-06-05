@@ -530,6 +530,15 @@ async def _execute_webhook_signal(
         logger.info("Complete")
 
 
+def bot_dict_postprocess(bot: dict) -> dict:
+    bot["bot_id"] = bot.pop("id")
+    bot["config"]["api_id"] = bot["config"]["api"]["id"]
+    bot["config"]["pair_id"] = None if bot["config"]['pair'] is None else bot["config"]['pair']['id']
+    bot["config"].pop("api", None)
+    bot["config"].pop("pair", None)
+    return bot
+
+
 @atomic()
 @permission_validator("get_user_bots")
 async def _get_user_bots(user: User) -> List[BotOrder]:
@@ -542,11 +551,7 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
     bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False))
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
-        bot["bot_id"] = bot.pop("id")
-        bot["config"]["api_id"] = bot["config"]["api"]["id"]
-        bot["config"]["pair_id"] = bot["config"]["pair"]["id"]
-        bot["config"].pop("api")
-        bot["config"].pop("pair")
+        bot = bot_dict_postprocess(bot)
 
     logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
@@ -570,9 +575,7 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
     )
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
-        bot["bot_id"] = bot.pop("id")
-        bot["config"]["api_id"] = bot["config"]["api"]["id"]
-        bot["config"].pop("api")
+        bot = bot_dict_postprocess(bot)
 
     logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
