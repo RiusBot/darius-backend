@@ -544,7 +544,9 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
     for bot in bot_list:
         bot["bot_id"] = bot.pop("id")
         bot["config"]["api_id"] = bot["config"]["api"]["id"]
+        bot["config"]["pair_id"] = bot["config"]["pair"]["id"]
         bot["config"].pop("api")
+        bot["config"].pop("pair")
 
     logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
