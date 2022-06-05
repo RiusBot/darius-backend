@@ -119,6 +119,7 @@ async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
 @permission_validator("create_user_subscription")
 async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     uid = user.uid
+    role = user.role.name
     # logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
 
     # acquire lock
@@ -134,7 +135,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     # if duplicate_subscription:
     #     raise BackendException(f"{plan.channel} channel already subscribed")
 
-    if user.name.role != 'vip':
+    if role != 'vip':
         # validate balance
         if float(user.balance) < float(plan.price):
             raise BackendException("Insufficient balance")
@@ -171,7 +172,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         subscription_count = await user.subscription_user.all().count()
         if subscription_count == 1:
 
-            if user.role.name != 'vip':
+            if role != 'vip':
                 # first subscription refund
                 user.balance += float(plan.price) * 0.3
 
@@ -189,7 +190,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         subscription.expire_date = new_expire_date
         await subscription.save()
 
-        if user.role.name != 'vip':
+        if role != 'vip':
             # renew (expand) refund
             user.balance += float(plan.price) * 0.15
 
