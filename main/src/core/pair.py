@@ -82,7 +82,7 @@ async def _get_all_pair(user: User) -> List[Pair]:
     return load_all_token()[0]
 
 
-async def validate_pair_number(user: User, lists: List[str]):
+async def validate_pair_number(user: User):
 
     # basic & trial
     role = 'trial'
@@ -98,7 +98,7 @@ async def validate_pair_number(user: User, lists: List[str]):
             role = 'subscriber'
 
     pair_number_limit = {
-        'trial user': 1,
+        'trial': 1,
         'vip': 3,
         'admin': 100,
         'subscriber': 3
@@ -106,8 +106,7 @@ async def validate_pair_number(user: User, lists: List[str]):
 
     # validate pair number
     pair_list = await user.pair_user.filter(is_del=False)
-    valid_pair_list = [pair for pair in pair_list if not pair.is_del]
-    if valid_pair_list and len(valid_pair_list) >= pair_number_limit:
+    if len(pair_list) >= pair_number_limit:
         raise BackendException(f"Maximum {pair_number_limit} pair for {role}")
 
 
@@ -151,7 +150,7 @@ async def _create_user_pair(user: User, name: str, types: str, lists: List[str])
     uid = user.uid
     logger.info(f"Create new pair for user [{uid}]")
 
-    await validate_pair_number(user, lists)
+    await validate_pair_number(user)
     lists = await validate_pair(lists)
 
     # validate name duplicate

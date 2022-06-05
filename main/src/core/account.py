@@ -57,6 +57,16 @@ async def _update_user_profile(user: User, user_name: str, referrer: str):
     await user.save()
 
 
+async def get_user_role(user: User, is_trial: bool) -> str:
+    if user.role.name in ["admin", "vip"]:
+        return user.role.name
+    elif await user.subscription_user.filter(is_del=False).exists():
+        return 'subscriber'
+    elif is_trial:
+        return 'trial'
+    return user.role.name
+
+
 @atomic()
 @permission_validator("get_user_profile")
 async def _get_user_profile(user: User):
@@ -67,17 +77,20 @@ async def _get_user_profile(user: User):
     referral_cnt = await User.filter(is_del=False, referrer=referral_code).count()
     telegram = await user.telegram_user.filter(is_del=False).first()
 
-    role = user.role.name
+    # check user in trial
+    is_trial = False
+    trial_period = None
+    if telegram and (telegram.created_at + timedelta(days=30)).timestamp() > datetime.now().timestamp():
+        trial_period = (telegram.created_at + timedelta(days=30)).strftime("%Y-%m-%d")
+        is_trial = True
+
+    role = await get_user_role(user, is_trial)
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
-    user["role"] = role
     user["referral_count"] = referral_cnt
-
-    user["is_trial"] = False
-    user["trial_period"] = None
-    if telegram and (telegram.created_at + timedelta(days=30)).timestamp() > datetime.now().timestamp():
-        user["trial_period"] = (telegram.created_at + timedelta(days=30)).strftime("%Y-%m-%d")
-        user["is_trial"] = True
+    user["is_trial"] = is_trial
+    user["trial_period"] = trial_period
+    user["role"] = role
     return user
 
 

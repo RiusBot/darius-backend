@@ -773,7 +773,7 @@ paths:
                   type: string
                   maxLength: 28
                   minLength: 28
-                api_id:
+                pair_id:
                   type: integer
               required:
               - uid
@@ -1922,8 +1922,6 @@ components:
     Pair:
       type: object
       properties:
-        pair_id:
-          type: integer
         name:
           type: string
           maxLength: 64

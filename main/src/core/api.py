@@ -91,8 +91,8 @@ async def validate_api_number(user: User, api_list: list):
         'subscriber': 3
     }.get(role, 0)
 
-    valid_api_list = [api for api in api_list if not api.is_del]
-    if valid_api_list and len(valid_api_list) >= api_number_limit:
+    non_delete_api_list = [api for api in api_list if not api.is_del]
+    if len(non_delete_api_list) >= api_number_limit:
         raise BackendException(f"Maximum {api_number_limit} api for {role}")
 
 

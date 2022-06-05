@@ -631,7 +631,7 @@ async def validate_bot_number(user: User, role: str, channel: str):
     }.get(role, 0)
 
     bot_list = await user.bot_user.filter(is_del=False, channel=channel)
-    if bot_list and len(bot_list) >= bot_number_limit:
+    if len(bot_list) >= bot_number_limit:
         raise BackendException(f"Maximum {bot_number_limit} bot per subscription for {role}")
 
 
