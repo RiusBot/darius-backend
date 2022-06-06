@@ -131,6 +131,7 @@ async def _clean_oco_order() -> int:
                 await trade.save()
         else:
             stats['error'] += 1
+            stats[result] += 1
 
     logger.info(f"clean oco order stats: {stats}")
 

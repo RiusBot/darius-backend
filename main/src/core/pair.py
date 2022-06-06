@@ -5,7 +5,7 @@ from cachetools import cached, TTLCache
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
-from main.src.models import Pair, User
+from main.src.models import Pair, User, BotConfig
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 
@@ -105,7 +105,7 @@ async def validate_pair_number(user: User):
     }.get(role, 0)
 
     # validate pair number
-    pair_list = await user.pair_user.filter(is_del=False)
+    pair_list = await user.pair_user.filter(is_del=False, types__not="BUILTIN")
     if len(pair_list) >= pair_number_limit:
         raise BackendException(f"Maximum {pair_number_limit} pair for {role}")
 
@@ -222,6 +222,9 @@ async def _delete_user_pair(user: User, pair_id: int) -> int:
     # delete pair
     # pair.is_del = True
     # await pair.save()
+    async for config in BotConfig.filter(pair_id=pair_id):
+        config.pair_id = None
+        await config.save()
     await pair.delete()
 
 

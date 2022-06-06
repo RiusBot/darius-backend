@@ -14,7 +14,7 @@ from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
-from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt
+from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair
 from main.src.models.channel import ChannelType
 from main.src.config import app_config
 from main.src.exception import BackendException
@@ -616,8 +616,8 @@ async def validate_config(user: User, config: dict):
     # validate pair belongs to user
     pair_id = config.get('pair_id')
     if pair_id is not None:
-        pair = await user.pair_user.filter(id=pair_id).filter(is_del=False).first()
-        if pair is None:
+        pair = await Pair.filter(id=pair_id, is_del=False).prefetch_related("user").first()
+        if pair is None or (pair.types != "BUILTIN" and pair.user != user):
             raise BackendException("Invalid pair_id")
     else:
         config.pop("pair_id", None)

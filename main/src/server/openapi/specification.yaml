@@ -1881,7 +1881,7 @@ components:
         role:
           type: string
           maxLength: 16
-          enum: [admin, user, guest, vip, test]
+          enum: [admin, user, guest, vip, test, subscriber]
         email: 
           type: string
           maxLength: 32
