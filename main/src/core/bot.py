@@ -2,6 +2,7 @@ import os
 import enum
 import json
 import asyncio
+import aiohttp
 import logging
 import requests
 import traceback
@@ -21,6 +22,7 @@ from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
 from main.src.core.cipher import decrypt
 from main.src.core.permission import permission_validator
+from main.src.utils import fetch
 
 
 logger = logging.getLogger(__name__)
@@ -156,69 +158,24 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: i
     return task_dict
 
 
-async def fetch(session, url: str, config: dict):
-    try:
-        if config["test"]:
-            return {
-                "status": 'error',
-                "open_order": None,
-                "sl_order": None,
-                "tp_order": None,
-                "price": None
-            }
-
-        response = "EXECUTE ERROR"
-        url = app_config["BOT_EXECUTOR_ENDPOINT"]
-        config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
-
-        try:
-            config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
-            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else ""
-        except Exception:
-            logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
-            logger.exception("")
-
-        max_retry = 3
-        for i in range(max_retry):
-            async with session.post(url, json=config, timeout=15) as response:
-                response = await response.text()
-                try:
-                    response = json.loads(response)
-                    if "error_message" in response:
-                        response = str(response["error_message"])
-                    elif "error_messages" in response:
-                        response = str(response["error_messages"])
-                except Exception:
-                    # return text if json parse failed
-                    pass
-                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
-                    break
-        return response
-
-    except Exception as e:
-        logger.exception("")
-        # return str(e)
-        # logger.error(str(e))
-        return "EXECUTE ERROR"
-
-
-async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = None) -> Dict[Future, int]:
-    import aiohttp
-
+async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = 40) -> Dict[Future, int]:
     logger.info("Start async activate bot executor")
-    task_dict = dict()
     url = app_config["BOT_EXECUTOR_ENDPOINT"]
 
-    async with aiohttp.ClientSession(timeout=600) as session:
-        for config in config_list:
-            config.update(data_dict)
-            if black_white_list_filter(config):
-                task = fetch(session, url, config)
-                task_dict[task] = config["bot_id"]
+    for config in config_list:
+        config.update(data_dict)
+    config_list = [config for config in config_list if black_white_list_filter(config)]
 
-        responses = await asyncio.gather(**task_dict)
-        for res in responses:
-            pass
+    async with aiohttp.ClientSession(timeout=600) as session:
+        sem = asyncio.Semaphore(workers)
+        tasks = []
+        for config in config_list:
+            task = asyncio.create_task(fetch(session, sem, url, config, error="EXECUTE"))
+            tasks.append(task)
+
+        logger.info(f"All {len(config_list)} scheduled.")
+        responses = await asyncio.gather(*tasks)
+        return responses
 
 
 async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, list]:

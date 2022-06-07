@@ -1,10 +1,10 @@
 import os
 import logging
+import aiohttp
+import asyncio
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import List, Dict
-import concurrent.futures
-from concurrent.futures import Future
+from typing import List, Dict, Union
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 
@@ -12,7 +12,8 @@ from main.src.config import app_config
 from main.src.models import Trade, User
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
-from main.src.core.bot import process_bot_config, send_to_execute
+from main.src.core.bot import process_bot_config
+from main.src.utils import fetch
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ async def _get_bot_trades(user: User, bot_id: int, page: int, pagesize: int) -> 
 
 
 @atomic()
-async def _clean_limit_order() -> int:
+async def _clean_limit_order():
     logger.info("Clean limit order")
     one_hour_ago = datetime.now() - timedelta(minutes=70)
     config_list = []
@@ -75,14 +76,18 @@ async def _clean_limit_order() -> int:
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    task_dict = await send_bot_executor_clean(config_list, {'type': 'limit'})
-    result_dict = await recieve_execute_clean_result(task_dict)
+    result_list = await send_bot_executor_clean(config_list, {'type': 'oco'})
 
     stats = defaultdict(int)
-    for trade_id, result in result_dict.items():
+    for config, result in zip(config_list, result_list):
+        trade_id = config["trade_id"]
         if isinstance(result, dict):
-            status = result.get("status", "no_status")
+            status = result.get("status")
             stats[status] += 1
+            if status:
+                trade = trade_dict[trade_id]
+                trade.status = status
+                await trade.save()
         else:
             stats['error'] += 1
 
@@ -90,7 +95,7 @@ async def _clean_limit_order() -> int:
 
 
 @atomic()
-async def _clean_oco_order() -> int:
+async def _clean_oco_order():
     logger.info("Clean oco order")
 
     start_date = datetime.now() - timedelta(days=7)
@@ -117,11 +122,11 @@ async def _clean_oco_order() -> int:
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    task_dict = await send_bot_executor_clean(config_list, {'type': 'oco'})
-    result_dict = await recieve_execute_clean_result(task_dict)
+    result_list = await send_bot_executor_clean(config_list, {'type': 'oco'})
 
     stats = defaultdict(int)
-    for trade_id, result in result_dict.items():
+    for config, result in zip(config_list, result_list):
+        trade_id = config["trade_id"]
         if isinstance(result, dict):
             status = result.get("status")
             stats[status] += 1
@@ -136,27 +141,19 @@ async def _clean_oco_order() -> int:
     logger.info(f"clean oco order stats: {stats}")
 
 
-async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = None) -> Dict[Future, int]:
+async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 20) -> List[Union[Dict, str]]:
     logger.info("Start activate bot executor clean")
     url = app_config["BOT_EXECUTOR_CLEAN_ENDPOINT"]
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        task_dict = dict()
+    async with aiohttp.ClientSession(timeout=600) as session:
+
+        sem = asyncio.Semaphore(workers)
+        tasks = []
         for config in config_list:
             config.update(data_dict)
-            task = executor.submit(send_to_execute, url, config)
-            task_dict[task] = config["trade_id"]
-        logger.info(f"All {len(config_list)} submitted.")
+            task = asyncio.create_task(fetch(session, sem, url, config))
+            tasks.append(task)
+        logger.info(f"All {len(config_list)} scheduled.")
 
-    return task_dict
-
-
-async def recieve_execute_clean_result(task_dict: Dict[Future, int]) -> dict:
-    logger.info("Receive execute clean result")
-    result_dict = dict()
-    for task in concurrent.futures.as_completed(task_dict, timeout=60):
-        bot_id = task_dict[task]
-        result = task.result()
-        result_dict[bot_id] = result
-    logger.info(f"Recieve {len(result_dict)} results")
-    return result_dict
+        responses = await asyncio.gather(*tasks)
+        return responses

@@ -46,6 +46,6 @@ def _create_hyperopt() -> dict:
     except Exception:
         msg += f"{response.text}"
     if response.status_code != 200:
-        logging.error(f"create hyperopt failed. {msg}")
+        logger.error(f"create hyperopt failed. {msg}")
     else:
-        logging.info("create hyperopt success.")
+        logger.info("create hyperopt success.")
