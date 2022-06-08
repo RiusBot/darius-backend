@@ -232,6 +232,7 @@ async def write_message(
     action: str,
     message_timestamp: datetime,
     recieve_timestamp: datetime,
+    quantity: float,
     entry: float,
     stop_loss: float,
     take_profit: float
@@ -244,6 +245,7 @@ async def write_message(
         "action": action,
         "message_timestamp": message_timestamp.isoformat(),
         "recieve_timestamp": recieve_timestamp.isoformat(),
+        "quantity": quantity,
         "entry": entry,
         "stop_loss": stop_loss,
         "take_profit": take_profit
@@ -256,6 +258,7 @@ async def write_message(
             action=action,
             message_timestamp=message_timestamp,
             recieve_timestamp=recieve_timestamp,
+            quantity=quantity,
             entry=entry,
             stop_loss=stop_loss,
             take_profit=take_profit,
@@ -273,6 +276,7 @@ async def _execute_bot_signal(
     action: str,
     message_timestamp: float,
     recieve_timestamp: float,
+    quantity: float = None,
     entry: float = None,
     stop_loss: float = None,
     take_profit: float = None,
@@ -293,6 +297,7 @@ async def _execute_bot_signal(
                     action,
                     datetime.fromtimestamp(message_timestamp),
                     datetime.fromtimestamp(recieve_timestamp),
+                    quantity,
                     entry,
                     stop_loss,
                     take_profit
@@ -317,6 +322,7 @@ async def _execute_bot_signal(
                 data_dict = {
                     "symbol": symbol,
                     "action": action,
+                    "scalp_quantity": quantity,
                     "scalp_entry": entry,
                     "scalp_stop_loss": stop_loss,
                     "scalp_take_profit": take_profit,
@@ -377,6 +383,7 @@ async def _execute_webhook_signal(
     bot_id: int,
     message_timestamp: float,
     recieve_timestamp: float,
+    quantity: float = None,
     entry: float = None,
     stop_loss: float = None,
     take_profit: float = None,
@@ -413,6 +420,7 @@ async def _execute_webhook_signal(
                 action,
                 datetime.fromtimestamp(message_timestamp),
                 datetime.fromtimestamp(recieve_timestamp),
+                quantity,
                 entry,
                 stop_loss,
                 take_profit
@@ -436,6 +444,7 @@ async def _execute_webhook_signal(
                 data_dict = {
                     "symbol": symbol,
                     "action": action,
+                    "scalp_quantity": quantity,
                     "scalp_entry": entry,
                     "scalp_stop_loss": stop_loss,
                     "scalp_take_profit": take_profit,

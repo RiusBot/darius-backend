@@ -272,6 +272,7 @@ CREATE TABLE IF NOT EXISTS `message` (
     `content` VARCHAR(1024) NOT NULL,
     `symbol` VARCHAR(16),
     `action` VARCHAR(16),
+    `quantity` DOUBLE,
     `entry` DOUBLE,
     `stop_loss` DOUBLE,
     `take_profit` DOUBLE,

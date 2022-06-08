@@ -2104,6 +2104,9 @@ components:
         entry:
           type: number
           nullable: True
+        quantity:
+          type: number
+          nullable: True
         stop_loss:
           type: number
           nullable: True
