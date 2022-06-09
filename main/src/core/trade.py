@@ -76,7 +76,7 @@ async def _clean_limit_order():
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
 
-    result_list = await send_bot_executor_clean(config_list, {'type': 'oco'})
+    result_list = await send_bot_executor_clean(config_list, {'type': 'limit'})
 
     stats = defaultdict(int)
     for config, result in zip(config_list, result_list):
