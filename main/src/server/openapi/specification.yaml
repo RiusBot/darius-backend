@@ -356,23 +356,59 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    bot_id:
-                      type: integer
-                    config:
-                      $ref: '#/components/schemas/BotConfig'
-                    channel:
-                      $ref: '#/components/schemas/Channel'
-                    status:
-                      $ref: '#/components/schemas/BotStatus'
-                  required:
-                  - channel
-                  - status
-                  - config
-                  - bot_id
+                oneOf:
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        bot_id:
+                          type: integer
+                        config:
+                          $ref: '#/components/schemas/BotConfig'
+                        channel:
+                          $ref: '#/components/schemas/Channel'
+                        status:
+                          $ref: '#/components/schemas/BotStatus'
+                      required:
+                      - channel
+                      - status
+                      - config
+                      - bot_id
+                  - type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 0
+                      pagesize:
+                        type: integer
+                        minimum: 5
+                        maximum: 50
+                      total_page:
+                        type: integer
+                        minimum: 1
+                      bots:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            bot_id:
+                              type: integer
+                            config:
+                              $ref: '#/components/schemas/BotConfig'
+                            channel:
+                              $ref: '#/components/schemas/Channel'
+                            status:
+                              $ref: '#/components/schemas/BotStatus'
+                          required:
+                          - channel
+                          - status
+                          - config
+                          - bot_id
+                    required:
+                      - page
+                      - pagesize
+                      - total_page
+                      - bots
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -419,9 +455,31 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Trade'
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Trade'
+                  - type: object
+                    properties:
+                      page:
+                        type: integer
+                        minimum: 0
+                      pagesize:
+                        type: integer
+                        minimum: 5
+                        maximum: 50
+                      total_page:
+                        type: integer
+                        minimum: 1
+                      trades:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Trade'
+                    required:
+                    - page
+                    - pagesize
+                    - total_page
+                    - trades
         default:
           $ref: '#/components/responses/Unexpected'
           
