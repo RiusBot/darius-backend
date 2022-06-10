@@ -616,6 +616,9 @@ async def validate_subscription(user: User, channel: str, config: dict):
     if channel not in ChannelType._value2member_map_:
         raise BackendException("Invalid channel")
 
+    if user.role.name == "vip":
+        return None, False, None
+    
     # validate channel subscription
     subscription = await user.subscription_user.filter(
         is_del=False, plan__channel__in=[channel, "DARIUS"]
@@ -626,6 +629,8 @@ async def validate_subscription(user: User, channel: str, config: dict):
     else:
         # check if trial
         telegram = await user.telegram_user.filter(is_del=False).first()
+        if not telegram:
+            raise BackendException("No subscription")
         trial_expired_at = telegram.created_at + timedelta(days=30)
         if telegram and trial_expired_at.timestamp() < datetime.now().timestamp():
             # not trial period
