@@ -86,6 +86,27 @@ async def _get_user_subscription(user: User) -> List[Subscription]:
 
 
 @atomic()
+@permission_validator("get_subscription_info")
+async def _get_subscription_info(user: User, channel: str) -> dict:
+    uid = user.uid
+    logger.info(f"Get {channel} subscription info for user {uid}")
+
+    count = await Subscription.filter(
+        is_del=False,
+        channel=channel,
+        user_id__not_in=(27, 34, 700),  # my testing accounts
+        expire_date__gt=datetime.now(),
+    ).count()
+
+    info = {
+        'count': count
+    }
+
+    logger.info(f"{channel} subscription info {info}")
+    return info
+
+
+@atomic()
 async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
     logger.info(f"Get subscription for tg user {telegram_id}")
 

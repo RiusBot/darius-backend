@@ -6,7 +6,8 @@ from main.src.core.subscription import (
     _delete_user_subscription,
     _update_user_subscription,
     _clean_subscription,
-    _get_tg_user_subscription
+    _get_tg_user_subscription,
+    _get_subscription_info
 )
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
@@ -49,7 +50,33 @@ async def get_user_subscription(request):
             data=subscribe_list
         )
     except Exception as e:
-        logger.error("Get subscription error.")
+        logger.error("Get user subscription error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+
+
+async def get_subscription_info(request, channel: str):
+
+    json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
+    channel = filter_illegal_char({'channel': channel})['channel']
+
+    try:
+        uid = json_payload["uid"]
+        subscribe_info = await _get_subscription_info(uid, channel)
+        return json_response(
+            status=200,
+            data=subscribe_info
+        )
+    except Exception as e:
+        logger.error("Get subscription info error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
