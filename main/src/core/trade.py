@@ -13,7 +13,7 @@ from main.src.models import Trade, User
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.core.bot import process_bot_config
-from main.src.utils import fetch
+from main.src.utils import fetch, pagination
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ usingProjectId = os.getenv('project_id', 'local')
 
 @atomic()
 @permission_validator("get_bot_trades")
-async def _get_bot_trades(user: User, bot_id: int, page: int, pagesize: int) -> List[Trade]:
+async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
     uid = user.uid
     logger.info(f"Get trades from bot {bot_id} for user {uid}")
     Trade_Pydantic_List = pydantic_queryset_creator(
@@ -34,8 +34,38 @@ async def _get_bot_trades(user: User, bot_id: int, page: int, pagesize: int) -> 
     if bot is None:
         raise BackendException("Invalid bot_id")
 
-    offset = page * pagesize
-    limit = pagesize
+    trade_list = await Trade_Pydantic_List.from_queryset(
+        bot.trade_bot.filter(
+            message__is_del=False,
+            is_del=False
+        ).limit(20)
+    )
+    trade_list = trade_list.dict()['__root__']
+    for trade in trade_list:
+        trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
+        trade["message"]["recieve_timestamp"] = trade["message"]["recieve_timestamp"].timestamp()
+
+    logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
+    return trade_list
+
+
+@atomic()
+@permission_validator("get_bot_trades")
+async def _get_bot_trades2(user: User, bot_id: int, page: int, pagesize: int) -> List[Trade]:
+    uid = user.uid
+    logger.info(f"Get trades from bot {bot_id} for user {uid}")
+    Trade_Pydantic_List = pydantic_queryset_creator(
+        Trade,
+        exclude=["bot"]
+    )
+
+    bot = await user.bot_user.filter(id=bot_id).first()
+    if bot is None:
+        raise BackendException("Invalid bot_id")
+
+    cnt = await bot.trade_bot.filter(message__is_del=False, is_del=False).limit(500).count()  # maximum 500
+    total_page = (cnt // pagesize) + (cnt % pagesize != 0)
+    offset, limit = pagination(page, pagesize, total_page)
 
     trade_list = await Trade_Pydantic_List.from_queryset(
         bot.trade_bot.filter(
@@ -49,7 +79,12 @@ async def _get_bot_trades(user: User, bot_id: int, page: int, pagesize: int) -> 
         trade["message"]["recieve_timestamp"] = trade["message"]["recieve_timestamp"].timestamp()
 
     logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
-    return trade_list
+    return {
+        'trades': trade_list,
+        'page': page,
+        'pagesize': pagesize,
+        'total_page': total_page
+    }
 
 
 @atomic()

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiohttp.web import json_response
-from main.src.core.trade import _clean_limit_order, _clean_oco_order, _get_bot_trades
+from main.src.core.trade import _clean_limit_order, _clean_oco_order, _get_bot_trades, _get_bot_trades2
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -18,9 +18,7 @@ async def get_bot_trades(request):
         logger.info("Get bot trades")
         uid = json_payload["uid"]
         bot_id = json_payload["bot_id"]
-        page = int(json_payload.get("page", 0))
-        pagesize = int(json_payload.get("pagesize", 20))
-        trade_list = await _get_bot_trades(uid, bot_id, page, pagesize)
+        trade_list = await _get_bot_trades(uid, bot_id)
         return json_response(
             status=200,
             data=trade_list
@@ -36,6 +34,36 @@ async def get_bot_trades(request):
                 'message': error_message
             }
         )
+
+
+async def get_bot_trades2(request):
+
+    json_payload = dict(request.rel_url.query)
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        logger.info("Get bot trades")
+        uid = json_payload["uid"]
+        bot_id = json_payload["bot_id"]
+        page = int(json_payload.get("page", 0))
+        pagesize = int(json_payload.get("pagesize", 20))
+        trade_list = await _get_bot_trades2(uid, bot_id, page, pagesize)
+        return json_response(
+            status=200,
+            data=trade_list
+        )
+    except Exception as e:
+        logger.error("Get bot trades 2 error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+
 
 async def clean_limit_order(request):
 

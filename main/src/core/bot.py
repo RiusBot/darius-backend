@@ -15,6 +15,7 @@ from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
+
 from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair
 from main.src.models.channel import ChannelType
 from main.src.config import app_config
@@ -22,7 +23,7 @@ from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
 from main.src.core.cipher import decrypt
 from main.src.core.permission import permission_validator
-from main.src.utils import fetch
+from main.src.utils import fetch, pagination
 
 
 logger = logging.getLogger(__name__)
@@ -533,8 +534,9 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
 
-    offset = page * pagesize
-    limit = pagesize
+    cnt = await user.bot_user.filter(is_del=True).limit(500).count()  # maximum 500
+    total_page = (cnt // pagesize) + (cnt % pagesize != 0)
+    offset, limit = pagination(page, pagesize, total_page)
 
     bot_list = await Bot_Pydantic_List.from_queryset(
         user.bot_user.filter(is_del=True).offset(offset).limit(limit)
@@ -543,8 +545,13 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
     for bot in bot_list:
         bot = bot_dict_postprocess(bot)
 
-    logger.info(f"Get user [{uid}] {len(bot_list)} bots")
-    return bot_list
+    logger.info(f"Get user [{uid}] {len(bot_list)} history bots.")
+    return {
+        'bots': bot_list,
+        'page': page,
+        'pagesize': pagesize,
+        'total_page': total_page
+    }
 
 
 @atomic()

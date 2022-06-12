@@ -4,11 +4,21 @@ import aiohttp
 import logging
 
 from main.src.core.cipher import decrypt
+from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
 
 
 logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
+
+
+def pagination(page: int, pagesize: int, totalpage: int):
+    if page >= totalpage:
+        raise BackendException("Invalid page")
+    offset = page * pagesize
+    limit = pagesize
+    logger.info(f"pagination {page}/{totalpage} size {pagesize}")
+    return offset, limit
 
 
 def data_decrypt(data: dict):
