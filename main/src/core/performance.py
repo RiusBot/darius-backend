@@ -27,7 +27,7 @@ async def _get_performance(channel: str) -> dict:
         include=["channel", "start_at", "result"]
     )
     performance_list = await Performance_Pydantic_List.from_queryset(
-        Performance.filter(is_del=False, channel=channel).limit(12)
+        Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
     )
     performance_list = json.loads(performance_list.json())
     for performance in performance_list:
@@ -64,7 +64,7 @@ async def _get_performances() -> dict:
 
     for channel in channel_list:
         performance_list = await Performance_Pydantic_List.from_queryset(
-            Performance.filter(is_del=False, channel=channel).limit(12)
+            Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
         )
         performance_list = json.loads(performance_list.json())
         for performance in performance_list:

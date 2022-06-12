@@ -64,9 +64,9 @@ async def create_user(request):
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        logger.info("Create user profile")
         uid = json_payload["uid"]
         referrer = json_payload.get("referrer")
+        logger.info(f"Create user profile with referrer {referrer}")
         user_id = await _create_user(uid, referrer)
         return json_response(
             status=200,

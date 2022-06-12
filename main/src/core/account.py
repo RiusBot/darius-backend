@@ -107,6 +107,7 @@ async def _create_user(uid: str, referrer: str = None):
         referral_code = generate_referral_code()
         if (await User.filter(referral_code=referral_code).exists()):
             continue
+
     if referral_code is None:
         raise BackendException("Cannot generate referral_code")
 

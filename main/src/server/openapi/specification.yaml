@@ -3,21 +3,21 @@ info:
   title: darius-backend
   version: 1.0.0
 servers:
-- url: /api/v1
+  - url: /api/v1
 tags:
-- name: fee
-- name: bot
-- name: general
-- name: api
-- name: pair
-- name: account
-- name: plan
-- name: performance
-- name: hyperopt
-- name: subscription
-- name: transaction
-- name: telegram
-- name: trade
+  - name: fee
+  - name: bot
+  - name: general
+  - name: api
+  - name: pair
+  - name: account
+  - name: plan
+  - name: performance
+  - name: hyperopt
+  - name: subscription
+  - name: transaction
+  - name: telegram
+  - name: trade
 security:
   - bearerAuth: []
 paths:
@@ -1939,7 +1939,7 @@ components:
         role:
           type: string
           maxLength: 16
-          enum: [admin, user, guest, vip, test, subscriber]
+          enum: [admin, user, guest, vip, test, subscriber, trial]
         email: 
           type: string
           maxLength: 32
