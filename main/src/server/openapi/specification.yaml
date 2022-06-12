@@ -358,6 +358,10 @@ paths:
                     $ref: '#/components/schemas/PageSize'
                   total_page:
                     $ref: '#/components/schemas/TotalPage'
+                  total_count:
+                    type: integer
+                    minimum: 0
+                    maximum: 500
                   bots:
                     type: array
                     items:
@@ -381,6 +385,7 @@ paths:
                   - pagesize
                   - total_page
                   - bots
+                  - total_count
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -462,6 +467,10 @@ paths:
                     $ref: '#/components/schemas/PageSize'
                   total_page:
                     $ref: '#/components/schemas/TotalPage'
+                  total_count:
+                    type: integer
+                    minimum: 0
+                    maximum: 500
                   trades:
                     type: array
                     items:
@@ -471,6 +480,7 @@ paths:
                 - pagesize
                 - total_page
                 - trades
+                - total_count
         default:
           $ref: '#/components/responses/Unexpected'
           

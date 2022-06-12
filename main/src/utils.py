@@ -1,6 +1,5 @@
 import os
-import asyncio
-import aiohttp
+import json
 import logging
 
 from main.src.core.cipher import decrypt
@@ -29,7 +28,7 @@ def data_decrypt(data: dict):
             if "password" in data:
                 data["password"] = decrypt(data["api_key"], data["password"]) if data["password"] else ""
     except Exception:
-        logger.error(f'Decrypt Error')
+        logger.error('Decrypt Error')
         logger.exception("")
     return data
 

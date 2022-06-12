@@ -83,7 +83,8 @@ async def _get_bot_trades2(user: User, bot_id: int, page: int, pagesize: int) ->
         'trades': trade_list,
         'page': page,
         'pagesize': pagesize,
-        'total_page': total_page
+        'total_page': total_page,
+        'total_count': cnt
     }
 
 

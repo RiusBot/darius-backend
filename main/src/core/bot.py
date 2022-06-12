@@ -550,7 +550,8 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         'bots': bot_list,
         'page': page,
         'pagesize': pagesize,
-        'total_page': total_page
+        'total_page': total_page,
+        'total_count': cnt
     }
 
 
