@@ -534,7 +534,7 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
 
-    cnt = await user.bot_user.filter(is_del=True).limit(500).count()  # maximum 500
+    cnt = await user.bot_user.filter(is_del=True).limit(1000).count()  # maximum 1000
     total_page = (cnt // pagesize) + (cnt % pagesize != 0)
     offset, limit = pagination(page, pagesize, total_page)
 

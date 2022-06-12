@@ -1915,8 +1915,8 @@ components:
 
     PageSize:
       type: integer
-      minimum: 5
-      maximum: 50
+      minimum: 10
+      maximum: 100
       default: 20
 
     TotalPage:

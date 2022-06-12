@@ -63,7 +63,7 @@ async def _get_bot_trades2(user: User, bot_id: int, page: int, pagesize: int) ->
     if bot is None:
         raise BackendException("Invalid bot_id")
 
-    cnt = await bot.trade_bot.filter(message__is_del=False, is_del=False).limit(500).count()  # maximum 500
+    cnt = await bot.trade_bot.filter(message__is_del=False, is_del=False).limit(1000).count()  # maximum 1000
     total_page = (cnt // pagesize) + (cnt % pagesize != 0)
     offset, limit = pagination(page, pagesize, total_page)
 
