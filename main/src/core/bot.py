@@ -8,7 +8,7 @@ import requests
 import traceback
 import concurrent.futures
 from concurrent.futures import Future
-from datetime import datetime, timedelta
+from datetime import datetime
 from tortoise.transactions import atomic
 from tortoise.queryset import QuerySet
 from tortoise.models import Model
@@ -626,7 +626,7 @@ async def validate_subscription(user: User, channel: str, config: dict):
 
     if user.role.name == "vip":
         return None, False, None
-    
+
     # validate channel subscription
     subscription = await user.subscription_user.filter(
         is_del=False, plan__channel__in=[channel, "DARIUS"]
@@ -635,21 +635,7 @@ async def validate_subscription(user: User, channel: str, config: dict):
     if subscription:
         await validate_bot_number(user, 'subscriber', channel)
     else:
-        # check if trial
-        telegram = await user.telegram_user.filter(is_del=False).first()
-        if not telegram:
-            raise BackendException("No subscription")
-        trial_expired_at = telegram.created_at + timedelta(days=30)
-        if telegram and trial_expired_at.timestamp() < datetime.now().timestamp():
-            # not trial period
-            raise BackendException("No subscription")
-        else:
-            # no subscription, but trial period
-            config["quantity"] = 30
-            config["leverage"] = 1
-            is_trial = True
-
-            await validate_bot_number(user, 'trial', channel)
+        await validate_bot_number(user, 'trial', channel)
 
     return subscription, is_trial, trial_expired_at
 

@@ -2,7 +2,6 @@ import re
 import random
 import string
 import logging
-from datetime import datetime, timedelta
 from email_validator import validate_email
 from tortoise.transactions import atomic
 from main.src.models import User, Role
@@ -57,14 +56,12 @@ async def _update_user_profile(user: User, user_name: str, referrer: str):
     await user.save()
 
 
-async def get_user_role(user: User, is_trial: bool) -> str:
+async def get_user_role(user: User) -> str:
     if user.role.name in ["admin", "vip"]:
         return user.role.name
     elif await user.subscription_user.filter(is_del=False).exists():
         return 'subscriber'
-    elif is_trial:
-        return 'trial'
-    return user.role.name
+    return 'trial'
 
 
 @atomic()
@@ -75,21 +72,13 @@ async def _get_user_profile(user: User):
     # get referral count
     referral_code = user.referral_code
     referral_cnt = await User.filter(is_del=False, referrer=referral_code).count()
-    telegram = await user.telegram_user.filter(is_del=False).first()
+    role = await get_user_role(user)
 
-    # check user in trial
-    is_trial = False
-    trial_period = None
-    if telegram and (telegram.created_at + timedelta(days=30)).timestamp() > datetime.now().timestamp():
-        trial_period = (telegram.created_at + timedelta(days=30)).strftime("%Y-%m-%d")
-        is_trial = True
-
-    role = await get_user_role(user, is_trial)
     user = await UserSchemaModel.from_tortoise_orm(user)
     user = user.dict()
     user["referral_count"] = referral_cnt
-    user["is_trial"] = is_trial
-    user["trial_period"] = trial_period
+    user["is_trial"] = False
+    user["trial_period"] = None
     user["role"] = role
     return user
 
