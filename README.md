@@ -6,7 +6,6 @@
 make init
 
 * make init
-  * make install-gcloud  -> install gcloud-cli
   * make install-env  -> install pyenv, pipenv
   * make insatll      -> install packages
 ```
@@ -21,6 +20,9 @@ python -m pip install -r requirements.txt
 ```
 make shell
 ```
+
+# install gcloud
+read commands in ```make install-gcloud``` need sudo to work
 
 # add config file to main/config/config.yaml (ask a teammate for help)
 ```
