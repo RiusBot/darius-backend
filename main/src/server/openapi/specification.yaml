@@ -361,7 +361,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 500
+                    maximum: 1000
                   bots:
                     type: array
                     items:
@@ -470,7 +470,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 500
+                    maximum: 1000
                   trades:
                     type: array
                     items:
@@ -1921,7 +1921,7 @@ components:
 
     TotalPage:
       type: integer
-      minimum: 1
+      minimum: 0
       maximum: 100
 
     Action:

@@ -12,7 +12,7 @@ usingProjectId = os.getenv('project_id', 'local')
 
 
 def pagination(page: int, pagesize: int, totalpage: int):
-    if page >= totalpage:
+    if totalpage > 0 and page >= totalpage:
         raise BackendException("Invalid page")
     offset = page * pagesize
     limit = pagesize
