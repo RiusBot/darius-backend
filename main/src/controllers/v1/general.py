@@ -183,7 +183,7 @@ async def create_test_data(request):
                     message_list.append(message)
 
             if len(message_list) > 100:
-                await Message.bulk_create(message_list)
+                # await Message.bulk_create(message_list)
                 message_list = []
 
         return json_response(

@@ -21,6 +21,22 @@ def fetch_secret_token_firestore():
 TGBot = telegram.Bot(token=fetch_secret_token_firestore())
 
 
+def send_message(chat_id: str, msg: str):
+    try:
+        TGBot.send_message(chat_id=chat_id, text=msg)
+    except Exception:
+        raise BackendException("TGBot send msg failed")
+
+
+def get_chat_info(telegram_id: str) -> dict:
+    try:
+        chat = TGBot.get_chat(telegram_id).to_dict()
+    except Exception as e:
+        logger.error(f"Get telegram chat info failed: {e}")
+        chat = {}
+    return chat
+
+
 def create_invite_link(channel: str, telegram) -> str:
     try:
         chat_id = getattr(ChannelID, channel, "")

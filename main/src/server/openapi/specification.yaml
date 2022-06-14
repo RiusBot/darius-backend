@@ -1623,6 +1623,37 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
           
+  /user_telegram_send_message:
+    post:
+      tags:
+      - telegram
+      summary: Send message to user telegram
+      operationId: main.src.controllers.v1.telegram.user_telegram_send_message
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                msg:
+                  type: string
+                  maxLength: 1024
+              required:
+              - uid
+              - msg
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /create_user_telegram:
     post:
       tags:
