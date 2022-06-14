@@ -93,10 +93,10 @@ async def check_rebate(api):
     return False
 
 
+@atomic()
 async def create_test_data(request):
-    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message, Telegram
+    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message, Telegram, Referral
 
-    @atomic()
     async def create():
         permission = await Permission.create(
             service="test"
@@ -146,45 +146,58 @@ async def create_test_data(request):
         assert subscription is not None
     try:
         # await create()
+        
+        import asyncio
+        from main.src.core.referral import create_user_referral
+        async for user in User.filter(is_del=False, referral=None).prefetch_related('referral').all():
+            referral = await create_user_referral(user.referrer)
+            referral.referral_code = user.referral_code
+            referral.user = user
+            user.referral = referral
+            await asyncio.gather(
+                referral.save(),
+                user.save()
+            )
+            
 
-        import pytz
-        import datetime
-        import pandas as pd
+#         import pytz
+#         import datetime
+#         import pandas as pd
 
-        df = pd.read_csv("../cta_usdt.csv")
-        df["Close_time"] = pd.to_datetime(df["Close_time"])
-        df = df[df["Close_time"] > datetime.datetime(2021, 1, 1).replace(tzinfo=pytz.utc)]
-        df.head()
+#         df = pd.read_csv("../cta_usdt.csv")
+#         df["Close_time"] = pd.to_datetime(df["Close_time"])
+#         df = df[df["Close_time"] > datetime.datetime(2021, 1, 1).replace(tzinfo=pytz.utc)]
+#         df.head()
 
-        message_list = []
+#         message_list = []
 
-        for i in range(len(df)):
+#         for i in range(len(df)):
 
-            row = df.iloc[i]
-            timestamp = row["Close_time"]
+#             row = df.iloc[i]
+#             timestamp = row["Close_time"]
 
-            for symbol, quantity in zip(df.columns[1:], row[1:]):
-                if not pd.isna(quantity) and quantity:
-                    action = "BUY" if quantity > 0 else "SELL"
+#             for symbol, quantity in zip(df.columns[1:], row[1:]):
+#                 if not pd.isna(quantity) and quantity:
+#                     action = "BUY" if quantity > 0 else "SELL"
 
-                    message = Message(
-                        channel="CTA",
-                        content="",
-                        symbol=symbol,
-                        action=action,
-                        message_timestamp=timestamp.isoformat(),
-                        recieve_timestamp=timestamp.isoformat(),
-                        quantity=float(quantity),
-                        entry=None,
-                        stop_loss=None,
-                        take_profit=None,
-                        price=None
-                    )
-                    message_list.append(message)
+#                     message = Message(
+#                         channel="CTA",
+#                         content="",
+#                         symbol=symbol,
+#                         action=action,
+#                         message_timestamp=timestamp.isoformat(),
+#                         recieve_timestamp=timestamp.isoformat(),
+#                         quantity=float(quantity),
+#                         entry=None,
+#                         stop_loss=None,
+#                         take_profit=None,
+#                         price=None
+#                     )
+#                     message_list.append(message)
 
-            if len(message_list) > 100:
-                # await Message.bulk_create(message_list)
-                message_list = []
+#             if len(message_list) > 100:
+#                 # await Message.bulk_create(message_list)
+#                 message_list = []
 
         return json_response(
             status=200,

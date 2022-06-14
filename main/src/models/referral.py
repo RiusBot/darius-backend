@@ -6,7 +6,7 @@ from main.src.models import BaseModel
 
 class Referral(BaseModel):
 
-    user = fields.OneToOneField("darius.User", related_name="referral_user", on_delete=fields.CASCADE, null=False)
+    user = fields.OneToOneField("darius.User", related_name="referral_user", on_delete=fields.CASCADE, null=True)
     referrer = fields.ForeignKeyField("darius.Referral", related_name="referral_referrer", null=True)
     referral_code = fields.CharField(8, null=False, unqiue=True)
     register_count = fields.IntField(null=False, default=0)
@@ -14,8 +14,8 @@ class Referral(BaseModel):
     subscribe_count = fields.IntField(null=False, default=0)
     total_rebate = fields.FloatField(null=False, default=0)
     rebate_rate = fields.FloatField(null=False, default=0.1)
-    my_rebate_rate = fields.FloatField(null=False, default=0.1)
-    your_rebate_rate = fields.FloatField(null=False, defualt=0)
+    referrer_rebate_rate = fields.FloatField(null=False, default=0.1)
+    referral_rebate_rate = fields.FloatField(null=False, default=0)
 
     class Meta:
         table = "referral"
@@ -35,11 +35,13 @@ ReferralInSchemaModel = pydantic_model_creator(Referral, name="ReferralIn", excl
 
 class ReferralHistory(BaseModel):
 
-    user = fields.ForeignKeyField("darius.User", related_name="referral_history_user", on_delete=fields.CASCADE, null=False)
-    referral = fields.ForeignKeyField("darius.Referral", related_name="referral_history_referral", on_delete=fields.CASCADE, null=True, unqiue=True)
+    referrer = fields.ForeignKeyField("darius.Referral", related_name="referral_history_referrer", on_delete=fields.CASCADE, null=False)
+    referral = fields.ForeignKeyField("darius.Referral", related_name="referral_history_referral", on_delete=fields.CASCADE, null=False)
     bot = fields.ForeignKeyField("darius.BotOrder", related_name="referral_history_bot", on_delete=fields.CASCADE, null=True, unqiue=True)
     subscription = fields.ForeignKeyField("darius.Subscription", related_name="referral_history_subscription", on_delete=fields.CASCADE, null=True, unqiue=True)
-    rebate = fields.FloatField(null=False, defualt=0)
+    rebate = fields.FloatField(null=False, default=0)
+    referrer_rebate_rate = fields.FloatField(null=False, default=0.1)
+    referral_rebate_rate = fields.FloatField(null=False, default=0)
 
     class Meta:
         table = "referral_history"

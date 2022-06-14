@@ -1,13 +1,14 @@
 import re
-import random
-import string
+import asyncio
 import logging
 from email_validator import validate_email
 from tortoise.transactions import atomic
+
 from main.src.models import User, Role
 from main.src.models.user import UserSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
+from main.src.core.referral import create_user_referral
 
 
 logger = logging.getLogger(__name__)
@@ -28,13 +29,6 @@ def email_normalize_and_validate(email: str):
         logger.error("Validate email error")
         logger.exception("")
         raise BackendException("Invalid email")
-
-
-def generate_referral_code(k=8):
-    return ''.join(random.choices(
-        string.ascii_uppercase + string.ascii_lowercase + string.digits,
-        k=k,
-    ))
 
 
 @atomic()
@@ -91,27 +85,24 @@ async def _create_user(uid: str, referrer: str = None):
         user.is_del = False
         return user.id
 
-    referral_code = None
-    for _ in range(10):
-        referral_code = generate_referral_code()
-        if (await User.filter(referral_code=referral_code).exists()):
-            continue
+    referral, role = await asyncio.gather(
+        await create_user_referral(referrer),
+        await Role.filter(is_del=False, name="user").first()
+    )
 
-    if referral_code is None:
-        raise BackendException("Cannot generate referral_code")
-
-    if not (await User.filter(referral_code=referrer, is_del=False).exists()):
-        logger.error(f"Referrer code {referrer} not exists")
-        referrer = None
-
-    role = await Role.filter(is_del=False, name="user").first()
     user = await User.create(
         uid=uid,
         role=role,
         referrer=referrer,
-        referral_code=referral_code,
-        referrer_count=0
+        referral_code=referral.referral_code,
+        referrer_count=0,
+        referral=referral
     )
+
+    # user to referral
+    referral.user = user
+    await referral.save()
+
     logger.info(f"Create user [{user.id}]")
     return user.id
 

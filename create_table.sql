@@ -2,25 +2,25 @@
 -- referral
 CREATE TABLE `referral` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `user_id` INT UNIQUE NOT NULL,
+    `user_id` INT UNIQUE,
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     `is_del` BOOLEAN NOT NULL DEFAULT False,
-    `referrer` INT(11),
+    `referrer_id` INT(11),
     `referral_code` varchar(8) UNIQUE NOT NULL,
     `register_count` int(11) NOT NULL  DEFAULT 0,
     `bot_count` int(11) NOT NULL  DEFAULT 0,
     `subscribe_count` int(11) NOT NULL  DEFAULT 0,
     `total_rebate` DOUBLE NOT NULL DEFAULT 0,
     `rebate_rate` DOUBLE NOT NULL DEFAULT 0.1,
-    `my_rebate_rate` DOUBLE NOT NULL DEFAULT 0.1,
-    `your_rebate_rate` DOUBLE NOT NULL DEFAULT 0,
+    `referrer_rebate_rate` DOUBLE NOT NULL DEFAULT 0.1,
+    `referral_rebate_rate` DOUBLE NOT NULL DEFAULT 0,
     KEY (`user_id`),
     KEY (`is_del`),
     KEY (`referrer`),
     KEY (`referral_code`),
     CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id) ON DELETE CASCADE,
-    CONSTRAINT FOREIGN KEY(`referrer`) REFERENCES `referral`(id)
+    CONSTRAINT FOREIGN KEY(`referrer_id`) REFERENCES `referral`(id)
 ) CHARACTER SET utf8;
 
 -- referral history
@@ -30,16 +30,18 @@ CREATE TABLE `referral_history` (
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     `is_del` BOOLEAN NOT NULL DEFAULT False,
     `rebate` DOUBLE NOT NULL DEFAULT 0,
-    `user_id` INT(11) NOT NULL,
-    `referral_id` INT(11) UNIQUE,
+    `referrer_id` INT(11) NOT NULL,
+    `referral_id` INT(11) NOT NULL,
     `bot_id` INT(11) UNIQUE,
     `subscription_id` INT(11) UNIQUE,
+    `referrer_rebate_rate` DOUBLE NOT NULL DEFAULT 0.1,
+    `referral_rebate_rate` DOUBLE NOT NULL DEFAULT 0,
     KEY (`is_del`),
     KEY (`bot_id`),
-    KEY (`user_id`),
+    KEY (`referrer_id`),
     KEY (`referral_id`),
     KEY (`subscription_id`),
-    CONSTRAINT FOREIGN KEY(`user_id`) REFERENCES `user`(id) ON DELETE CASCADE,
+    CONSTRAINT FOREIGN KEY(`referrer_id`) REFERENCES `referral`(id) ON DELETE CASCADE,
     CONSTRAINT FOREIGN KEY(`referral_id`) REFERENCES `referral`(id) ON DELETE CASCADE,
     CONSTRAINT FOREIGN KEY(`bot_id`) REFERENCES `bot_order`(id) ON DELETE CASCADE,
     CONSTRAINT FOREIGN KEY(`subscription_id`) REFERENCES `subscription`(id) ON DELETE CASCADE
@@ -94,7 +96,6 @@ CREATE TABLE `user` (
    KEY (`referral_code`),
    KEY (`is_del`),
    CONSTRAINT FOREIGN KEY (`role_id`) REFERENCES `role`(`id`),
-   CONSTRAINT FOREIGN KEY (`referral_id`) REFERENCES `referral`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

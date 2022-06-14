@@ -1,5 +1,7 @@
 import os
 import json
+import random
+import string
 import logging
 
 from main.src.core.cipher import decrypt
@@ -9,6 +11,13 @@ from main.src.core.auth import fetch_secret_token_firestore
 
 logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
+
+
+def generate_random_string(k: int):
+    return ''.join(random.choices(
+        string.ascii_uppercase + string.ascii_lowercase + string.digits,
+        k=k,
+    ))
 
 
 def pagination(page: int, pagesize: int, totalpage: int):

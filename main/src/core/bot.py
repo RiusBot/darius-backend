@@ -16,7 +16,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
 
-from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair
+from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair, Referral
 from main.src.models.channel import ChannelType
 from main.src.config import app_config
 from main.src.exception import BackendException
@@ -24,6 +24,7 @@ from main.src.core.auth import fetch_secret_token_firestore
 from main.src.core.cipher import decrypt
 from main.src.core.permission import permission_validator
 from main.src.utils import fetch, pagination
+from main.src.core.referral import create_user_referral_history
 
 
 logger = logging.getLogger(__name__)
@@ -688,6 +689,19 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 
         bot_config.bot = bot_order
         await bot_config.save()
+
+    # referrer gets credit on user first bot
+    user_create_bot_already = await BotOrder.filter(user=user).exists()
+    user_create_bot_already = False
+    if not user_create_bot_already:
+        referral = await user.referral_user.prefetch_related('referrer').first()
+        if referral.referrer:
+            referrer = await Referral.filter(id=referral.referrer.id).prefetch_related('user').select_for_update().first()
+            referrer.bot_count += 1
+            await asyncio.gather(
+                create_user_referral_history(referrer, referral, bot=bot_order),
+                referrer.save()
+            )
 
     bot_id = bot_order.id
     logger.info(f"Create bot [{bot_id}]")
