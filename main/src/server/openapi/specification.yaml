@@ -2079,7 +2079,7 @@ components:
           type: integer
           minimum: 0
           readOnly: true
-        subscription_count:
+        subscribe_count:
           type: integer
           minimum: 0
           readOnly: true
@@ -2106,7 +2106,7 @@ components:
         - referral_code
         - register_count
         - bot_count
-        - subscription_count
+        - subscribe_count
         - total_rebate
         - rebate_rate
         - referrer_rebate_rate
