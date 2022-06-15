@@ -49,7 +49,7 @@ class ReferralHistory(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "updated_at", "id", "is_del"]
+        exclude = ["created_at", "updated_at", "id", "is_del", "referrer_rebate_rate", "referral_rebate_rate"]
 
     def __str__(self):
         return f"ReferralHistory [{self.id}]"

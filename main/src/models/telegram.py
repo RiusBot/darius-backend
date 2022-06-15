@@ -7,7 +7,7 @@ from main.src.models import BaseModel
 class Telegram(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="telegram_user")
-    telegram_id = fields.IntField(pk=False, null=False, unique=True)
+    telegram_id = fields.BigIntField(pk=False, null=False, unique=True)
 
     class Meta:
         table = "telegram"

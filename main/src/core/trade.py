@@ -63,16 +63,10 @@ async def _get_bot_trades2(user: User, bot_id: int, page: int, pagesize: int) ->
     if bot is None:
         raise BackendException("Invalid bot_id")
 
-    cnt = await bot.trade_bot.filter(message__is_del=False, is_del=False).limit(1000).count()  # maximum 1000
-    total_page = (cnt // pagesize) + (cnt % pagesize != 0)
-    offset, limit = pagination(page, pagesize, total_page)
+    query = bot.trade_bot.filter(message__is_del=False, is_del=False)
+    pagination_query, total_count, total_page = await pagination(query, page, pagesize)
 
-    trade_list = await Trade_Pydantic_List.from_queryset(
-        bot.trade_bot.filter(
-            message__is_del=False,
-            is_del=False
-        ).offset(offset).limit(limit)
-    )
+    trade_list = await Trade_Pydantic_List.from_queryset(pagination_query)
     trade_list = trade_list.dict()['__root__']
     for trade in trade_list:
         trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
@@ -84,7 +78,7 @@ async def _get_bot_trades2(user: User, bot_id: int, page: int, pagesize: int) ->
         'page': page,
         'pagesize': pagesize,
         'total_page': total_page,
-        'total_count': cnt
+        'total_count': total_count
     }
 
 

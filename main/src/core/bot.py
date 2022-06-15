@@ -535,13 +535,9 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
 
-    cnt = await user.bot_user.filter(is_del=True).limit(1000).count()  # maximum 1000
-    total_page = (cnt // pagesize) + (cnt % pagesize != 0)
-    offset, limit = pagination(page, pagesize, total_page)
-
-    bot_list = await Bot_Pydantic_List.from_queryset(
-        user.bot_user.filter(is_del=True).offset(offset).limit(limit)
-    )
+    query = user.bot_user.filter(is_del=True)
+    pagination_query, total_count, total_page = await pagination(query, page, pagesize)
+    bot_list = await Bot_Pydantic_List.from_queryset(pagination_query)
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot = bot_dict_postprocess(bot)
@@ -552,7 +548,7 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         'page': page,
         'pagesize': pagesize,
         'total_page': total_page,
-        'total_count': cnt
+        'total_count': total_count
     }
 
 

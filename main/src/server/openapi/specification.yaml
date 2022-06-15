@@ -18,6 +18,7 @@ tags:
   - name: transaction
   - name: telegram
   - name: trade
+  - name: referral
 security:
   - bearerAuth: []
 paths:
@@ -1028,7 +1029,7 @@ paths:
                     type: integer
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
   /update_plan:
     patch:
       tags:
@@ -1058,7 +1059,7 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
   /get_plan/{plan_id}:
     get:
       tags:
@@ -1272,7 +1273,6 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
-
   /clean_subscription:
     delete:
       tags:
@@ -1286,7 +1286,7 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-  
+
   /create_user_subscription:
     post:
       tags:
@@ -1353,7 +1353,7 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
   /get_subscription_info/{channel}:
     get:
       tags:
@@ -1392,7 +1392,7 @@ paths:
                 - count
         default:
           $ref: '#/components/responses/Unexpected'
-  
+
   /get_user_subscription:
     get:
       tags:
@@ -1429,7 +1429,7 @@ paths:
                       - plan
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
   /get_tg_user_subscription:
     get:
       tags:
@@ -1495,7 +1495,7 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
   /create_user_transaction:
     post:
       tags:
@@ -1622,7 +1622,7 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
   /user_telegram_send_message:
     post:
       tags:
@@ -1824,6 +1824,87 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /get_user_referral_info:
+    get:
+      tags:
+      - referral
+      summary: get user referral info
+      operationId: main.src.controllers.v1.referral.get_user_referral_info
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Referral'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_user_referral_history:
+    get:
+      tags:
+      - referral
+      summary: get user referral history
+      operationId: main.src.controllers.v1.referral.get_user_referral_history
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+        - in: query
+          name: page
+          schema:
+            $ref: '#/components/schemas/Page'
+          description: page number
+        - in: query
+          name: pagesize
+          schema:
+            $ref: '#/components/schemas/PageSize'
+          description: page size
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    $ref: '#/components/schemas/Page'
+                  pagesize:
+                    $ref: '#/components/schemas/PageSize'
+                  total_page:
+                    $ref: '#/components/schemas/TotalPage'
+                  total_count:
+                    type: integer
+                    minimum: 0
+                    maximum: 1000
+                  referral_history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReferralHistory'
+                required:
+                - page
+                - pagesize
+                - total_page
+                - referral_history
+                - total_count
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /clean_limit_order:
     delete:
       tags:
@@ -1837,7 +1918,7 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
-          
+
   /clean_oco_order:
     delete:
       tags:
@@ -1879,7 +1960,6 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
-
 components:
 
   securitySchemes:
@@ -1888,7 +1968,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
       x-bearerInfoFunc: main.src.core.auth.openapi_auth
-      
+
     bearerAuthBackendOnly:
       type: http
       scheme: bearer
@@ -1955,6 +2035,83 @@ components:
       minimum: 0
       maximum: 100
 
+    ReferralHistory:
+      type: object
+      properties:
+        referral_code:
+          type: string
+          maxLength: 8
+          minLength: 8
+        bot_id:
+          type: integer
+          minimum: 0
+          nullable: True
+        subscription_id:
+          type: integer
+          minimum: 0
+          nullable: True
+        rebate:
+          type: number
+          minimum: 0
+      required:
+        - referral_code
+        - bot_id
+        - subscription_id
+        - rebate
+
+    Referral:
+      type: object
+      properties:
+        referrer_code:
+          type: string
+          maxLength: 8
+          minLength: 8
+        referral_code:
+          type: string
+          maxLength: 8
+          minLength: 8
+          readOnly: true
+        register_count:
+          type: integer
+          minimum: 0
+          readOnly: true
+        bot_count:
+          type: integer
+          minimum: 0
+          readOnly: true
+        subscription_count:
+          type: integer
+          minimum: 0
+          readOnly: true
+        total_rebate:
+          type: number
+          minimum: 0
+          default: 0
+          readOnly: true
+        rebate_rate:
+          type: number
+          minimum: 0
+          default: 0.1
+          readOnly: true
+        referrer_rebate_rate:
+          type: number
+          minimum: 0
+          default: 0.1
+        referral_rebate_rate:
+          type: number
+          minimum: 0
+          default: 0.0
+      required:
+        - referrer_code
+        - referral_code
+        - register_count
+        - bot_count
+        - subscription_count
+        - total_rebate
+        - rebate_rate
+        - referrer_rebate_rate
+        - referral_rebate_rate
+
     Action:
       type: string
       nullable: true
@@ -1991,7 +2148,7 @@ components:
         - SPACEFORCE
         - ARBITRAGE
         - CTA
-    
+
     Exchange:
       type: string
       maxLength: 16
@@ -2064,7 +2221,7 @@ components:
         - is_trial
         - trial_period
         - role
-    
+
     Pair:
       type: object
       properties:
@@ -2084,7 +2241,7 @@ components:
       - name
       - lists
       - types
-    
+
     BuiltinPair:
       type: object
       properties:
@@ -2104,7 +2261,7 @@ components:
       - name
       - lists
       - types
-    
+
     API_READ:
       type: object
       properties:
@@ -2129,7 +2286,7 @@ components:
       required:
       - api_key
       - exchange
-      
+
     API_WRITE:
       type: object
       properties:
@@ -2161,7 +2318,7 @@ components:
           type: number
         stop_loss:
           type: number
-    
+
     BotConfig:
       type: object
       properties:
@@ -2281,7 +2438,7 @@ components:
           type: object
         channel:
           $ref: '#/components/schemas/Channel'
-    
+
     Transaction:
       type: object
       properties:
@@ -2323,7 +2480,7 @@ components:
       - channel
       - price
       - day
-    
+
     Subscription:
       type: object
       properties:
