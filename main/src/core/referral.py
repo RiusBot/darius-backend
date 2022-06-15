@@ -134,3 +134,34 @@ async def _get_user_referral_info(user: User):
     referral_info = referral_info.dict()
     referral_info["referrer_code"] = referral.referrer.referral_code
     return referral_info
+
+
+@atomic()
+@permission_validator("update_user_referral_info")
+async def _update_user_referral_info(user: User, referrer_rebate_rate: float, referral_rebate_rate: float):
+    referral = await user.referral_user.first().prefetch_related('referrer')
+    coroutines = [referral.save()]
+
+    if referrer_rebate_rate + referral_rebate_rate > referral.rebate_rate:
+        raise BackendException(f"total rebate rate must <= {referral.rebate_rate}")
+    else:
+        referral.referrer_rebate_rate = referrer_rebate_rate
+        referral.referral_rebate_rate = referral_rebate_rate
+
+    # if referrer_code:
+    #     if referral.referrer is not None:
+    #         raise BackendException(f"You already have referrer {referral.referrer.referral_code}")
+    #     elif referral.referral_code == referrer_code:
+    #         raise BackendException("Don't referrer yourself")
+    #     referrer = await Referral.filter(referral_code=referrer_code).select_for_update().first()
+    #     if referrer:
+    #         referral.referrer = referrer
+    #         referrer.register_count += 1
+    #         coroutines += [
+    #             referrer.save(),
+    #             create_user_referral_history(referrer, referral)
+    #         ]
+    #     else:
+    #         raise BackendException(f"Referral code {referrer_code} not exists")
+
+    await asyncio.gather(*coroutines)

@@ -33,19 +33,19 @@ def email_normalize_and_validate(email: str):
 
 @atomic()
 @permission_validator("update_user_profile")
-async def _update_user_profile(user: User, user_name: str, referrer: str):
+async def _update_user_profile(user: User, user_name: str):
     logger.info(f"Update profile user {user.uid}")
     user.user_name = user_name
 
-    if referrer:
-        if user.referrer is not None:
-            raise BackendException("Referrer exists")
-        if user.referral_code == referrer:
-            raise BackendException("Don't referrer yourself")
-        if (await User.filter(referrer=referrer, is_del=False).exists()):
-            user.referrer = referrer
-        else:
-            raise BackendException(f"Referrer code {referrer} not exists")
+    # if referrer:
+    #     if user.referrer is not None:
+    #         raise BackendException("Referrer exists")
+    #     if user.referral_code == referrer:
+    #         raise BackendException("Don't referrer yourself")
+    #     if (await User.filter(referrer=referrer, is_del=False).exists()):
+    #         user.referrer = referrer
+    #     else:
+    #         raise BackendException(f"Referrer code {referrer} not exists")
 
     await user.save()
 

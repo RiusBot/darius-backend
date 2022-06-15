@@ -146,19 +146,22 @@ async def create_test_data(request):
         assert subscription is not None
     try:
         # await create()
-        
-        import asyncio
-        from main.src.core.referral import create_user_referral
-        async for user in User.filter(is_del=False, referral=None).prefetch_related('referral').all():
-            referral = await create_user_referral(user.referrer)
-            referral.referral_code = user.referral_code
-            referral.user = user
-            user.referral = referral
-            await asyncio.gather(
-                referral.save(),
-                user.save()
-            )
-            
+
+        # import asyncio
+        # from main.src.core.referral import create_user_referral
+        # async for user in User.filter(is_del=False, referral=None).prefetch_related('referral').all():
+        #     referral = await create_user_referral(user.referrer)
+        #     referral.referral_code = user.referral_code
+        #     referral.user = user
+        #     user.referral = referral
+        #     referrer = await Referral.filter(referral_code=user.referrer).select_for_update().first()
+        #     if referrer:
+        #         referrer.register_count += 1
+        #     await asyncio.gather(
+        #         referral.save(),
+        #         user.save(),
+        #         referrer.save()
+        #     )
 
 #         import pytz
 #         import datetime

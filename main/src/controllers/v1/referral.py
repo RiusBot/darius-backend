@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiohttp.web import json_response
-from main.src.core.referral import _get_user_referral_info, _get_user_referral_history
+from main.src.core.referral import _get_user_referral_info, _get_user_referral_history, _update_user_referral_info
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
@@ -52,6 +52,33 @@ async def get_user_referral_history(request):
         )
     except Exception as e:
         logger.error("Get user referral history error.")
+        logger.exception("")
+        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
+        return json_response(
+            status=500,
+            data={
+                'code': 500,
+                'message': error_message
+            }
+        )
+
+
+async def update_user_referral_info(request):
+
+    json_payload = await request.json()
+    json_payload = filter_illegal_char(json_payload)
+
+    try:
+        uid = json_payload["uid"]
+        referrer_rebate_rate = json_payload["referrer_rebate_rate"]
+        referral_rebate_rate = json_payload["referral_rebate_rate"]
+        await _update_user_referral_info(uid, referrer_rebate_rate, referral_rebate_rate)
+        return json_response(
+            status=200,
+            data={}
+        )
+    except Exception as e:
+        logger.error("Update user referral error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(
