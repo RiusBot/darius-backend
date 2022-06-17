@@ -1,6 +1,10 @@
 import os
 import json
+import random
+import string
 import logging
+from typing import Tuple
+from tortoise.queryset import QuerySet
 
 from main.src.core.cipher import decrypt
 from main.src.exception import BackendException
@@ -11,13 +15,22 @@ logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
-def pagination(page: int, pagesize: int, totalpage: int):
+def generate_random_string(k: int):
+    return ''.join(random.choices(
+        string.ascii_uppercase + string.ascii_lowercase + string.digits,
+        k=k,
+    ))
+
+
+async def pagination(query, page: int, pagesize: int) -> Tuple[QuerySet, int, int]:
+    total_count = await query.limit(1000).count()
+    totalpage = (total_count // pagesize) + (total_count % pagesize != 0)
     if totalpage > 0 and page >= totalpage:
         raise BackendException("Invalid page")
     offset = page * pagesize
     limit = pagesize
     logger.info(f"pagination {page}/{totalpage} size {pagesize}")
-    return offset, limit
+    return query.offset(offset).limit(limit), total_count, totalpage
 
 
 def data_decrypt(data: dict):

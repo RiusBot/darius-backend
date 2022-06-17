@@ -8,7 +8,7 @@ import requests
 import traceback
 import concurrent.futures
 from concurrent.futures import Future
-from datetime import datetime, timedelta
+from datetime import datetime
 from tortoise.transactions import atomic
 from tortoise.queryset import QuerySet
 from tortoise.models import Model
@@ -16,7 +16,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
 
-from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair
+from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair, Referral
 from main.src.models.channel import ChannelType
 from main.src.config import app_config
 from main.src.exception import BackendException
@@ -24,6 +24,7 @@ from main.src.core.auth import fetch_secret_token_firestore
 from main.src.core.cipher import decrypt
 from main.src.core.permission import permission_validator
 from main.src.utils import fetch, pagination
+from main.src.core.referral import create_user_referral_history
 
 
 logger = logging.getLogger(__name__)
@@ -534,13 +535,9 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
 
-    cnt = await user.bot_user.filter(is_del=True).limit(1000).count()  # maximum 1000
-    total_page = (cnt // pagesize) + (cnt % pagesize != 0)
-    offset, limit = pagination(page, pagesize, total_page)
-
-    bot_list = await Bot_Pydantic_List.from_queryset(
-        user.bot_user.filter(is_del=True).offset(offset).limit(limit)
-    )
+    query = user.bot_user.filter(is_del=True)
+    pagination_query, total_count, total_page = await pagination(query, page, pagesize)
+    bot_list = await Bot_Pydantic_List.from_queryset(pagination_query)
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot = bot_dict_postprocess(bot)
@@ -551,7 +548,7 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         'page': page,
         'pagesize': pagesize,
         'total_page': total_page,
-        'total_count': cnt
+        'total_count': total_count
     }
 
 
@@ -626,7 +623,7 @@ async def validate_subscription(user: User, channel: str, config: dict):
 
     if user.role.name == "vip":
         return None, False, None
-    
+
     # validate channel subscription
     subscription = await user.subscription_user.filter(
         is_del=False, plan__channel__in=[channel, "DARIUS"]
@@ -635,21 +632,7 @@ async def validate_subscription(user: User, channel: str, config: dict):
     if subscription:
         await validate_bot_number(user, 'subscriber', channel)
     else:
-        # check if trial
-        telegram = await user.telegram_user.filter(is_del=False).first()
-        if not telegram:
-            raise BackendException("No subscription")
-        trial_expired_at = telegram.created_at + timedelta(days=30)
-        if telegram and trial_expired_at.timestamp() < datetime.now().timestamp():
-            # not trial period
-            raise BackendException("No subscription")
-        else:
-            # no subscription, but trial period
-            config["quantity"] = 30
-            config["leverage"] = 1
-            is_trial = True
-
-            await validate_bot_number(user, 'trial', channel)
+        await validate_bot_number(user, 'trial', channel)
 
     return subscription, is_trial, trial_expired_at
 
@@ -702,6 +685,19 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 
         bot_config.bot = bot_order
         await bot_config.save()
+
+    # referrer gets credit on user first bot
+    user_create_bot_already = await BotOrder.filter(user=user).exists()
+    user_create_bot_already = False
+    if not user_create_bot_already:
+        referral = await user.referral_user.prefetch_related('referrer').first()
+        if referral.referrer:
+            referrer = await Referral.filter(id=referral.referrer.id).prefetch_related('user').select_for_update().first()
+            referrer.bot_count += 1
+            await asyncio.gather(
+                create_user_referral_history(referrer, referral, bot=bot_order),
+                referrer.save()
+            )
 
     bot_id = bot_order.id
     logger.info(f"Create bot [{bot_id}]")

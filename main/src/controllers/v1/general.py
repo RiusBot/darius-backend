@@ -93,10 +93,10 @@ async def check_rebate(api):
     return False
 
 
+@atomic()
 async def create_test_data(request):
-    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message, Telegram
+    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message, Telegram, Referral
 
-    @atomic()
     async def create():
         permission = await Permission.create(
             service="test"
@@ -147,44 +147,64 @@ async def create_test_data(request):
     try:
         # await create()
 
-        import pytz
-        import datetime
-        import pandas as pd
+        import asyncio
+        from main.src.core.referral import create_user_referral
 
-        df = pd.read_csv("../cta_usdt.csv")
-        df["Close_time"] = pd.to_datetime(df["Close_time"])
-        df = df[df["Close_time"] > datetime.datetime(2021, 1, 1).replace(tzinfo=pytz.utc)]
-        df.head()
+        coroutines = []
+        async for user in User.filter(is_del=False, referral=None).prefetch_related('referral').all():
+            referral = await create_user_referral(user.referrer)
+            referral.referral_code = user.referral_code
+            referral.user = user
+            user.referral = referral
+            referrer = await Referral.filter(referral_code=user.referrer).select_for_update().first()
+            if referrer:
+                referrer.register_count += 1
+                coroutines.append(referrer.save())
 
-        message_list = []
+            coroutines.append(referral.save())
+            coroutines.append(user.save())
 
-        for i in range(len(df)):
+        await asyncio.gather(*coroutines)
+        logger.info("Complete")
 
-            row = df.iloc[i]
-            timestamp = row["Close_time"]
+#         import pytz
+#         import datetime
+#         import pandas as pd
 
-            for symbol, quantity in zip(df.columns[1:], row[1:]):
-                if not pd.isna(quantity) and quantity:
-                    action = "BUY" if quantity > 0 else "SELL"
+#         df = pd.read_csv("../cta_usdt.csv")
+#         df["Close_time"] = pd.to_datetime(df["Close_time"])
+#         df = df[df["Close_time"] > datetime.datetime(2021, 1, 1).replace(tzinfo=pytz.utc)]
+#         df.head()
 
-                    message = Message(
-                        channel="CTA",
-                        content="",
-                        symbol=symbol,
-                        action=action,
-                        message_timestamp=timestamp.isoformat(),
-                        recieve_timestamp=timestamp.isoformat(),
-                        quantity=float(quantity),
-                        entry=None,
-                        stop_loss=None,
-                        take_profit=None,
-                        price=None
-                    )
-                    message_list.append(message)
+#         message_list = []
 
-            if len(message_list) > 100:
-                await Message.bulk_create(message_list)
-                message_list = []
+#         for i in range(len(df)):
+
+#             row = df.iloc[i]
+#             timestamp = row["Close_time"]
+
+#             for symbol, quantity in zip(df.columns[1:], row[1:]):
+#                 if not pd.isna(quantity) and quantity:
+#                     action = "BUY" if quantity > 0 else "SELL"
+
+#                     message = Message(
+#                         channel="CTA",
+#                         content="",
+#                         symbol=symbol,
+#                         action=action,
+#                         message_timestamp=timestamp.isoformat(),
+#                         recieve_timestamp=timestamp.isoformat(),
+#                         quantity=float(quantity),
+#                         entry=None,
+#                         stop_loss=None,
+#                         take_profit=None,
+#                         price=None
+#                     )
+#                     message_list.append(message)
+
+#             if len(message_list) > 100:
+#                 # await Message.bulk_create(message_list)
+#                 message_list = []
 
         return json_response(
             status=200,

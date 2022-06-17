@@ -14,6 +14,7 @@ class User(BaseModel):
     referrer = fields.CharField(8, null=True)
     referral_code = fields.CharField(8, null=False, unique=True)
     referrer_count = fields.IntField(null=False, default=0)
+    referral = fields.OneToOneField("darius.Referral", related_name="user_referral", null=True, unqiue=True)
 
     class Meta:
         table = "user"
