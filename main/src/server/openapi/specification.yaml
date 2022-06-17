@@ -1846,7 +1846,7 @@ paths:
           $ref: '#/components/responses/Unexpected'
 
   /update_user_referral_info:
-    post:
+    patch:
       tags:
       - referral
       summary: update user referral info
@@ -2061,6 +2061,9 @@ components:
     ReferralHistory:
       type: object
       properties:
+        timestamp:
+          type: number
+          minimum: 0
         referral_code:
           type: string
           maxLength: 8
@@ -2081,6 +2084,7 @@ components:
         - bot_id
         - subscription_id
         - rebate
+        - timestamp
 
     Referral:
       type: object
@@ -2090,6 +2094,7 @@ components:
           maxLength: 8
           minLength: 8
           readOnly: true
+          nullable: true
         referral_code:
           type: string
           maxLength: 8

@@ -115,6 +115,7 @@ async def _get_user_referral_history(user: User, page: int, pagesize: int):
         record["referral_code"] = orm.referral.referral_code
         record["bot_id"] = orm.bot.id if orm.bot else None
         record["subscription_id"] = orm.subscription.id if orm.subscription else None
+        record["timestamp"] = orm.created_at.timestamp()
 
     return {
         'page': page,
@@ -132,7 +133,7 @@ async def _get_user_referral_info(user: User):
     referral = await user.referral_user.first().prefetch_related('referrer')
     referral_info = await ReferralSchemaModel.from_tortoise_orm(referral)
     referral_info = referral_info.dict()
-    referral_info["referrer_code"] = referral.referrer.referral_code
+    referral_info["referrer_code"] = referral.referrer.referral_code if referral.referrer else None
     return referral_info
 
 
@@ -140,7 +141,6 @@ async def _get_user_referral_info(user: User):
 @permission_validator("update_user_referral_info")
 async def _update_user_referral_info(user: User, referrer_rebate_rate: float, referral_rebate_rate: float):
     referral = await user.referral_user.first().prefetch_related('referrer')
-    coroutines = [referral.save()]
 
     if referrer_rebate_rate + referral_rebate_rate > referral.rebate_rate:
         raise BackendException(f"total rebate rate must <= {referral.rebate_rate}")
@@ -157,11 +157,11 @@ async def _update_user_referral_info(user: User, referrer_rebate_rate: float, re
     #     if referrer:
     #         referral.referrer = referrer
     #         referrer.register_count += 1
-    #         coroutines += [
+    #         await asyncio.gather(
     #             referrer.save(),
     #             create_user_referral_history(referrer, referral)
-    #         ]
+    #         )
     #     else:
     #         raise BackendException(f"Referral code {referrer_code} not exists")
 
-    await asyncio.gather(*coroutines)
+    await referral.save()

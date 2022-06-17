@@ -149,6 +149,8 @@ async def create_test_data(request):
 
         import asyncio
         from main.src.core.referral import create_user_referral
+
+        coroutines = []
         async for user in User.filter(is_del=False, referral=None).prefetch_related('referral').all():
             referral = await create_user_referral(user.referrer)
             referral.referral_code = user.referral_code
@@ -157,11 +159,13 @@ async def create_test_data(request):
             referrer = await Referral.filter(referral_code=user.referrer).select_for_update().first()
             if referrer:
                 referrer.register_count += 1
-            await asyncio.gather(
-                referral.save(),
-                user.save(),
-                referrer.save()
-            )
+                coroutines.append(referrer.save())
+
+            coroutines.append(referral.save())
+            coroutines.append(user.save())
+
+        await asyncio.gather(*coroutines)
+        logger.info("Complete")
 
 #         import pytz
 #         import datetime
