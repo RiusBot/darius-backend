@@ -43,8 +43,58 @@ async def get_stats(request):
         )
 
 
-async def create_test_data(request):
+async def clean_no_subscription_bot(request):
+
+    from datetime import datetime, timedelta
     from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message
+
+    async for bot in BotOrder.filter(is_del=False).prefetch_related("user__telegram_user"):
+
+        user = bot.user
+        has_subscription = await user.subscription_user.filter(is_del=False, plan__channel=bot.channel).exists()
+        if has_subscription:
+            continue
+
+        telegram = await bot.user.telegram_user.filter(is_del=False).first()
+
+        if not telegram:
+            bot.is_del = True
+            await bot.save()
+        elif (telegram.created_at + timedelta(days=30)).timestamp() < datetime.now().timestamp():
+            # not trial period
+            bot.is_del = True
+            await bot.save()
+    
+    return json_response(
+        status=200,
+        data={},
+    )
+
+
+async def check_rebate(api):
+    import ccxt.async_support as ccxt
+    from main.src.core.cipher import decrypt
+    try:
+        api_key = api.api_key
+        api_secret = decrypt(api.api_key, api.api_secret)
+    except:
+        return False
+    exchange = ccxt.binance({
+        'apiKey': api_key,
+        "secret": api_secret,
+        "options": {
+            "defaultType": 'spot',
+        }
+    })
+    ifNewUser = await exchange.sapi_get_apireferral_ifnewuser(params={'apiAgentCode': 'V9ZBVGB7'})
+    await exchange.close()
+    if ifNewUser['rebateWorking'] and ifNewUser['ifNewUser']:
+        return True
+    return False
+
+
+async def create_test_data(request):
+    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message, Telegram
 
     @atomic()
     async def create():
@@ -96,37 +146,49 @@ async def create_test_data(request):
         assert subscription is not None
     try:
         # await create()
-        # import datetime
-        # from dateutil.parser import parse as parse_date
-        # json_payload = await request.json()
-        # uid = json_payload["uid"]
-        # plan = json_payload["plan"]
-        # expire_date = json_payload["expire_date"]
-        # user = await User.filter(uid=uid).first()
-        # plan = await Plan.filter(id=plan).first()
-        # expire_date = None if not expire_date else parse_date(expire_date)
-        # await Subscription.create(
-        #     user=user,
-        #     expire_date=expire_date,
-        #     plan=plan,
-        #     is_del=False
-        # )
 
-        from tortoise.contrib.pydantic import pydantic_queryset_creator
-        Message_Pydantic_List = pydantic_queryset_creator(
-            Message,
-            exclude=["id", 'content', 'trade_message']
-        )
+        import pytz
+        import datetime
+        import pandas as pd
 
-        message_list = await Message_Pydantic_List.from_queryset(Message.filter(symbol__not_isnull=True, action__not_isnull=True))
-        message_list = message_list.dict()['__root__']
-        for message in message_list:
-            message["message_timestamp"] = message["message_timestamp"].timestamp()
-            message["recieve_timestamp"] = message["recieve_timestamp"].timestamp()
+        df = pd.read_csv("../cta_usdt.csv")
+        df["Close_time"] = pd.to_datetime(df["Close_time"])
+        df = df[df["Close_time"] > datetime.datetime(2021, 1, 1).replace(tzinfo=pytz.utc)]
+        df.head()
+
+        message_list = []
+
+        for i in range(len(df)):
+
+            row = df.iloc[i]
+            timestamp = row["Close_time"]
+
+            for symbol, quantity in zip(df.columns[1:], row[1:]):
+                if not pd.isna(quantity) and quantity:
+                    action = "BUY" if quantity > 0 else "SELL"
+
+                    message = Message(
+                        channel="CTA",
+                        content="",
+                        symbol=symbol,
+                        action=action,
+                        message_timestamp=timestamp.isoformat(),
+                        recieve_timestamp=timestamp.isoformat(),
+                        quantity=float(quantity),
+                        entry=None,
+                        stop_loss=None,
+                        take_profit=None,
+                        price=None
+                    )
+                    message_list.append(message)
+
+            if len(message_list) > 100:
+                await Message.bulk_create(message_list)
+                message_list = []
 
         return json_response(
             status=200,
-            data=message_list,
+            data={},
         )
     except Exception as e:
         logger.error("create test data error.")

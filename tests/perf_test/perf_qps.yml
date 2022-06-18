@@ -1,0 +1,56 @@
+---
+execution:
+- concurrency: 1
+  hold-for: 60s
+  ramp-up: 0s
+  scenario: Health Check
+
+---
+modules:
+  local:
+    sequential: true # one scenario by one
+
+---
+scenarios:
+  HNS Group:
+    requests:
+    - url: https://darius-backend-dot-darius-332003.de.r.appspot.com/api/v1/health_liveness
+      method: GET
+      label: health_liveness
+      headers:
+        Content-Type: application/json
+      follow-redirects: true
+
+      # check the status = 200
+      assert:
+      - assume-success: false
+        contains:
+        - ^200$
+        not: false
+        regexp: true
+        subject: http-code
+
+      # check the algo existing
+      assert-jsonpath:  # contains list of options
+      - jsonpath: "$.value[*].alg" # path to value, validation fails if path not exists
+        validate: false # validate against expected value
+        regexp: true  # if the value is regular expression, default: true
+        expect-null: false  # expected value is null
+
+    store-cache: false
+    store-cookie: false
+    use-dns-cache-mgr: false
+
+---
+reporting:
+- module: final-stats
+  summary: true  # overall samples count and percent of failures
+  percentiles: true  # display average times and percentiles
+  summary-labels: true # provides list of sample labels, status, percentage of completed, avg time and errors
+  failed-labels: true  # provides list of sample labels with failures
+  test-duration: true  # provides test duration
+  dump-xml: ./perf_result.xml
+- module: passfail
+  criteria: # refer to the https://gettaurus.org/docs/PassFail/ for more detail
+  - p95>250ms, stop as failed
+  - fail>15% for 3s, stop as failed

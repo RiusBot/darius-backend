@@ -15,7 +15,7 @@ class Telegram(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del", "id"]
+        exclude = ["updated_at", "is_del", "id"]
 
     def __str__(self):
         return f"User [{self.id}] {self.telegram_id}"

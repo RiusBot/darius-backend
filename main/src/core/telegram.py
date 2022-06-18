@@ -1,4 +1,6 @@
+import json
 import logging
+import aiohttp
 import telegram
 import functools
 from firebase_admin import firestore
@@ -58,6 +60,7 @@ async def _get_user_telegram(user: User):
         chat = {}
     telegram_info["username"] = chat.get("username")
     telegram_info["name"] = chat.get("first_name", "") + " " + chat.get("last_name", "")
+    telegram_info.pop("created_at")
     return telegram_info
 
 
@@ -75,6 +78,32 @@ async def _check_tg_user_valid(telegram_id: str, chat_id: str):
         return valid
     except Exception:
         raise BackendException(f"Invalid chat_id {chat_id}")
+
+
+async def fetch_alphashark(telegram_id: int):
+    try:
+        url = "https://us-central1-alpha-shark-bot.cloudfunctions.net/checkHasShark"
+        params = {'tg_id': telegram_id}
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as response:
+                resp_text = await response.text()
+                resp_json = json.loads(resp_text)
+                logger.info(f'{resp_json}')
+                return resp_json.get("has_shark", False)
+    except Exception:
+        logger.exception("")
+        logger.error("Fetch alphashark error")
+
+
+@atomic()
+async def alphashark_campaign(user: User, telegram_id: int):
+    if await fetch_alphashark(telegram_id):
+        logger.info(f"user [{user.id}] is alphashark holder !")
+        # acquire lock
+        user = await user.filter(id=user.id).select_for_update().first()
+        user.balance += 100
+        await user.save()
 
 
 @atomic()
@@ -96,6 +125,8 @@ async def _create_user_telegram(user: User, telegram_id: int):
     )
     if not create:
         raise BackendException(f"User already bind {bind_telegram.telegram_id}")
+
+    await alphashark_campaign(user, telegram_id)
 
     logger.info(f"Create telegram [{bind_telegram.telegram_id}]")
     return bind_telegram.telegram_id

@@ -1,57 +1,22 @@
 import logging
 import asyncio
-import threading
 from datetime import datetime
-from collections import defaultdict
 from aiohttp.web import json_response
-from main.src.core.bot import _execute_bot_signal, _get_user_bots, _get_bot_trades, _create_user_bot, _delete_user_bot, _execute_webhook_signal, _update_user_bot
+from main.src.core.bot import _execute_bot_signal, _get_user_bots, _create_user_bot, _delete_user_bot, _execute_webhook_signal, _update_user_bot, _get_user_history_bots
 from main.src.exception import BackendException
 from main.src.core.validator import filter_illegal_char
 
 
 logger = logging.getLogger(__name__)
-ThreadID = 0
-BotStatus = defaultdict(dict)
-
-
-async def get_executing_status(request):
-    try:
-        logger.info("Get execution thread status")
-        return json_response(
-            status=200,
-            data={
-                "bot_status": BotStatus
-            }
-        )
-    except Exception as e:
-        logger.error("Get bot status error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
 
 
 async def execute_bot_signal(request):
-    global ThreadID, BotStatus
     json_payload = await request.json()
     json_payload = filter_illegal_char(json_payload)
 
     try:
         logger.info("Start bot signal thread")
-        thread = threading.Thread(
-            target=_execute_bot_signal,
-            args=(asyncio.get_event_loop(), ThreadID, BotStatus),
-            kwargs=json_payload,
-            daemon=True
-        )
-        thread.start()
-        ThreadID += 1
-
+        asyncio.create_task(_execute_bot_signal(**json_payload))
         return json_response(
             status=200,
             data={}
@@ -74,14 +39,14 @@ async def execute_webhook_signal(request, bot_id: int):
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        logger.info("Start webhook signal")
+        logger.info(f"Start webhook signal {bot_id}")
         json_payload["bot_id"] = bot_id
         json_payload["uid"] = json_payload.pop('token')[::-1]
         json_payload["message_timestamp"] = datetime.now().timestamp()
         json_payload["recieve_timestamp"] = datetime.now().timestamp()
         json_payload["content"] = ""
         json_payload["channel"] = "WEBHOOK"
-        await _execute_webhook_signal(**json_payload)
+        asyncio.create_task(_execute_webhook_signal(**json_payload))
         return json_response(
             status=200,
             data={}
@@ -125,22 +90,23 @@ async def get_user_bots(request):
         )
 
 
-async def get_bot_trades(request):
+async def get_user_history_bots(request):
 
-    json_payload = json_payload = dict(request.rel_url.query)
+    json_payload = dict(request.rel_url.query)
     json_payload = filter_illegal_char(json_payload)
 
     try:
-        logger.info("Get bot trades")
+        logger.info("Start get user bots")
         uid = json_payload["uid"]
-        bot_id = json_payload["bot_id"]
-        trade_list = await _get_bot_trades(uid, bot_id)
+        page = int(json_payload.get("page", 0))
+        pagesize = int(json_payload.get("pagesize", 20))
+        bot_list = await _get_user_history_bots(uid, page, pagesize)
         return json_response(
             status=200,
-            data=trade_list
+            data=bot_list
         )
     except Exception as e:
-        logger.error("Get bot trades error.")
+        logger.error("Get user bots error.")
         logger.exception("")
         error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
         return json_response(

@@ -19,6 +19,8 @@ class BotOrder(BaseModel):
     config = fields.OneToOneField("darius.BotConfig", related_name="bot_config")
     channel = fields.CharEnumField(ChannelType, max_length=32, null=False)
     status = fields.CharEnumField(BotStatusType, max_length=16, null=False, default=BotStatusType.PENDING)
+    is_trial = fields.BooleanField(null=False, default=False)
+    trial_expired_at = fields.DatetimeField(null=True)
 
     class Meta:
         table = "bot_order"
@@ -26,7 +28,7 @@ class BotOrder(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del"]
+        exclude = ["created_at", "updated_at", "is_del"]
 
     def __str__(self):
         return f"Bot [{self.id}] {self.channel} {self.status}"

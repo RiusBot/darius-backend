@@ -3,18 +3,21 @@ info:
   title: darius-backend
   version: 1.0.0
 servers:
-- url: /api/v1
+  - url: /api/v1
 tags:
-- name: fee
-- name: bot
-- name: general
-- name: api
-- name: account
-- name: plan
-- name: subscription
-- name: transaction
-- name: telegram
-- name: trade
+  - name: fee
+  - name: bot
+  - name: general
+  - name: api
+  - name: pair
+  - name: account
+  - name: plan
+  - name: performance
+  - name: hyperopt
+  - name: subscription
+  - name: transaction
+  - name: telegram
+  - name: trade
 security:
   - bearerAuth: []
 paths:
@@ -80,6 +83,18 @@ paths:
       - general
       summary: get stats in database
       operationId: main.src.controllers.v1.general.get_stats
+      responses:
+        '200':
+          description: received
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /clean_no_subscription_bot:
+    delete:
+      tags:
+      - general
+      summary: delete no subscription bot
+      operationId: main.src.controllers.v1.general.clean_no_subscription_bot
       responses:
         '200':
           description: received
@@ -203,18 +218,6 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
   
-  /get_executing_status:
-    get:
-      tags:
-      - bot
-      summary: get bot executing status. Check if unexpected error and dangling threads
-      operationId: main.src.controllers.v1.bot.get_executing_status
-      responses:
-        '200':
-          description: received
-        default:
-          $ref: '#/components/responses/Unexpected'
-  
   /execute_bot_signal:
     post:
       tags:
@@ -315,13 +318,83 @@ paths:
                   - bot_id
         default:
           $ref: '#/components/responses/Unexpected'
+          
+  /get_user_history_bots:
+    get:
+      tags:
+      - bot
+      summary: get user closed bot
+      operationId: main.src.controllers.v1.bot.get_user_history_bots
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+        - in: query
+          name: page
+          schema:
+            $ref: '#/components/schemas/Page'
+          description: page number
+        - in: query
+          name: pagesize
+          schema:
+            $ref: '#/components/schemas/PageSize'
+          description: page size
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    $ref: '#/components/schemas/Page'
+                  pagesize:
+                    $ref: '#/components/schemas/PageSize'
+                  total_page:
+                    $ref: '#/components/schemas/TotalPage'
+                  total_count:
+                    type: integer
+                    minimum: 0
+                    maximum: 500
+                  bots:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        bot_id:
+                          type: integer
+                        config:
+                          $ref: '#/components/schemas/BotConfig'
+                        channel:
+                          $ref: '#/components/schemas/Channel'
+                        status:
+                          $ref: '#/components/schemas/BotStatus'
+                      required:
+                      - channel
+                      - status
+                      - config
+                      - bot_id
+                required:
+                  - page
+                  - pagesize
+                  - total_page
+                  - bots
+                  - total_count
+        default:
+          $ref: '#/components/responses/Unexpected'
 
   /get_bot_trades:
     get:
       tags:
-      - bot
+      - trade
       summary: get bot trade history
-      operationId: main.src.controllers.v1.bot.get_bot_trades
+      operationId: main.src.controllers.v1.trade.get_bot_trades
       parameters:
         - in: query
           name: bot_id
@@ -346,6 +419,68 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Trade'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_bot_trades2:
+    get:
+      tags:
+      - trade
+      summary: get bot trade history with pagination
+      operationId: main.src.controllers.v1.trade.get_bot_trades2
+      parameters:
+        - in: query
+          name: bot_id
+          schema:
+            type: integer
+          description: bot ID
+          required: true
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+        - in: query
+          name: page
+          schema:
+            $ref: '#/components/schemas/Page'
+          description: page number
+        - in: query
+          name: pagesize
+          schema:
+            $ref: '#/components/schemas/PageSize'
+          description: page size
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  page:
+                    $ref: '#/components/schemas/Page'
+                  pagesize:
+                    $ref: '#/components/schemas/PageSize'
+                  total_page:
+                    $ref: '#/components/schemas/TotalPage'
+                  total_count:
+                    type: integer
+                    minimum: 0
+                    maximum: 500
+                  trades:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Trade'
+                required:
+                - page
+                - pagesize
+                - total_page
+                - trades
+                - total_count
         default:
           $ref: '#/components/responses/Unexpected'
           
@@ -589,6 +724,277 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
           
+  /create_user_pair:
+    post:
+      tags:
+      - pair
+      summary: create new pair. 3 for each user.
+      operationId: main.src.controllers.v1.pair.create_user_pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Pair'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                  required:
+                  - uid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /update_user_pair:
+    patch:
+      tags:
+      - pair
+      summary: update user pair.
+      operationId: main.src.controllers.v1.pair.update_user_pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Pair'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                    pair_id:
+                      type: integer
+                  required:
+                  - uid
+                  - pair_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /get_user_pair:
+    get:
+      tags:
+      - pair
+      summary: get user pair.
+      operationId: main.src.controllers.v1.pair.get_user_pair
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pair'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_user_pair:
+    delete:
+      tags:
+      - pair
+      summary: delete pair
+      operationId: main.src.controllers.v1.pair.delete_user_pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                pair_id:
+                  type: integer
+              required:
+              - uid
+              - pair_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /create_builtin_pair:
+    post:
+      tags:
+      - pair
+      summary: create new builtin pair.
+      operationId: main.src.controllers.v1.pair.create_builtin_pair
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/BuiltinPair'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                  required:
+                  - uid
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_id:
+                    type: integer
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /update_builtin_pair:
+    patch:
+      tags:
+      - pair
+      summary: update builtin pair.
+      operationId: main.src.controllers.v1.pair.update_builtin_pair
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/BuiltinPair'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                    pair_id:
+                      type: integer
+                  required:
+                  - uid
+                  - pair_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
+  /get_builtin_pair:
+    get:
+      tags:
+      - pair
+      summary: get builtin pair.
+      operationId: main.src.controllers.v1.pair.get_builtin_pair
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BuiltinPair'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /delete_builtin_pair:
+    delete:
+      tags:
+      - pair
+      summary: delete builtin pair
+      operationId: main.src.controllers.v1.pair.delete_builtin_pair
+      security:
+        - bearerAuthBackendOnly: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                uid:
+                  type: string
+                  maxLength: 28
+                  minLength: 28
+                pair_id:
+                  type: integer
+              required:
+              - uid
+              - pair_id
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_all_pair:
+    get:
+      tags:
+      - pair
+      summary: get all pair.
+      operationId: main.src.controllers.v1.pair.get_all_pair
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        default:
+          $ref: '#/components/responses/Unexpected'
+          
   /create_plan:
     post:
       tags:
@@ -754,6 +1160,118 @@ paths:
           description: success
         default:
           $ref: '#/components/responses/Unexpected'
+
+  /get_performance:
+    get:
+      tags:
+      - performance
+      summary: get all channel performance
+      operationId: main.src.controllers.v1.performance.get_performances
+      security: []
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_performance/{channel}:
+    get:
+      tags:
+      - performance
+      summary: get performance
+      operationId: main.src.controllers.v1.performance.get_performance
+      security: []
+      parameters:
+        - in: path
+          name: channel
+          schema:
+            $ref: '#/components/schemas/Channel'
+          description: channel
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Performance'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /create_performance:
+    post:
+      tags:
+      - performance
+      summary: create performance
+      operationId: main.src.controllers.v1.performance.create_performance
+      security:
+        - bearerAuthBackendOnly: []
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /get_hyperopt:
+    get:
+      tags:
+      - hyperopt
+      summary: get hyperopt
+      operationId: main.src.controllers.v1.hyperopt.get_hyperopt
+      security: []
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+        - in: query
+          name: channel
+          schema:
+            $ref: '#/components/schemas/Channel'
+          description: channel
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hyperopt'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /create_hyperopt:
+    post:
+      tags:
+      - hyperopt
+      summary: create hyperopt
+      operationId: main.src.controllers.v1.hyperopt.create_hyperopt
+      security:
+        - bearerAuthBackendOnly: []
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
 
   /clean_subscription:
     delete:
@@ -1350,6 +1868,23 @@ components:
             rootCause:
               type: string
 
+    Page:
+      type: integer
+      minimum: 0
+      maximum: 100
+      default: 0
+
+    PageSize:
+      type: integer
+      minimum: 5
+      maximum: 50
+      default: 20
+
+    TotalPage:
+      type: integer
+      minimum: 1
+      maximum: 100
+
     Action:
       type: string
       nullable: true
@@ -1378,6 +1913,14 @@ components:
         - VEGAS
         - JUSTIN
         - WEBHOOK
+        - COURAGE
+        - MOON
+        - ARBITRAGE
+        - AIRFORCE7
+        - ACDC
+        - SPACEFORCE
+        - ARBITRAGE
+        - CTA
     
     Exchange:
       type: string
@@ -1386,6 +1929,7 @@ components:
         - binance
         - ftx
         - ftxus
+        - okx
 
     TradeStatus:
       type: string
@@ -1410,6 +1954,10 @@ components:
           type: string
           maxLength: 16
           nullable: True
+        role:
+          type: string
+          maxLength: 16
+          enum: [admin, user, guest, vip, test, subscriber, trial]
         email: 
           type: string
           maxLength: 32
@@ -1429,6 +1977,13 @@ components:
         referrer_count:
           type: integer
           minimum: 0
+        is_trial:
+          type: boolean
+        trial_period:
+          type: string
+          nullable: True
+          example:
+            value: "%Y-%m-%d"
       required:
         - uid
         - user_name
@@ -1436,6 +1991,49 @@ components:
         - balance
         - referrer
         - referral_code
+        - is_trial
+        - trial_period
+        - role
+    
+    Pair:
+      type: object
+      properties:
+        pair_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 64
+        lists:
+          type: array
+          items:
+            type: string
+        types:
+          type: string
+          enum: [WHITE, BLACK]
+      required:
+      - name
+      - lists
+      - types
+    
+    BuiltinPair:
+      type: object
+      properties:
+        pair_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 64
+        lists:
+          type: array
+          items:
+            type: string
+        types:
+          type: string
+          enum: [BUILTIN]
+      required:
+      - name
+      - lists
+      - types
     
     API_READ:
       type: object
@@ -1448,6 +2046,10 @@ components:
         api_secret:
           type: string
           maxLength: 64
+        password:
+          type: string
+          maxLength: 64
+          nullable: true
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:
@@ -1467,6 +2069,10 @@ components:
         api_secret:
           type: string
           maxLength: 64
+        password:
+          type: string
+          maxLength: 64
+          nullable: true
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:
@@ -1478,13 +2084,27 @@ components:
       - exchange
       - api_secret
 
+    Hyperopt:
+      type: object
+      properties:
+        take_profit:
+          type: number
+        stop_loss:
+          type: number
+    
     BotConfig:
       type: object
       properties:
         api_id:
           type: integer
+        pair_id:
+          type: integer
+          nullable: True
         test:
           type: boolean
+        hyperopt:
+          type: boolean
+          nullable: true
         duplicate:
           type: boolean
         target:
@@ -1495,7 +2115,7 @@ components:
           minimum: 30
         leverage:
           type: number
-          minimum: 0
+          minimum: 1
         margin:
           type: number
           minimum: 0
@@ -1562,6 +2182,9 @@ components:
         entry:
           type: number
           nullable: True
+        quantity:
+          type: number
+          nullable: True
         stop_loss:
           type: number
           nullable: True
@@ -1576,6 +2199,19 @@ components:
       - symbol
       - action
 
+    Performance:
+      type: object
+      properties:
+        date:
+          type: string
+          maxLength: 10
+          example:
+            value: "2022-01-01"
+        result:
+          type: object
+        channel:
+          $ref: '#/components/schemas/Channel'
+    
     Transaction:
       type: object
       properties:

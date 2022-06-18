@@ -5,7 +5,7 @@ from dateutil.parser import parse as parse_date
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
-from main.src.models import Subscription, User, Plan, Telegram
+from main.src.models import Subscription, User, Plan, Telegram, BotOrder
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.core.telegram_bot import create_invite_link, revoke_invite_link, kick_user
@@ -51,6 +51,13 @@ async def _clean_subscription() -> List[Subscription]:
     await Subscription.filter(
         is_del=False,
         expire_date__lt=datetime.now()
+    ).update(is_del=True)
+
+    # clean trial expired bot
+    await BotOrder.filter(
+        is_del=False,
+        is_trial=True,
+        trial_expired_at__lt=datetime.now()
     ).update(is_del=True)
 
 
@@ -112,7 +119,8 @@ async def _get_tg_user_subscription(telegram_id: str) -> List[Subscription]:
 @permission_validator("create_user_subscription")
 async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     uid = user.uid
-    logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
+    role = user.role.name
+    # logger.info(f"Create new subscription for user [{uid}] with plan [{plan_id}]")
 
     # acquire lock
     user = await user.filter(id=user.id).select_for_update().first()
@@ -127,12 +135,13 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
     # if duplicate_subscription:
     #     raise BackendException(f"{plan.channel} channel already subscribed")
 
-    # validate balance
-    if float(user.balance) < float(plan.price):
-        raise BackendException("Insufficient balance")
+    if role != 'vip':
+        # validate balance
+        if float(user.balance) < float(plan.price):
+            raise BackendException("Insufficient balance")
 
-    # update balance
-    user.balance = float(user.balance) - float(plan.price)
+        # update balance
+        user.balance = float(user.balance) - float(plan.price)
 
     # create subscription
     channel = plan.channel
@@ -142,37 +151,48 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         defaults={
             "expire_date": expire_date,
             "plan": plan,
-            "invite_link": create_invite_link(channel, user_telegram)
         },
-        plan__channel=channel,
+        channel=channel,
         is_del=False,
         user=user
     )
     subscription_id = subscription.id
 
+    # acquire lock
+    subscription = await Subscription.filter(id=subscription_id).select_for_update().first()
+
     if create:
-        logger.info(f"Create subscription [{subscription_id}]")
+        logger.info(f"Create subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}]")
+
+        # dont use default param for get_or_create because it will create invite link first
+        subscription.invite_link = create_invite_link(channel, user_telegram)
+        await subscription.save()
 
         # if first time create subscription, referrer get credit
         subscription_count = await user.subscription_user.all().count()
         if subscription_count == 1:
 
-            # first subscription refund
-            user.balance += float(plan.price) * 0.3
+            if role != 'vip':
+                # first subscription refund
+                user.balance += float(plan.price) * 0.3
 
-            # referrer credit
-            referrer = await User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
-            if referrer is not None:
-                referrer.referrer_count += 1
-                referrer.balance += float(plan.day) / 10
-                await referrer.save()
+                # referrer credit
+                referrer = await User.filter(referral_code=user.referrer, is_del=False).select_for_update().first()
+                if referrer is not None:
+                    referrer.referrer_count += 1
+                    referrer.balance += float(plan.day) / 10
+                    await referrer.save()
     else:
-        logger.info(f"Expand subscription [{subscription_id}]")
+        new_expire_date = subscription.expire_date + timedelta(days=int(plan.day))
+        logger.info(f"Expand subscription [{subscription_id}] for user [{uid}] with plan [{plan_id}] to {new_expire_date}")
         if subscription.expire_date is None:
             raise BackendException("Life Time cannot expand expire date")
-        subscription.expire_date = subscription.expire_date + timedelta(days=int(plan.day))
+        subscription.expire_date = new_expire_date
         await subscription.save()
-        user.balance += float(plan.price) * 0.15
+
+        if role != 'vip':
+            # renew (expand) refund
+            user.balance += float(plan.price) * 0.15
 
     await user.save()
     return subscription_id
@@ -214,6 +234,11 @@ async def _delete_user_subscription(user: User, subscription_id: int):
         raise BackendException("Invalid subscription_id")
 
     # delete subscription
-    subscription.is_del = True
+    subscription.is_del = None
     await subscription.save()
     revoke_invite_link(subscription.plan.channel, subscription.invite_link)
+
+    # is_del = None
+    # so that unique constraint (user, channel, is_del) will not trigger after deleted
+    # only is_del=True will be constrainted
+    # to avoid duplicate subscription created
