@@ -135,8 +135,11 @@ def input_filter(f):
             json_payload = dict(request.rel_url.query)
             json_payload = filter_illegal_char(json_payload)
         else:
-            json_payload = await request.json()
-            json_payload = filter_illegal_char(json_payload)
+            try:
+                json_payload = await request.json()
+                json_payload = filter_illegal_char(json_payload)
+            except json.decoder.JSONDecodeError:
+                json_payload = {}
 
         args = filter_illegal_char({e: i for e, i in enumerate(args)})
         args = [args[key] for key in sorted(args.keys())]

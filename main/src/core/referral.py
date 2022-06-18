@@ -27,7 +27,7 @@ async def generate_referral_code():
     return referral_code
 
 
-async def create_user_referral(referrer_code: str) -> Referral:
+async def create_user_referral(uid: str, referrer_code: str) -> Referral:
 
     referrer, referral_code = await asyncio.gather(
         Referral.filter(
@@ -37,7 +37,7 @@ async def create_user_referral(referrer_code: str) -> Referral:
         generate_referral_code()
     )
     if referrer_code and not referrer:
-        logger.error(f"Referrer code {referrer_code} not exists")
+        raise BackendException(f"Referrer code {referrer_code} not exists")
 
     referral = await Referral.create(
         referrer=referrer,
@@ -51,7 +51,7 @@ async def create_user_referral(referrer_code: str) -> Referral:
             create_user_referral_history(referrer, referral)
         )
 
-    logger.info(f"Create referral {referral.id}")
+    logger.info(f"Create referral {referral} with referrer {referrer} for {uid}")
     return referral
 
 

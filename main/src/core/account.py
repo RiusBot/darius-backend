@@ -86,9 +86,11 @@ async def _create_user(uid: str, referrer: str = None):
         return user.id
 
     referral, role = await asyncio.gather(
-        await create_user_referral(referrer),
+        await create_user_referral(uid, referrer),
         await Role.filter(is_del=False, name="user").first()
     )
+    if referral is None or role is None:
+        raise BackendException("create referral, fetch role error")
 
     user = await User.create(
         uid=uid,

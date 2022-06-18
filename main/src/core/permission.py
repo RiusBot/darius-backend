@@ -1,6 +1,7 @@
 import logging
 from functools import wraps
 from tortoise.transactions import atomic
+from tortoise.exceptions import IntegrityError
 from main.src.models import Permission, User, Role
 from main.src.exception import BackendException
 from main.src.core.auth import verify_firestore_uid_exists
@@ -18,7 +19,11 @@ def permission_validator(service):
             if user is None:
                 if verify_firestore_uid_exists(uid):
                     from main.src.core.account import _create_user
-                    await _create_user(uid)
+                    logger.info(f"Create user {uid} since user not exists")
+                    try:
+                        await _create_user(uid)
+                    except IntegrityError:
+                        pass
                     user = await User.filter(is_del=False, uid=uid).prefetch_related("role").first()
                 else:
                     raise BackendException("uid not exists")
