@@ -13,6 +13,8 @@ from .transaction import Transaction
 from .telegram import Telegram
 from .performance import Performance
 from .hyperopt import Hyperopt
+from .pair import Pair
+from .referral import Referral, ReferralHistory
 
 
 __all__ = [
@@ -31,4 +33,7 @@ __all__ = [
     "Telegram",
     "Performance",
     "Hyperopt",
+    "Pair",
+    "Referral",
+    "ReferralHistory"
 ]

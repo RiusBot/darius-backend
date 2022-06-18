@@ -1,76 +1,30 @@
 import logging
-import threading
-from aiohttp.web import json_response
+import asyncio
 from main.src.core.performance import _get_performance, _create_performance, _get_performances
-from main.src.exception import BackendException
-from main.src.core.validator import filter_illegal_char
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
 
 
-async def get_performance(request, channel: str):
-
-    try:
-        performance = await _get_performance(channel)
-        return json_response(
-            status=200,
-            data=performance
-        )
-    except Exception as e:
-        logger.error("Get performance error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_performance(request: dict, channel: str):
+    logger.debug(f"get {channel} performance")
+    performance = await _get_performance(channel)
+    return performance
 
 
-async def get_performances(request):
-
-    try:
-        performances = await _get_performances()
-        return json_response(
-            status=200,
-            data=performances
-        )
-    except Exception as e:
-        logger.error("Get all performance error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_performances(request: dict):
+    logger.debug("get performances")
+    performances = await _get_performances()
+    return performances
 
 
-async def create_performance(request):
-
-    try:
-        thread = threading.Thread(
-            target=_create_performance,
-            daemon=True
-        )
-        thread.start()
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Create performance error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def create_performance(request: dict):
+    logger.info("create performance")
+    asyncio.create_task(_create_performance())

@@ -2,22 +2,26 @@ from tortoise import fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 
 from main.src.models import BaseModel
+from .channel import ChannelType
 
 
 class Subscription(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="subscription_user")
     plan = fields.ForeignKeyField("darius.Plan", related_name="subscription_plan")
+    channel = fields.CharEnumField(ChannelType, max_length=32, null=False)
     expire_date = fields.DatetimeField(null=True)
     invite_link = fields.CharField(50, null=True, unique=True)
+    is_del = fields.BooleanField(null=True, default=False)
 
     class Meta:
         table = "subscription"
         table_description = "Subscription"
+        unique_together = ("user_id", "channel", "is_del")
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del"]
+        exclude = ["created_at", "updated_at", "is_del"]
 
     def __str__(self):
         return f"Subscription [{self.id}]"

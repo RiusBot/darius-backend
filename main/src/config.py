@@ -18,12 +18,14 @@ class BaseConfig:
     PORT = 8080
     RECAPTCHA_VALID_ACTIONS = ['LOGIN', 'REGISTER', 'FORGET', 'RESET']
 
+
 class ProdConfig(BaseConfig):
     ENV = 'prod'
     LOGGING_LEVEL = 'INFO'
     CORS_ALLOW_ORIGIN = ['*']
     RECAPTCHA_SITE_KEY = '6LcTDJUeAAAAAMejTn0wFGdafjTTgBDYQ0CGgRiR'
     G_CLOUD_PROJECT_ID = 'darius-prod'
+
 
 class DevConfig(BaseConfig):
     ENV = 'dev'
@@ -39,6 +41,7 @@ ENV_CONFIGS = {
     'dev': DevConfig,
     'prod': ProdConfig
 }
+
 
 def get_config_from_yaml() -> Type[BaseConfig]:
     yaml_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config/config.yaml')

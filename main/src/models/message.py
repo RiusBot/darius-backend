@@ -19,6 +19,7 @@ class Message(BaseModel):
     action = fields.CharEnumField(ActionType, "action", 16, null=True)
     message_timestamp = fields.DatetimeField(null=False)
     recieve_timestamp = fields.DatetimeField(null=False)
+    quantity = fields.FloatField(null=True)
     entry = fields.FloatField(null=True)
     stop_loss = fields.FloatField(null=True)
     take_profit = fields.FloatField(null=True)
@@ -29,7 +30,7 @@ class Message(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del"]
+        exclude = ["created_at", "updated_at", "is_del"]
 
     def __str__(self):
         return f"""Message [{self.id}]
