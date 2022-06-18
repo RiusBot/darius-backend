@@ -1,6 +1,6 @@
 import logging
 from main.src.core.telegram import _get_user_telegram, _create_user_telegram, _delete_user_telegram, _update_user_telegram, _check_tg_user_valid, _user_telegram_send_message
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

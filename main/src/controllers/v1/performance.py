@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from main.src.core.performance import _get_performance, _create_performance, _get_performances
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

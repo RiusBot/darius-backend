@@ -1,6 +1,6 @@
 import logging
 from main.src.core.plan import _get_plan, _get_plans, _create_plan, _delete_plan, _update_plan
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

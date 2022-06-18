@@ -1,6 +1,6 @@
 import logging
 from main.src.core.referral import _get_user_referral_info, _get_user_referral_history, _update_user_referral_info
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

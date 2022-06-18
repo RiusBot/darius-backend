@@ -1,6 +1,6 @@
 import logging
 from main.src.core.recaptcha import create_recaptcha_assessment
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

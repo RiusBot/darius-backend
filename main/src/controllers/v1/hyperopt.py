@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from main.src.core.hyperopt import _get_hyperopt, _create_hyperopt
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

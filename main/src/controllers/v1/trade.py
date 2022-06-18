@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from main.src.core.trade import _clean_limit_order, _clean_oco_order, _get_bot_trades, _get_bot_trades2
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

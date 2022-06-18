@@ -3,7 +3,7 @@ from aiohttp.web import json_response
 from tortoise.transactions import atomic
 from main.src.core.stats import _get_stats
 from main.src.exception import BackendException
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

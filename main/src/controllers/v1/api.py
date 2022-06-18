@@ -1,6 +1,6 @@
 import logging
 from main.src.core.api import _get_user_api, _create_user_api, _delete_user_api, _update_user_api, _clean_api
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

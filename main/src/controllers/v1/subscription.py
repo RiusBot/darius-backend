@@ -8,7 +8,7 @@ from main.src.core.subscription import (
     _get_tg_user_subscription,
     _get_subscription_info
 )
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

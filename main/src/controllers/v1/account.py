@@ -1,6 +1,6 @@
 import logging
 from main.src.core.account import _update_user_profile, _get_user_profile, _create_user, _delete_user
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

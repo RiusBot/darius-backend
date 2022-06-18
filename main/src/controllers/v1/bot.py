@@ -2,7 +2,7 @@ import logging
 import asyncio
 from datetime import datetime
 from main.src.core.bot import _execute_bot_signal, _get_user_bots, _create_user_bot, _delete_user_bot, _execute_webhook_signal, _update_user_bot, _get_user_history_bots
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)

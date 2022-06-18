@@ -1,7 +1,7 @@
 import logging
 from main.src.core.pair import _get_user_pair, _create_user_pair, _delete_user_pair, _update_user_pair, _get_all_pair
 from main.src.core.pair import _get_builtin_pair, _create_builtin_pair, _delete_builtin_pair, _update_builtin_pair
-from . import error_handler, input_filter
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
