@@ -125,10 +125,8 @@ def send_to_execute(url: str, config: dict):
                 if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
                     break
             return response
-    except Exception as e:
+    except Exception:
         logger.exception("")
-        # return str(e)
-        # logger.error(str(e))
         return "EXECUTE ERROR"
 
 

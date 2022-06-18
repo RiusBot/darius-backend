@@ -1,9 +1,9 @@
 import logging
 from aiohttp.web import json_response
 from tortoise.transactions import atomic
-from main.src.exception import BackendException
-from main.src.core.validator import filter_illegal_char
 from main.src.core.stats import _get_stats
+from main.src.exception import BackendException
+from . import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
@@ -18,35 +18,19 @@ async def get_health_readiness(request):
     return json_response(status=200, data={'message': 'The service is healthy based on readiness healthcheck'})
 
 
-async def get_stats(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload['uid']
-        stats = await _get_stats(uid)
-        return json_response(
-            status=200,
-            data=stats,
-        )
-    except Exception as e:
-        logger.error("avaiable balance error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_stats(request: dict):
+    uid = request['uid']
+    logger.info("Get Riusbot stats")
+    stats = await _get_stats(uid)
+    return stats
 
 
 async def clean_no_subscription_bot(request):
 
     from datetime import datetime, timedelta
-    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message
+    from main.src.models import BotOrder
 
     async for bot in BotOrder.filter(is_del=False).prefetch_related("user__telegram_user"):
 
@@ -64,7 +48,7 @@ async def clean_no_subscription_bot(request):
             # not trial period
             bot.is_del = True
             await bot.save()
-    
+
     return json_response(
         status=200,
         data={},
@@ -77,7 +61,7 @@ async def check_rebate(api):
     try:
         api_key = api.api_key
         api_secret = decrypt(api.api_key, api.api_secret)
-    except:
+    except Exception:
         return False
     exchange = ccxt.binance({
         'apiKey': api_key,
@@ -95,7 +79,7 @@ async def check_rebate(api):
 
 @atomic()
 async def create_test_data(request):
-    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message, Telegram, Referral
+    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Referral
 
     async def create():
         permission = await Permission.create(

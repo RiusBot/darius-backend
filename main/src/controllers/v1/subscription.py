@@ -1,5 +1,4 @@
 import logging
-from aiohttp.web import json_response
 from main.src.core.subscription import (
     _get_user_subscription,
     _create_user_subscription,
@@ -9,186 +8,70 @@ from main.src.core.subscription import (
     _get_tg_user_subscription,
     _get_subscription_info
 )
-from main.src.exception import BackendException
-from main.src.core.validator import filter_illegal_char
+from . import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
 
 
-async def clean_subscription(request):
-
-    try:
-        await _clean_subscription()
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Get subscription error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def clean_subscription(request: dict):
+    logger.info("clean subscription")
+    await _clean_subscription()
 
 
-async def get_user_subscription(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        subscribe_list = await _get_user_subscription(uid)
-        return json_response(
-            status=200,
-            data=subscribe_list
-        )
-    except Exception as e:
-        logger.error("Get user subscription error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_user_subscription(request: dict):
+    uid = request["uid"]
+    logger.debug(f"get user {uid} subscription")
+    subscribe_list = await _get_user_subscription(uid)
+    return subscribe_list
 
 
-async def get_subscription_info(request, channel: str):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-    channel = filter_illegal_char({'channel': channel})['channel']
-
-    try:
-        uid = json_payload["uid"]
-        subscribe_info = await _get_subscription_info(uid, channel)
-        return json_response(
-            status=200,
-            data=subscribe_info
-        )
-    except Exception as e:
-        logger.error("Get subscription info error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_subscription_info(request: dict, channel: str):
+    uid = request["uid"]
+    logger.debug(f'get {channel} subscription info')
+    subscribe_info = await _get_subscription_info(uid, channel)
+    return subscribe_info
 
 
-async def get_tg_user_subscription(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        telegram_id = json_payload["telegram_id"]
-        subscribe_list = await _get_tg_user_subscription(telegram_id)
-        return json_response(
-            status=200,
-            data=subscribe_list
-        )
-    except Exception as e:
-        logger.error("Get tg subscription error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_tg_user_subscription(request: dict):
+    telegram_id = request["telegram_id"]
+    logger.info(f"get tg user {telegram_id} subscription")
+    subscribe_list = await _get_tg_user_subscription(telegram_id)
+    return subscribe_list
 
 
-async def create_user_subscription(request):
-
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        plan_id = json_payload["plan_id"]
-        subscription_id = await _create_user_subscription(uid, plan_id)
-        return json_response(
-            status=200,
-            data={
-                "subscription_id": subscription_id
-            }
-        )
-    except Exception as e:
-        logger.error("Create subscription error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def create_user_subscription(request: dict):
+    uid = request["uid"]
+    plan_id = request["plan_id"]
+    subscription_id = await _create_user_subscription(uid, plan_id)
+    logger.info(f"create user {uid} subscription {subscription_id}")
+    return {"subscription_id": subscription_id}
 
 
-async def update_user_subscription(request):
-
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        subscription_id = json_payload["subscription_id"]
-        expire_date = json_payload["expire_date"]
-        await _update_user_subscription(uid, subscription_id, expire_date)
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Update subscription error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def update_user_subscription(request: dict):
+    uid = request["uid"]
+    subscription_id = request["subscription_id"]
+    expire_date = request["expire_date"]
+    logger.info(f"update user {uid} subscription {subscription_id}")
+    await _update_user_subscription(uid, subscription_id, expire_date)
 
 
-async def delete_user_subscription(request):
-
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        subscription_id = json_payload["subscription_id"]
-        await _delete_user_subscription(uid, subscription_id)
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Delete subscription error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def delete_user_subscription(request: dict):
+    uid = request["uid"]
+    subscription_id = request["subscription_id"]
+    logger.info(f"delete user {uid} subscription {subscription_id}")
+    await _delete_user_subscription(uid, subscription_id)

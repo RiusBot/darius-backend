@@ -121,7 +121,8 @@ async def validate_pair(lists: List[str]):
                 valid_lists.append(i)
 
     ignore_token = list(set(lists) - set(valid_lists))
-    logger.info(f"Ignore following token: {ignore_token}")
+    if ignore_token:
+        logger.info(f"Ignore following token: {ignore_token}")
     return valid_lists
 
 

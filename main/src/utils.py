@@ -75,8 +75,6 @@ async def fetch(session, sem, url: str, request_data: dict, max_retry: int = 3, 
 
             return error
 
-    except Exception as e:
+    except Exception:
         logger.exception("")
-        # return str(e)
-        # logger.error(str(e))
         return error

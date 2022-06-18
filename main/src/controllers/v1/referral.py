@@ -1,90 +1,36 @@
-import asyncio
 import logging
-from aiohttp.web import json_response
 from main.src.core.referral import _get_user_referral_info, _get_user_referral_history, _update_user_referral_info
-from main.src.exception import BackendException
-from main.src.core.validator import filter_illegal_char
+from . import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
 
 
-async def get_user_referral_info(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        logger.info("Get user referral info")
-        uid = json_payload["uid"]
-        referral_info = await _get_user_referral_info(uid)
-        return json_response(
-            status=200,
-            data=referral_info
-        )
-    except Exception as e:
-        logger.error("Get user referral info error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_user_referral_info(request: dict):
+    uid = request["uid"]
+    logger.info("Get user {uid} referral info")
+    referral_info = await _get_user_referral_info(uid)
+    return referral_info
 
 
-async def get_user_referral_history(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        logger.info("Get user referral history")
-        uid = json_payload["uid"]
-        page = int(json_payload.get("page", 0))
-        pagesize = int(json_payload.get("pagesize", 20))
-        referral_history = await _get_user_referral_history(uid, page, pagesize)
-        return json_response(
-            status=200,
-            data=referral_history
-        )
-    except Exception as e:
-        logger.error("Get user referral history error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_user_referral_history(request: dict):
+    uid = request["uid"]
+    logger.info(f"Get user {uid} referral history")
+    page = int(request.get("page", 0))
+    pagesize = int(request.get("pagesize", 20))
+    referral_history = await _get_user_referral_history(uid, page, pagesize)
+    return referral_history
 
 
-async def update_user_referral_info(request):
-
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        referrer_rebate_rate = json_payload["referrer_rebate_rate"]
-        referral_rebate_rate = json_payload["referral_rebate_rate"]
-        await _update_user_referral_info(uid, referrer_rebate_rate, referral_rebate_rate)
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Update user referral error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def update_user_referral_info(request: dict):
+    uid = request["uid"]
+    logger.info(f"update user {uid} referral info")
+    referrer_rebate_rate = request["referrer_rebate_rate"]
+    referral_rebate_rate = request["referral_rebate_rate"]
+    await _update_user_referral_info(uid, referrer_rebate_rate, referral_rebate_rate)
