@@ -2400,6 +2400,13 @@ components:
         take_profit_type:
           type: string
           enum: [MARKET, LIMIT, TRAILING]
+        others:
+          type: object
+          properties:
+            quote:
+              type: string
+              enum: [USDT, USDC, BUSD, USD]
+          nullable: true
       required:
         - api_id
         - test

@@ -25,6 +25,7 @@ from main.src.core.cipher import decrypt
 from main.src.core.permission import permission_validator
 from main.src.utils import fetch, pagination
 from main.src.core.referral import create_user_referral_history
+from main.src.constant import quote_constant
 
 
 logger = logging.getLogger(__name__)
@@ -500,6 +501,7 @@ def bot_dict_postprocess(bot: dict) -> dict:
     bot["bot_id"] = bot.pop("id")
     bot["config"]["api_id"] = bot["config"]["api"]["id"]
     bot["config"]["pair_id"] = None if bot["config"]['pair'] is None else bot["config"]['pair']['id']
+    bot["config"]["others"] = json.loads(bot["config"]['others']) if bot["config"]['others'] else {}
     bot["config"].pop("api", None)
     bot["config"].pop("pair", None)
     return bot
@@ -592,7 +594,25 @@ async def validate_config(user: User, config: dict):
         config.pop("pair_id", None)
         pair = None
 
-    return api, pair
+    # validate other properties
+    others = config['others']
+    others_key = {'quote'}
+    if others:
+        # unknown key check
+        for key in others:
+            if key not in others_key:
+                raise BackendException(f"Unknown config property {key}")
+
+        # quote check
+        if 'quote' in others:
+            if others['quote'] not in quote_constant[api.exchange]:
+                raise BackendException(f"{api.exchange} exchange cannot use {others['quote']} as quote currency")
+        else:
+            others['quote'] = quote_constant['default'][api.exchange]
+
+        others = json.dumps(others)
+
+    return api, pair, others
 
 
 async def validate_bot_number(user: User, role: str, channel: str):
@@ -642,11 +662,13 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     logger.info(f"Create new bot for user [{uid}]")
 
     subscription, is_trial, trial_expired_at = await validate_subscription(user, channel, config)
-    api, pair = await validate_config(user, config)
+    api, pair, others = await validate_config(user, config)
 
     # create bot
     config["api"] = api
     config["pair"] = pair
+    config["others"] = others
+
     if channel == ChannelType.WEBHOOK:
 
         bot_config = await BotConfig.create(
@@ -707,11 +729,13 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
     logger.info(f"Update bot [{bot_id}]")
 
-    api, pair = await validate_config(user, config)
+    api, pair, others = await validate_config(user, config)
 
     # update bot
     config["api"] = api
     config["pair"] = pair
+    config["others"] = others
+
     bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
     if bot_order is None:
         raise BackendException(f"No Bot {bot_id}")
