@@ -5,12 +5,15 @@ ifeq ($(ENV), prod)
 	APP = app-prod.yaml
 	CREDENTIAL = darius-prod-5bed36160a65.json
 	IMAGE_NAME = darius-backend
-else
+else ifeq ($(ENV), dev)
 	CREDENTIAL = darius-332003-6391a8358dec.json
 	CLOUDBUILD = cloudbuild-dev.yaml
 	PROJECT_ID = darius-332003
 	APP = app-dev.yaml
 	IMAGE_NAME = darius-backend
+else
+	CREDENTIAL = darius-332003-6391a8358dec.json
+	PROJECT_ID = local
 endif
 
 ifeq ($(words $(MAKECMDGOALS)), 1)
