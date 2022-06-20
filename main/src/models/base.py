@@ -6,6 +6,7 @@ class BaseModel(Model):
 
     id = fields.IntField(pk=True)
     created_at = fields.DatetimeField(null=True, auto_now_add=True)
+    updated_at = fields.DatetimeField(null=True, auto_now=True)
     is_del = fields.BooleanField(null=False, default=False)
 
     class Meta:

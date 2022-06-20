@@ -1,8 +1,8 @@
 import os
-import time
 import enum
 import json
 import asyncio
+import aiohttp
 import logging
 import requests
 import traceback
@@ -15,28 +15,21 @@ from tortoise.models import Model
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
-from main.src.models import BotOrder, BotConfig, Trade, Message, User
+
+from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair, Referral
 from main.src.models.channel import ChannelType
 from main.src.config import app_config
 from main.src.exception import BackendException
 from main.src.core.auth import fetch_secret_token_firestore
 from main.src.core.cipher import decrypt
 from main.src.core.permission import permission_validator
+from main.src.utils import fetch, pagination
+from main.src.core.referral import create_user_referral_history
+from main.src.constant import quote_constant
 
 
 logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
-
-
-def _execute_bot_signal(loop, *args, **kwargs):
-    loop.create_task(execute(*args, **kwargs))
-    logger.info("execute bot signal complete.")
-
-
-async def _execute_webhook_signal(*args, **kwargs):
-    result = await execute_webhook(*args, **kwargs)
-    logger.info("execute webhook signal complete.")
-    return result
 
 
 @atomic()
@@ -44,8 +37,13 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
     logger.info("Get all bot")
     try:
         bot_dict = {}
-        async for bot in BotOrder.filter(is_del=False, status="RUNNING", channel=channel).prefetch_related(
+        async for bot in BotOrder.filter(
+            is_del=False,
+            status="RUNNING",
+            channel=channel
+        ).prefetch_related(
             "config__api",
+            "config__pair",
             "user",
         ).order_by("config__order_type"):
             bot_dict[bot.id] = bot
@@ -72,6 +70,8 @@ def process_bot_config(config: BotConfig):
         for key, value in model:
             if isinstance(value, (QuerySet, ReverseRelation)):
                 continue
+            elif key in ("lists", "others"):
+                config_dict[key] = json.loads(value) if value is not None else {}
             elif isinstance(value, Model):
                 config_dict.update(parse(value))
             else:
@@ -81,25 +81,32 @@ def process_bot_config(config: BotConfig):
     return parse(config)
 
 
-def get_all_bot_config(bot_dict: Dict[int, BotOrder]) -> List[dict]:
+async def get_all_bot_config(channel: str, bot_dict: Dict[int, BotOrder]) -> List[dict]:
     logger.info("Get all bot config")
+
+    hyperopt = await get_hyperopt(channel)
+
     config_list = []
     for bot in bot_dict.values():
         config_dict = process_bot_config(bot.config)
+        config_dict = fill_hyperopt(hyperopt, config_dict)
         config_list.append(config_dict)
 
     logger.info(f"{len(config_list)} bot configs")
     return config_list
 
 
-def send_to_execute(config: dict):
+def send_to_execute(url: str, config: dict):
     try:
-        url = app_config["BOT_EXECUTOR_ENDPOINT"]
-        if usingProjectId != "local":
-            config["token"] = fetch_secret_token_firestore()
+        if config["test"]:
+            "Test only"
+
+        config["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
 
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
+            config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else ""
+            config["headers"] = {} if config["api_key"] != "9a53750a-5af4-4636-906c-c3e558801694" else {'x-simulated-trading': '1'}
         except Exception:
             logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
             logger.exception("")
@@ -116,28 +123,60 @@ def send_to_execute(config: dict):
                         response = str(response["error_messages"])
                 except Exception:
                     response = response.text
-                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response)):
+                if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
                     break
             return response
-    except Exception as e:
+    except Exception:
         logger.exception("")
-        # return str(e)
-        # logger.error(str(e))
         return "EXECUTE ERROR"
 
 
-async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = 1) -> Dict[Future, int]:
+def black_white_list_filter(config_dict):
+    types = config_dict.get('types')
+    lists = config_dict.get('lists')
+    if lists and types:
+        symbol = config_dict['symbol']
+        if types == "WHITE" and symbol not in lists:
+            return False
+        elif types == "BLACK" and symbol in lists:
+            return False
+    return True
+
+
+async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = None) -> Dict[Future, int]:
     logger.info("Start activate bot executor")
+    url = app_config["BOT_EXECUTOR_ENDPOINT"]
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         task_dict = dict()
         for config in config_list:
             config.update(data_dict)
-            task = executor.submit(send_to_execute, config)
-            task_dict[task] = config["bot_id"]
-            # await asyncio.sleep(1)
-            time.sleep(1)
+            if black_white_list_filter(config):
+                task = executor.submit(send_to_execute, url, config)
+                task_dict[task] = config["bot_id"]
+
         logger.info(f"All {len(config_list)} submitted.")
     return task_dict
+
+
+async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = 40) -> Dict[Future, int]:
+    logger.info("Start async activate bot executor")
+    url = app_config["BOT_EXECUTOR_ENDPOINT"]
+
+    for config in config_list:
+        config.update(data_dict)
+    config_list = [config for config in config_list if black_white_list_filter(config)]
+
+    async with aiohttp.ClientSession(timeout=600) as session:
+        sem = asyncio.Semaphore(workers)
+        tasks = []
+        for config in config_list:
+            task = asyncio.create_task(fetch(session, sem, url, config, error="EXECUTE"))
+            tasks.append(task)
+
+        logger.info(f"All {len(config_list)} scheduled.")
+        responses = await asyncio.gather(*tasks)
+        return responses
 
 
 async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, list]:
@@ -158,7 +197,6 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
     trade_list = []
     for bot_id, result in result_dict.items():
         bot = bot_dict[bot_id]
-        logger.info(json.dumps(result, indent=4))
 
         if isinstance(result, str):  # error
             trade = Trade(
@@ -195,6 +233,7 @@ async def write_message(
     action: str,
     message_timestamp: datetime,
     recieve_timestamp: datetime,
+    quantity: float,
     entry: float,
     stop_loss: float,
     take_profit: float
@@ -207,6 +246,7 @@ async def write_message(
         "action": action,
         "message_timestamp": message_timestamp.isoformat(),
         "recieve_timestamp": recieve_timestamp.isoformat(),
+        "quantity": quantity,
         "entry": entry,
         "stop_loss": stop_loss,
         "take_profit": take_profit
@@ -219,6 +259,7 @@ async def write_message(
             action=action,
             message_timestamp=message_timestamp,
             recieve_timestamp=recieve_timestamp,
+            quantity=quantity,
             entry=entry,
             stop_loss=stop_loss,
             take_profit=take_profit,
@@ -229,27 +270,25 @@ async def write_message(
         logger.exception("")
 
 
-async def execute(
-    thread_id: int,
-    BotStatus: dict,
+async def _execute_bot_signal(
     channel: str,
     content: str,
     symbol: str,
     action: str,
     message_timestamp: float,
     recieve_timestamp: float,
+    quantity: float = None,
     entry: float = None,
     stop_loss: float = None,
     take_profit: float = None,
     price: float = None,
 ):
     try:
-        status_logger = ThreadStatusLogger(thread_id, BotStatus)
-        status_logger.log("Starting execute bot signal")
+        logger.info("Starting execute bot signal")
         bot_dict, message = None, None
 
         try:
-            status_logger.log("Get all bot and write message.")
+            logger.info("Get all bot and write message.")
             bot_dict, message = await asyncio.gather(
                 get_all_bot(channel),
                 write_message(
@@ -259,6 +298,7 @@ async def execute(
                     action,
                     datetime.fromtimestamp(message_timestamp),
                     datetime.fromtimestamp(recieve_timestamp),
+                    quantity,
                     entry,
                     stop_loss,
                     take_profit
@@ -266,125 +306,6 @@ async def execute(
             )
         except Exception as e:
             error_msg = f"get all bot and write message error. {e}"
-            status_logger.log(
-                json.dumps(
-                    {
-                        "error": error_msg,
-                        "traceback": traceback.format_exc()
-                    },
-                    indent=4
-                )
-            )
-
-        if bot_dict is not None and message is not None and action is not None:
-            try:
-                status_logger.log("Prepare data")
-                config_list = get_all_bot_config(bot_dict)
-                data_dict = {
-                    "symbol": symbol,
-                    "action": action,
-                    "scalp_entry": entry,
-                    "scalp_stop_loss": stop_loss,
-                    "scalp_take_profit": take_profit,
-                    "price": price,
-                }
-                status_logger.log_data(data_dict)
-                task_dict = await send_bot_executor(config_list, data_dict)
-                result_dict = await recieve_execute_result(task_dict)
-            except Exception as e:
-                error_msg = f"send and receive data error. {e}"
-                status_logger.log(
-                    json.dumps(
-                        {
-                            "error": error_msg,
-                            "traceback": traceback.format_exc()
-                        },
-                        indent=4
-                    )
-                )
-                result_dict = {bot_id: 'EXECUTE ERROR' for bot_id in bot_dict}
-
-            try:
-                status_logger.log("write trade result.")
-                await write_trade_result(message, result_dict, bot_dict)
-            except Exception as e:
-                error_msg = f"write trade result error. {e}"
-                status_logger.log(
-                    json.dumps(
-                        {
-                            "error": error_msg,
-                            "traceback": traceback.format_exc()
-                        },
-                        indent=4
-                    )
-                )
-
-    except Exception as e:
-        error_msg = f"Unexpected error. {e}"
-        status_logger.log(
-            json.dumps(
-                {
-                    "error": error_msg,
-                    "traceback": traceback.format_exc()
-                },
-                indent=4
-            )
-        )
-    finally:
-        status_logger.log("Complete")
-        BotStatus.pop(thread_id)
-
-
-async def execute_webhook(
-    channel: str,
-    content: str,
-    symbol: str,
-    action: str,
-    uid: str,
-    bot_id: int,
-    message_timestamp: float,
-    recieve_timestamp: float,
-    entry: float = None,
-    stop_loss: float = None,
-    take_profit: float = None,
-    price: float = None,
-):
-    try:
-        bot_dict, message = None, None
-
-        try:
-            logger.info("Get all bot and write message.")
-            bot = await BotOrder.filter(
-                is_del=False,
-                status="RUNNING",
-                channel=channel,
-                user__uid=uid,
-            ).prefetch_related(
-                "config__api",
-                "user",
-            ).first()
-            
-            if bot is None:
-                logger.info(f"No such webhook Bot {channel} {uid}")
-                return
-            
-            bot_dict = {bot.id: bot}
-            if bot_id != bot.id:
-                raise BackendException("Bot ID not match")
-
-            message = await write_message(
-                channel,
-                content,
-                symbol,
-                action,
-                datetime.fromtimestamp(message_timestamp),
-                datetime.fromtimestamp(recieve_timestamp),
-                entry,
-                stop_loss,
-                take_profit
-            )
-        except Exception as e:
-            error_msg = f"get webhook bot and write message error. {e}"
             logger.error(
                 json.dumps(
                     {
@@ -398,16 +319,17 @@ async def execute_webhook(
         if bot_dict is not None and message is not None and action is not None:
             try:
                 logger.info("Prepare data")
-                config_list = get_all_bot_config(bot_dict)
+                config_list = await get_all_bot_config(channel, bot_dict)
                 data_dict = {
                     "symbol": symbol,
                     "action": action,
+                    "scalp_quantity": quantity,
                     "scalp_entry": entry,
                     "scalp_stop_loss": stop_loss,
                     "scalp_take_profit": take_profit,
                     "price": price,
                 }
-                logger.info(json.dumps(data_dict, indent=4))
+                logger.info(json.dumps(data_dict))
                 task_dict = await send_bot_executor(config_list, data_dict)
                 result_dict = await recieve_execute_result(task_dict)
             except Exception as e:
@@ -453,6 +375,140 @@ async def execute_webhook(
         logger.info("Complete")
 
 
+async def _execute_webhook_signal(
+    channel: str,
+    content: str,
+    symbol: str,
+    action: str,
+    uid: str,
+    bot_id: int,
+    message_timestamp: float,
+    recieve_timestamp: float,
+    quantity: float = None,
+    entry: float = None,
+    stop_loss: float = None,
+    take_profit: float = None,
+    price: float = None,
+):
+    try:
+        bot_dict, message = None, None
+
+        try:
+            logger.info("Get webhook bot and write message.")
+            bot = await BotOrder.filter(
+                is_del=False,
+                status="RUNNING",
+                channel=channel,
+                user__uid=uid,
+            ).prefetch_related(
+                "config__api",
+                "config__pair",
+                "user",
+            ).first()
+
+            if bot is None:
+                logger.info(f"No such webhook Bot {channel} {uid}")
+                return
+
+            bot_dict = {bot.id: bot}
+            if bot_id != bot.id:
+                raise BackendException("Bot ID not match")
+
+            message = await write_message(
+                channel,
+                content,
+                symbol,
+                action,
+                datetime.fromtimestamp(message_timestamp),
+                datetime.fromtimestamp(recieve_timestamp),
+                quantity,
+                entry,
+                stop_loss,
+                take_profit
+            )
+        except Exception as e:
+            error_msg = f"get webhook bot and write message error. {e}"
+            logger.error(
+                json.dumps(
+                    {
+                        "error": error_msg,
+                        "traceback": traceback.format_exc()
+                    },
+                    indent=4
+                )
+            )
+
+        if bot_dict is not None and message is not None and action is not None:
+            try:
+                logger.info("Prepare data")
+                config_list = await get_all_bot_config(channel, bot_dict)
+                data_dict = {
+                    "symbol": symbol,
+                    "action": action,
+                    "scalp_quantity": quantity,
+                    "scalp_entry": entry,
+                    "scalp_stop_loss": stop_loss,
+                    "scalp_take_profit": take_profit,
+                    "price": price,
+                }
+                logger.info(json.dumps(data_dict))
+                task_dict = await send_bot_executor(config_list, data_dict)
+                result_dict = await recieve_execute_result(task_dict)
+            except Exception as e:
+                error_msg = f"send and receive data error. {e}"
+                logger.error(
+                    json.dumps(
+                        {
+                            "error": error_msg,
+                            "traceback": traceback.format_exc()
+                        },
+                        indent=4
+                    )
+                )
+                result_dict = {bot_id: 'EXECUTE ERROR' for bot_id in bot_dict}
+
+            try:
+                logger.info("write trade result.")
+                await write_trade_result(message, result_dict, bot_dict)
+            except Exception as e:
+                error_msg = f"write trade result error. {e}"
+                logger.error(
+                    json.dumps(
+                        {
+                            "error": error_msg,
+                            "traceback": traceback.format_exc()
+                        },
+                        indent=4
+                    )
+                )
+
+    except Exception as e:
+        error_msg = f"Unexpected error. {e}"
+        logger.error(
+            json.dumps(
+                {
+                    "error": error_msg,
+                    "traceback": traceback.format_exc()
+                },
+                indent=4
+            )
+        )
+    finally:
+        logger.info("Complete")
+
+
+def bot_dict_postprocess(bot: dict) -> dict:
+    bot["bot_id"] = bot.pop("id")
+    bot["config"]["api_id"] = bot["config"]["api"]["id"]
+    bot["config"]["pair_id"] = None if bot["config"]['pair'] is None else bot["config"]['pair']['id']
+    bot["config"].pop("api", None)
+    bot["config"].pop("pair", None)
+    others = bot["config"].pop("others", "{}")
+    others = json.loads(others) if others else {}
+    bot["config"].update(others)
+    return bot
+
+
 @atomic()
 @permission_validator("get_user_bots")
 async def _get_user_bots(user: User) -> List[BotOrder]:
@@ -460,42 +516,139 @@ async def _get_user_bots(user: User) -> List[BotOrder]:
     logger.info(f"Get bots for user {uid}")
     Bot_Pydantic_List = pydantic_queryset_creator(
         BotOrder,
-        include=["id", "config", "status", "channel", "config_id"]
+        include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
     bot_list = await Bot_Pydantic_List.from_queryset(user.bot_user.filter(is_del=False))
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
-        bot["bot_id"] = bot.pop("id")
-        bot["config"]["api_id"] = bot["config"]["api"]["id"]
-        bot["config"].pop("api")
+        bot = bot_dict_postprocess(bot)
 
     logger.info(f"Get user [{uid}] {len(bot_list)} bots")
     return bot_list
 
 
 @atomic()
-@permission_validator("get_bot_trades")
-async def _get_bot_trades(user: User, bot_id: int) -> List[Trade]:
+@permission_validator("get_user_history_bots")
+async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[BotOrder]:
     uid = user.uid
-    logger.info(f"Get trades from bot {bot_id} for user {uid}")
-    Trade_Pydantic_List = pydantic_queryset_creator(
-        Trade,
-        exclude=["bot"]
+    logger.info(f"Get hisotry bots for user {uid}")
+    Bot_Pydantic_List = pydantic_queryset_creator(
+        BotOrder,
+        include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
 
-    bot = await user.bot_user.filter(id=bot_id).first()
-    if bot is None:
-        raise BackendException("Invalid bot_id")
+    query = user.bot_user.filter(is_del=True)
+    pagination_query, total_count, total_page = await pagination(query, page, pagesize)
+    bot_list = await Bot_Pydantic_List.from_queryset(pagination_query)
+    bot_list = json.loads(bot_list.json())
+    for bot in bot_list:
+        bot = bot_dict_postprocess(bot)
 
-    trade_list = await Trade_Pydantic_List.from_queryset(bot.trade_bot.filter(is_del=False).offset(0).limit(20))
-    trade_list = trade_list.dict()['__root__']
-    for trade in trade_list:
-        trade["message"]["message_timestamp"] = trade["message"]["message_timestamp"].timestamp()
-        trade["message"]["recieve_timestamp"] = trade["message"]["recieve_timestamp"].timestamp()
+    logger.info(f"Get user [{uid}] {len(bot_list)} history bots.")
+    return {
+        'bots': bot_list,
+        'page': page,
+        'pagesize': pagesize,
+        'total_page': total_page,
+        'total_count': total_count
+    }
 
-    # trade_list = json.loads(trade_list.json())
-    logger.info(f"Get bot [{bot_id}] {len(trade_list)} trades")
-    return trade_list
+
+@atomic()
+async def get_hyperopt(channel: str) -> dict:
+    hyperopt = await Hyperopt.filter(
+        is_del=False,
+        channel=channel,
+        loss="SharpeHyperOptLoss"
+    ).first()
+    if hyperopt is None:
+        hyperopt = await Hyperopt.filter(is_del=False, channel="DEFAULT").first()
+
+    return json.loads(hyperopt.params)
+
+
+def fill_hyperopt(hyperopt: dict, config: dict):
+    if config.get('hyperopt'):
+        config["take_profit"] = float(hyperopt["take_profit"])
+        config["stop_loss"] = float(hyperopt["stop_loss"])
+    return config
+
+
+@atomic()
+async def validate_config(user: User, config: dict):
+
+    # validate api belongs to user
+    api_id = config["api_id"]
+    api = await user.api_user.filter(id=api_id, is_del=False).first()
+    if api is None:
+        raise BackendException("Invalid api_id")
+
+    # validate trailing order
+    validate_trailing(api, config)
+
+    # validate pair belongs to user
+    pair_id = config.get('pair_id')
+    if pair_id is not None:
+        pair = await Pair.filter(id=pair_id, is_del=False).prefetch_related("user").first()
+        if pair is None or (pair.types != "BUILTIN" and pair.user != user):
+            raise BackendException("Invalid pair_id")
+    else:
+        config.pop("pair_id", None)
+        pair = None
+
+    # validate other properties
+
+    quote = config.get('quote')
+    quote = quote_constant['default'][api.exchange] if quote is None else quote
+    if quote not in quote_constant[api.exchange]:
+        raise BackendException(f"{api.exchange} exchange cannot use {quote} as quote currency")
+
+    others = {
+        'quote': quote,
+    }
+    others = json.dumps(others)
+
+    return api, pair, others
+
+
+async def validate_bot_number(user: User, role: str, channel: str):
+
+    bot_number_limit = {
+        'admin': 10,
+        'subscriber': 2,
+        'vip': 2,
+        'trial': 1
+    }.get(role, 0)
+
+    bot_list = await user.bot_user.filter(is_del=False, channel=channel)
+    if len(bot_list) >= bot_number_limit:
+        raise BackendException(f"Maximum {bot_number_limit} bot per subscription for {role}")
+
+
+@atomic()
+async def validate_subscription(user: User, channel: str, config: dict):
+
+    is_trial = False
+    trial_expired_at = None
+
+    # check channel from code base
+    if channel not in ChannelType._value2member_map_:
+        raise BackendException("Invalid channel")
+
+    if user.role.name == "vip":
+        return None, False, None
+
+    # validate channel subscription
+    subscription = await user.subscription_user.filter(
+        is_del=False, plan__channel__in=[channel, "DARIUS"]
+    ).exists()
+
+    if subscription:
+        await validate_bot_number(user, 'subscriber', channel)
+    else:
+        await validate_bot_number(user, 'trial', channel)
+
+    return subscription, is_trial, trial_expired_at
 
 
 @atomic()
@@ -504,37 +657,14 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     uid = user.uid
     logger.info(f"Create new bot for user [{uid}]")
 
-    # validate api belongs to user
-    api_id = config["api_id"]
-    api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
-    if api is None:
-        raise BackendException("Invalid api_id")
-
-    # validate channel subscription
-    # subscription = await user.subscription_user.filter(
-    #     is_del=False, plan__channel__in=[channel, "DARIUS"]
-    # ).exists()
-    # if not subscription:
-    #     raise BackendException("Invalid channel")
-
-    # remove this check after activate above validation
-    if channel not in ChannelType._value2member_map_:
-        raise BackendException("Invalid channel")
-
-    # validate bot number
-    bot_list = await user.bot_user.filter(is_del=False)
-    if bot_list and len(bot_list) >= 7 and user.role.name != "admin":
-        raise BackendException("Maximum 7 bot per user")
-
-    # validate channel no duplicate
-    # if channel in set([bot.channel for bot in bot_list]):
-    #     raise BackendException("Channel duplicate")
-
-    # validate trailing
-    validate_trailing(api, config)
+    subscription, is_trial, trial_expired_at = await validate_subscription(user, channel, config)
+    api, pair, others = await validate_config(user, config)
 
     # create bot
     config["api"] = api
+    config["pair"] = pair
+    config["others"] = others
+
     if channel == ChannelType.WEBHOOK:
 
         bot_config = await BotConfig.create(
@@ -544,7 +674,9 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         bot_order, create = await BotOrder.get_or_create(
             defaults={
                 "config": bot_config,
-                "status": "RUNNING"
+                "status": "RUNNING",
+                "is_trial": is_trial,
+                "trial_expired_at": trial_expired_at
             },
             channel=channel,
             is_del=False,
@@ -570,6 +702,19 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         bot_config.bot = bot_order
         await bot_config.save()
 
+    # referrer gets credit on user first bot
+    user_create_bot_already = await BotOrder.filter(user=user).exists()
+    user_create_bot_already = False
+    if not user_create_bot_already:
+        referral = await user.referral_user.prefetch_related('referrer').first()
+        if referral.referrer:
+            referrer = await Referral.filter(id=referral.referrer.id).prefetch_related('user').select_for_update().first()
+            referrer.bot_count += 1
+            await asyncio.gather(
+                create_user_referral_history(referrer, referral, bot=bot_order),
+                referrer.save()
+            )
+
     bot_id = bot_order.id
     logger.info(f"Create bot [{bot_id}]")
     return bot_id
@@ -578,20 +723,15 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 @atomic()
 @permission_validator("update_user_bot")
 async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
-    uid = user.uid
     logger.info(f"Update bot [{bot_id}]")
 
-    # validate api belongs to user
-    api_id = config["api_id"]
-    api = await user.api_user.filter(id=api_id).filter(is_del=False).first()
-    if api is None:
-        raise BackendException("Invalid api_id")
-
-    # validate trailing
-    validate_trailing(api, config)
+    api, pair, others = await validate_config(user, config)
 
     # update bot
     config["api"] = api
+    config["pair"] = pair
+    config["others"] = others
+
     bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
     if bot_order is None:
         raise BackendException(f"No Bot {bot_id}")
@@ -599,6 +739,7 @@ async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -
         bot_order.status = status
     for key, value in config.items():
         setattr(bot_order.config, key, value)
+
     await bot_order.save()
     await bot_order.config.save()
 
@@ -614,22 +755,22 @@ def validate_trailing(api, config):
             if config["target"] != "FUTURE":
                 raise BackendException("Binance can only use trailing stop in future trading.")
 
-            if config["stop_loss_type"] == "TRAILING":
+        if config["stop_loss_type"] == "TRAILING":
 
-                if float(config["stop_loss"]) < 0.001 or float(config["stop_loss"]) > 0.05:
-                    raise BackendException(" 0.1 < stop_loss < 5 %")
+            if float(config["stop_loss"]) < 0.001 or float(config["stop_loss"]) > 0.05:
+                raise BackendException(" 0.1 < stop_loss < 5 %")
 
-            if config["take_profit_type"] == "TRAILING":
+        if config["take_profit_type"] == "TRAILING":
 
-                if float(config["take_profit"]) < 0.001 or float(config["take_profit"]) > 0.05:
-                    raise BackendException(" 0.1 < take_profit < 5 %")
+            if float(config["take_profit"]) < 0.001 or float(config["take_profit"]) > 0.05:
+                raise BackendException(" 0.1 < take_profit < 5 %")
 
     if config['stop_loss_type'] != "TRAILING":
-        if config['stop_loss'] < 0:
+        if config['stop_loss'] < 0 or config['stop_loss'] > 1:
             raise BackendException(" 0 < stop loss < 100 %")
 
     if config['take_profit_type'] != "TRAILING":
-        if config['take_profit'] < 0:
+        if config['take_profit'] < 0 or config['take_profit'] > 5:
             raise BackendException(" 0 < take profit < 500 %")
 
     return params
@@ -641,33 +782,18 @@ async def _delete_user_bot(user: User, bot_id: int) -> int:
     uid = user.uid
     logger.info(f"Delete bot[{bot_id}] for user {uid}")
 
-    user = await User.filter(uid=uid).filter(is_del=False).first()
+    user = await User.filter(uid=uid, is_del=False).first()
     if user is None:
         raise BackendException("Invalid uid")
 
     # validate bot
-    bot = await user.bot_user.filter(id=bot_id).filter(is_del=False).prefetch_related("config").first()
+    bot = await user.bot_user.filter(id=bot_id, is_del=False).prefetch_related("config").first()
     if bot is None:
         raise BackendException("Invalid bot_id")
 
     # delete bot
     bot.is_del = True
+    bot.status = "STOPPED"
     bot.config.is_del = True
     await bot.config.save()
     await bot.save()
-
-
-class ThreadStatusLogger():
-    def __init__(self, thread_id: int, BotStatus: dict):
-        self.id = thread_id
-        self.status_dict = BotStatus[thread_id]
-        self.status_dict["log"] = []
-        self.status_dict["data"] = {}
-
-    def log(self, msg: str, level: str = "info"):
-        log_func = getattr(logger, level)
-        log_func(msg)
-        self.status_dict["log"].append(msg)
-
-    def log_data(self, data: dict):
-        self.status_dict["data"] = data

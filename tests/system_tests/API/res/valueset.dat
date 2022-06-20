@@ -1,0 +1,7 @@
+# For rat.robot
+  [Server2]
+  tags=prod
+  PRODUCT_API_HOST=https://darius-backend-dot-darius-332003.de.r.appspot.com/api/v1/
+
+
+# Don't use ${Empty} , just leave a blank if you haven't decided the value

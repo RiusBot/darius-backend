@@ -1,140 +1,61 @@
 import logging
-from aiohttp.web import json_response
-from main.src.core.telegram import _get_user_telegram, _create_user_telegram, _delete_user_telegram, _update_user_telegram, _check_tg_user_valid
-from main.src.exception import BackendException
-from main.src.core.validator import filter_illegal_char
+from main.src.core.telegram import _get_user_telegram, _create_user_telegram, _delete_user_telegram, _update_user_telegram, _check_tg_user_valid, _user_telegram_send_message
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
 
 
-async def get_user_telegram(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        telegram_info = await _get_user_telegram(uid)
-        return json_response(
-            status=200,
-            data=telegram_info
-        )
-    except Exception as e:
-        logger.error("Get telegram error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_user_telegram(request: dict):
+    uid = request["uid"]
+    logger.debug(f"get user {uid} telegram")
+    telegram_info = await _get_user_telegram(uid)
+    return telegram_info
 
 
-async def check_tg_user_valid(request):
-
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        telegram_id = json_payload["telegram_id"]
-        chat_id = json_payload["chat_id"]
-        valid = await _check_tg_user_valid(telegram_id, chat_id)
-        return json_response(
-            status=200,
-            data={
-                "valid": valid
-            }
-        )
-    except Exception as e:
-        logger.error("Create telegram error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def check_tg_user_valid(request: dict):
+    telegram_id = request["telegram_id"]
+    chat_id = request["chat_id"]
+    logger.debug(f"check tg user {chat_id} valid")
+    valid = await _check_tg_user_valid(telegram_id, chat_id)
+    return {"valid": valid}
 
 
-async def create_user_telegram(request):
-
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        telegram_id = json_payload['telegram_id']
-        telegram_id = await _create_user_telegram(uid, telegram_id)
-        return json_response(
-            status=200,
-            data={
-                "telegram_id": telegram_id
-            }
-        )
-    except Exception as e:
-        logger.error("Create telegram error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def create_user_telegram(request: dict):
+    uid = request["uid"]
+    telegram_id = request['telegram_id']
+    logger.info(f"create user {uid} telegram {telegram_id}")
+    telegram_id = await _create_user_telegram(uid, telegram_id)
+    return {"telegram_id": telegram_id}
 
 
-async def update_user_telegram(request):
-
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        telegram_id = json_payload["telegram_id"]
-        await _update_user_telegram(uid, telegram_id)
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Update telegram error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def update_user_telegram(request: dict):
+    uid = request["uid"]
+    telegram_id = request["telegram_id"]
+    logger.info(f"update user {uid} telegram {telegram_id}")
+    await _update_user_telegram(uid, telegram_id)
 
 
-async def delete_user_telegram(request):
+@error_handler()
+@input_filter
+async def delete_user_telegram(request: dict):
+    uid = request["uid"]
+    logger.info(f"delete user {uid} telegram")
+    await _delete_user_telegram(uid)
 
-    json_payload = await request.json()
-    json_payload = filter_illegal_char(json_payload)
 
-    try:
-        uid = json_payload["uid"]
-        await _delete_user_telegram(uid)
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Delete telegram error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def user_telegram_send_message(request: dict):
+    uid = request["uid"]
+    msg = request["msg"]
+    logger.info(f"send telegram message to user {uid}")
+    await _user_telegram_send_message(uid, msg)

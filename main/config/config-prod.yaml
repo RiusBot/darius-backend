@@ -1,0 +1,8 @@
+ENV: prod
+
+DARIUSDB_USER: root
+DARIUSDB_PASSWD: dadarius
+DARIUSDB_HOST: '35.236.170.60'
+BOT_EXECUTOR_ENDPOINT: "https://bot-executor-ls7fboir7a-de.a.run.app/"
+BOT_EXECUTOR_CLEAN_ENDPOINT: "https://bot-executor-ls7fboir7a-de.a.run.app/clean"
+BOT_OPTIMIZER_URL: "https://bot-optimizer-ls7fboir7a-de.a.run.app"

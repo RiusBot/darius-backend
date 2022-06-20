@@ -11,6 +11,7 @@ from google.cloud import secretmanager
 
 usingProjectId = os.getenv('project_id', 'local')
 logger = logging.getLogger(__name__)
+db = firestore.Client()
 
 
 async def openapi_auth(bearer_token: str, request):
@@ -80,13 +81,18 @@ def fetch_secret_token_manager():
 
 @functools.lru_cache(maxsize=None)
 def fetch_secret_token_firestore():
-    db = firestore.Client()
     Secret = db.collection("config").document("backend").get().to_dict()
     Token = Secret['auth_token']
     return Token
 
 
-def check_client_access(json_payload):
+@functools.lru_cache(maxsize=64)
+def verify_firestore_uid_exists(uid: str):
+    user = db.collection("users").document(uid).get().to_dict()
+    return (user is not None)
+
+
+def check_client_access(json_payload: dict):
     # TODO HERE
     try:
         # https://firebase.google.com/docs/auth/admin/verify-id-tokens#web
@@ -103,7 +109,7 @@ def check_client_access(json_payload):
         return False
 
 
-def fetch_access_token(audience_url):
+def fetch_access_token(audience_url: str):
     # set up metadata server request
     metadata_server_token_url = "http://metadata/computeMetadata/v1/instance/service-accounts/default/identity?audience="
 
