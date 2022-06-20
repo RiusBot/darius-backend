@@ -70,8 +70,8 @@ def process_bot_config(config: BotConfig):
         for key, value in model:
             if isinstance(value, (QuerySet, ReverseRelation)):
                 continue
-            elif key == "lists":
-                config_dict[key] = json.loads(value) if value is not None else None
+            elif key in ("lists", "others"):
+                config_dict[key] = json.loads(value) if value is not None else {}
             elif isinstance(value, Model):
                 config_dict.update(parse(value))
             else:
@@ -501,9 +501,11 @@ def bot_dict_postprocess(bot: dict) -> dict:
     bot["bot_id"] = bot.pop("id")
     bot["config"]["api_id"] = bot["config"]["api"]["id"]
     bot["config"]["pair_id"] = None if bot["config"]['pair'] is None else bot["config"]['pair']['id']
-    bot["config"]["others"] = json.loads(bot["config"]['others']) if bot["config"]['others'] else {}
     bot["config"].pop("api", None)
     bot["config"].pop("pair", None)
+    others = bot["config"].pop("others", "{}")
+    others = json.loads(others) if others else {}
+    bot["config"].update(others)
     return bot
 
 
@@ -595,22 +597,16 @@ async def validate_config(user: User, config: dict):
         pair = None
 
     # validate other properties
-    others = config['others']
-    others_key = {'quote'}
-    if others:
-        # unknown key check
-        for key in others:
-            if key not in others_key:
-                raise BackendException(f"Unknown config property {key}")
 
-        # quote check
-        if 'quote' in others:
-            if others['quote'] not in quote_constant[api.exchange]:
-                raise BackendException(f"{api.exchange} exchange cannot use {others['quote']} as quote currency")
-        else:
-            others['quote'] = quote_constant['default'][api.exchange]
+    quote = config.get('quote')
+    quote = quote_constant['default'][api.exchange] if quote is None else quote
+    if quote not in quote_constant[api.exchange]:
+        raise BackendException(f"{api.exchange} exchange cannot use {quote} as quote currency")
 
-        others = json.dumps(others)
+    others = {
+        'quote': quote,
+    }
+    others = json.dumps(others)
 
     return api, pair, others
 
