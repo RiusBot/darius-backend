@@ -4,7 +4,7 @@ name: Release-Candidate Deployment
 on:
   push:
     branches:
-      - "release-candidate/"
+      - "master"
 
 jobs:
   deploy:
@@ -28,5 +28,5 @@ jobs:
         name: "Deploy to GAE"
         uses: "google-github-action/deploy-appengine@v0"
         with:
-          project: "darius-prod"
-          deliverables: "./app.yaml"
+          project: "darius-332003"
+          deliverables: "./app-dev.yaml"

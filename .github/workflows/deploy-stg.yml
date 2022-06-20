@@ -4,7 +4,8 @@ name: Release-Candidate Deployment
 on:
   push:
     branches:
-      - "release-candidate/"
+      - "dev"
+      - "testing/**"
 
 jobs:
   deploy:
@@ -29,4 +30,4 @@ jobs:
         uses: "google-github-action/deploy-appengine@v0"
         with:
           project: "darius-prod"
-          deliverables: "./app.yaml"
+          deliverables: "./app-prod.yaml"
