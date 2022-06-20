@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import threading
 from main.src.core.performance import _get_performance, _create_performance, _get_performances
 from main.src.utils import error_handler, input_filter
 
@@ -27,4 +27,8 @@ async def get_performances(request: dict):
 @input_filter
 async def create_performance(request: dict):
     logger.info("create performance")
-    asyncio.create_task(_create_performance())
+    thread = threading.Thread(
+        target=_create_performance,
+        daemon=True
+    )
+    thread.start()

@@ -1,5 +1,5 @@
 import logging
-import asyncio
+import threading
 from main.src.core.hyperopt import _get_hyperopt, _create_hyperopt
 from main.src.utils import error_handler, input_filter
 
@@ -21,4 +21,8 @@ async def get_hyperopt(request: dict):
 @input_filter
 async def create_hyperopt(request: dict):
     logger.info("Create hyperopt")
-    asyncio.create_task(_create_hyperopt())
+    thread = threading.Thread(
+        target=_create_hyperopt,
+        daemon=True
+    )
+    thread.start()

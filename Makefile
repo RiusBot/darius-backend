@@ -5,15 +5,12 @@ ifeq ($(ENV), prod)
 	APP = app-prod.yaml
 	CREDENTIAL = darius-prod-5bed36160a65.json
 	IMAGE_NAME = darius-backend
-else ifeq ($(ENV), dev)
+else
 	CREDENTIAL = darius-332003-6391a8358dec.json
 	CLOUDBUILD = cloudbuild-dev.yaml
 	PROJECT_ID = darius-332003
 	APP = app-dev.yaml
 	IMAGE_NAME = darius-backend
-else
-	CREDENTIAL = darius-332003-6391a8358dec.json
-	PROJECT_ID = local
 endif
 
 ifeq ($(words $(MAKECMDGOALS)), 1)
@@ -151,7 +148,7 @@ version:
 ###########################
 
 start-local:
-	GOOGLE_APPLICATION_CREDENTIALS=$(CREDENTIAL) project_id=$(PROJECT_ID) python -m main.src.server.service
+	GOOGLE_APPLICATION_CREDENTIALS=$(CREDENTIAL) project_id=local python -m main.src.server.service
 
 mysql-proxy:
 	wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
