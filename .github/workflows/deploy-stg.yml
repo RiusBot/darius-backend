@@ -29,5 +29,5 @@ jobs:
         name: "Deploy to GAE"
         uses: "google-github-actions/deploy-appengine@v0"
         with:
-          project: "darius-prod"
+          project_id: "darius-prod"
           deliverables: "./app-prod.yaml"
