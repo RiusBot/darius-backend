@@ -1,9 +1,9 @@
 import logging
 from aiohttp.web import json_response
 from tortoise.transactions import atomic
-from main.src.exception import BackendException
-from main.src.core.validator import filter_illegal_char
 from main.src.core.stats import _get_stats
+from main.src.exception import BackendException
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
@@ -18,35 +18,19 @@ async def get_health_readiness(request):
     return json_response(status=200, data={'message': 'The service is healthy based on readiness healthcheck'})
 
 
-async def get_stats(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload['uid']
-        stats = await _get_stats(uid)
-        return json_response(
-            status=200,
-            data=stats,
-        )
-    except Exception as e:
-        logger.error("avaiable balance error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_stats(request: dict):
+    uid = request['uid']
+    logger.info("Get Riusbot stats")
+    stats = await _get_stats(uid)
+    return stats
 
 
 async def clean_no_subscription_bot(request):
 
     from datetime import datetime, timedelta
-    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message
+    from main.src.models import BotOrder
 
     async for bot in BotOrder.filter(is_del=False).prefetch_related("user__telegram_user"):
 
@@ -64,7 +48,7 @@ async def clean_no_subscription_bot(request):
             # not trial period
             bot.is_del = True
             await bot.save()
-    
+
     return json_response(
         status=200,
         data={},
@@ -77,7 +61,7 @@ async def check_rebate(api):
     try:
         api_key = api.api_key
         api_secret = decrypt(api.api_key, api.api_secret)
-    except:
+    except Exception:
         return False
     exchange = ccxt.binance({
         'apiKey': api_key,
@@ -93,10 +77,10 @@ async def check_rebate(api):
     return False
 
 
+@atomic()
 async def create_test_data(request):
-    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Message, Telegram
+    from main.src.models import BotConfig, BotOrder, User, Role, Permission, Api, Plan, Subscription, Referral
 
-    @atomic()
     async def create():
         permission = await Permission.create(
             service="test"
@@ -147,44 +131,64 @@ async def create_test_data(request):
     try:
         # await create()
 
-        import pytz
-        import datetime
-        import pandas as pd
+        import asyncio
+        from main.src.core.referral import create_user_referral
 
-        df = pd.read_csv("../cta_usdt.csv")
-        df["Close_time"] = pd.to_datetime(df["Close_time"])
-        df = df[df["Close_time"] > datetime.datetime(2021, 1, 1).replace(tzinfo=pytz.utc)]
-        df.head()
+        coroutines = []
+        async for user in User.filter(is_del=False, referral=None).prefetch_related('referral').all():
+            referral = await create_user_referral(user.referrer)
+            referral.referral_code = user.referral_code
+            referral.user = user
+            user.referral = referral
+            referrer = await Referral.filter(referral_code=user.referrer).select_for_update().first()
+            if referrer:
+                referrer.register_count += 1
+                coroutines.append(referrer.save())
 
-        message_list = []
+            coroutines.append(referral.save())
+            coroutines.append(user.save())
 
-        for i in range(len(df)):
+        await asyncio.gather(*coroutines)
+        logger.info("Complete")
 
-            row = df.iloc[i]
-            timestamp = row["Close_time"]
+#         import pytz
+#         import datetime
+#         import pandas as pd
 
-            for symbol, quantity in zip(df.columns[1:], row[1:]):
-                if not pd.isna(quantity) and quantity:
-                    action = "BUY" if quantity > 0 else "SELL"
+#         df = pd.read_csv("../cta_usdt.csv")
+#         df["Close_time"] = pd.to_datetime(df["Close_time"])
+#         df = df[df["Close_time"] > datetime.datetime(2021, 1, 1).replace(tzinfo=pytz.utc)]
+#         df.head()
 
-                    message = Message(
-                        channel="CTA",
-                        content="",
-                        symbol=symbol,
-                        action=action,
-                        message_timestamp=timestamp.isoformat(),
-                        recieve_timestamp=timestamp.isoformat(),
-                        quantity=float(quantity),
-                        entry=None,
-                        stop_loss=None,
-                        take_profit=None,
-                        price=None
-                    )
-                    message_list.append(message)
+#         message_list = []
 
-            if len(message_list) > 100:
-                await Message.bulk_create(message_list)
-                message_list = []
+#         for i in range(len(df)):
+
+#             row = df.iloc[i]
+#             timestamp = row["Close_time"]
+
+#             for symbol, quantity in zip(df.columns[1:], row[1:]):
+#                 if not pd.isna(quantity) and quantity:
+#                     action = "BUY" if quantity > 0 else "SELL"
+
+#                     message = Message(
+#                         channel="CTA",
+#                         content="",
+#                         symbol=symbol,
+#                         action=action,
+#                         message_timestamp=timestamp.isoformat(),
+#                         recieve_timestamp=timestamp.isoformat(),
+#                         quantity=float(quantity),
+#                         entry=None,
+#                         stop_loss=None,
+#                         take_profit=None,
+#                         price=None
+#                     )
+#                     message_list.append(message)
+
+#             if len(message_list) > 100:
+#                 # await Message.bulk_create(message_list)
+#                 message_list = []
 
         return json_response(
             status=200,

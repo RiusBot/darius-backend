@@ -1,7 +1,6 @@
 import json
 import logging
 import aiohttp
-import telegram
 import functools
 from firebase_admin import firestore
 from tortoise.transactions import atomic
@@ -11,6 +10,7 @@ from main.src.models.telegram import TelegramSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.models.channel import ChannelID
+from main.src.core.telegram_bot import get_chat_info, send_message
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,13 @@ def fetch_telegram_bot_token_firestore():
     return config[doc]
 
 
-TGBot = telegram.Bot(token=fetch_telegram_bot_token_firestore())
+async def _user_telegram_send_message(uid: str, msg: str):
+    logger.info(f"Send telegram msg to user {uid}")
+    user = await User.filter(uid=uid).first()
+    bind_telegram = await user.telegram_user.all().first()
+    if bind_telegram is None:
+        raise BackendException("User has no bind telegram")
+    send_message(bind_telegram.telegram_id, msg=msg)
 
 
 @atomic()
@@ -54,10 +60,7 @@ async def _get_user_telegram(user: User):
     telegram_info = bind_telegram.dict()
 
     # add addition info
-    try:
-        chat = TGBot.get_chat(telegram_info["telegram_id"]).to_dict()
-    except Exception:
-        chat = {}
+    chat = get_chat_info(telegram_info["telegram_id"])
     telegram_info["username"] = chat.get("username")
     telegram_info["name"] = chat.get("first_name", "") + " " + chat.get("last_name", "")
     telegram_info.pop("created_at")

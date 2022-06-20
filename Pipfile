@@ -8,6 +8,10 @@ name = "pypi"
 aiodns = "==3.0.0"
 aiohttp = "==3.8.1"
 aiohttp-jinja2 = "==1.4"
+<<<<<<< HEAD
+=======
+async-timeout = "==4.0.2"
+>>>>>>> dev
 attrs = "==21.2.0"
 cchardet = "==2.1.7"
 certifi = "==2021.10.8"
@@ -38,8 +42,12 @@ six = "==1.16.0"
 swagger-ui-bundle = "==0.0.9"
 typing-extensions = "==3.10.0.2"
 urllib3 = "==1.26.7"
+<<<<<<< HEAD
+=======
+yarl = "==1.7.2"
+>>>>>>> dev
 zipp = "==3.6.0"
-ccxt = "==1.65.38"
+ccxt = "==1.72.85"
 firebase-admin = "==4.4.0"
 tortoise-orm = "==0.17.2"
 aiomysql = "==0.0.21"
@@ -61,6 +69,7 @@ google-cloud-recaptcha-enterprise = "==1.4.1"
 cachetools = "==4.2.2"
 cryptography = "==36.0.1"
 python-telegram-bot = "==13.9"
+aiocache = "==0.11.1"
 
 [dev-packages]
 "testfixtures" = "*"

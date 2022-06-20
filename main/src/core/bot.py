@@ -8,7 +8,7 @@ import requests
 import traceback
 import concurrent.futures
 from concurrent.futures import Future
-from datetime import datetime, timedelta
+from datetime import datetime
 from tortoise.transactions import atomic
 from tortoise.queryset import QuerySet
 from tortoise.models import Model
@@ -16,7 +16,7 @@ from tortoise.contrib.pydantic import pydantic_queryset_creator
 from tortoise.fields.relational import ReverseRelation
 from typing import List, Dict, Tuple
 
-from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair
+from main.src.models import BotOrder, BotConfig, Trade, Message, User, Hyperopt, Pair, Referral
 from main.src.models.channel import ChannelType
 from main.src.config import app_config
 from main.src.exception import BackendException
@@ -24,6 +24,8 @@ from main.src.core.auth import fetch_secret_token_firestore
 from main.src.core.cipher import decrypt
 from main.src.core.permission import permission_validator
 from main.src.utils import fetch, pagination
+from main.src.core.referral import create_user_referral_history
+from main.src.constant import quote_constant
 
 
 logger = logging.getLogger(__name__)
@@ -68,8 +70,8 @@ def process_bot_config(config: BotConfig):
         for key, value in model:
             if isinstance(value, (QuerySet, ReverseRelation)):
                 continue
-            elif key == "lists":
-                config_dict[key] = json.loads(value) if value is not None else None
+            elif key in ("lists", "others"):
+                config_dict[key] = json.loads(value) if value is not None else {}
             elif isinstance(value, Model):
                 config_dict.update(parse(value))
             else:
@@ -124,10 +126,8 @@ def send_to_execute(url: str, config: dict):
                 if not (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
                     break
             return response
-    except Exception as e:
+    except Exception:
         logger.exception("")
-        # return str(e)
-        # logger.error(str(e))
         return "EXECUTE ERROR"
 
 
@@ -503,6 +503,9 @@ def bot_dict_postprocess(bot: dict) -> dict:
     bot["config"]["pair_id"] = None if bot["config"]['pair'] is None else bot["config"]['pair']['id']
     bot["config"].pop("api", None)
     bot["config"].pop("pair", None)
+    others = bot["config"].pop("others", "{}")
+    others = json.loads(others) if others else {}
+    bot["config"].update(others)
     return bot
 
 
@@ -534,13 +537,9 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         include=["id", "config", "status", "channel", "config_id", "is_trial", "trial_expired_at"]
     )
 
-    cnt = await user.bot_user.filter(is_del=True).limit(500).count()  # maximum 500
-    total_page = (cnt // pagesize) + (cnt % pagesize != 0)
-    offset, limit = pagination(page, pagesize, total_page)
-
-    bot_list = await Bot_Pydantic_List.from_queryset(
-        user.bot_user.filter(is_del=True).offset(offset).limit(limit)
-    )
+    query = user.bot_user.filter(is_del=True)
+    pagination_query, total_count, total_page = await pagination(query, page, pagesize)
+    bot_list = await Bot_Pydantic_List.from_queryset(pagination_query)
     bot_list = json.loads(bot_list.json())
     for bot in bot_list:
         bot = bot_dict_postprocess(bot)
@@ -551,7 +550,7 @@ async def _get_user_history_bots(user: User, page: int, pagesize: int) -> List[B
         'page': page,
         'pagesize': pagesize,
         'total_page': total_page,
-        'total_count': cnt
+        'total_count': total_count
     }
 
 
@@ -597,7 +596,19 @@ async def validate_config(user: User, config: dict):
         config.pop("pair_id", None)
         pair = None
 
-    return api, pair
+    # validate other properties
+
+    quote = config.get('quote')
+    quote = quote_constant['default'][api.exchange] if quote is None else quote
+    if quote not in quote_constant[api.exchange]:
+        raise BackendException(f"{api.exchange} exchange cannot use {quote} as quote currency")
+
+    others = {
+        'quote': quote,
+    }
+    others = json.dumps(others)
+
+    return api, pair, others
 
 
 async def validate_bot_number(user: User, role: str, channel: str):
@@ -626,7 +637,7 @@ async def validate_subscription(user: User, channel: str, config: dict):
 
     if user.role.name == "vip":
         return None, False, None
-    
+
     # validate channel subscription
     subscription = await user.subscription_user.filter(
         is_del=False, plan__channel__in=[channel, "DARIUS"]
@@ -635,21 +646,7 @@ async def validate_subscription(user: User, channel: str, config: dict):
     if subscription:
         await validate_bot_number(user, 'subscriber', channel)
     else:
-        # check if trial
-        telegram = await user.telegram_user.filter(is_del=False).first()
-        if not telegram:
-            raise BackendException("No subscription")
-        trial_expired_at = telegram.created_at + timedelta(days=30)
-        if telegram and trial_expired_at.timestamp() < datetime.now().timestamp():
-            # not trial period
-            raise BackendException("No subscription")
-        else:
-            # no subscription, but trial period
-            config["quantity"] = 30
-            config["leverage"] = 1
-            is_trial = True
-
-            await validate_bot_number(user, 'trial', channel)
+        await validate_bot_number(user, 'trial', channel)
 
     return subscription, is_trial, trial_expired_at
 
@@ -661,11 +658,13 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     logger.info(f"Create new bot for user [{uid}]")
 
     subscription, is_trial, trial_expired_at = await validate_subscription(user, channel, config)
-    api, pair = await validate_config(user, config)
+    api, pair, others = await validate_config(user, config)
 
     # create bot
     config["api"] = api
     config["pair"] = pair
+    config["others"] = others
+
     if channel == ChannelType.WEBHOOK:
 
         bot_config = await BotConfig.create(
@@ -703,6 +702,19 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         bot_config.bot = bot_order
         await bot_config.save()
 
+    # referrer gets credit on user first bot
+    user_create_bot_already = await BotOrder.filter(user=user).exists()
+    user_create_bot_already = False
+    if not user_create_bot_already:
+        referral = await user.referral_user.prefetch_related('referrer').first()
+        if referral.referrer:
+            referrer = await Referral.filter(id=referral.referrer.id).prefetch_related('user').select_for_update().first()
+            referrer.bot_count += 1
+            await asyncio.gather(
+                create_user_referral_history(referrer, referral, bot=bot_order),
+                referrer.save()
+            )
+
     bot_id = bot_order.id
     logger.info(f"Create bot [{bot_id}]")
     return bot_id
@@ -713,11 +725,13 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
     logger.info(f"Update bot [{bot_id}]")
 
-    api, pair = await validate_config(user, config)
+    api, pair, others = await validate_config(user, config)
 
     # update bot
     config["api"] = api
     config["pair"] = pair
+    config["others"] = others
+
     bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
     if bot_order is None:
         raise BackendException(f"No Bot {bot_id}")
