@@ -1,0 +1,32 @@
+
+name: Release-Candidate Deployment
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  deploy:
+    permissions:
+      contents: "read"
+      id-token: "write"
+    
+    runs-on: "ubuntu-latest"
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: "auth"
+        name: "Authenticate to GCP"
+        uses: "google-github-action/auth@v0"
+        with:
+          workload_identity_provider: "projects/928149002461/locations/global/workloadIdentityPools/gh-action-cd"
+          service_account: "gh-action"
+
+      - id: "deploy"
+        name: "Deploy to GAE"
+        uses: "google-github-action/deploy-appengine@v0"
+        with:
+          project: "darius-332003"
+          deliverables: "./app-dev.yaml"
