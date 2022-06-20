@@ -1,5 +1,5 @@
 
-name: Release-Candidate Deployment
+name: Release Deployment
 
 on:
   push:
