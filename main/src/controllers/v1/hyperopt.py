@@ -1,60 +1,24 @@
 import logging
-import threading
-from aiohttp.web import json_response
+import asyncio
 from main.src.core.hyperopt import _get_hyperopt, _create_hyperopt
-from main.src.exception import BackendException
-from main.src.core.validator import filter_illegal_char
+from main.src.utils import error_handler, input_filter
 
 
 logger = logging.getLogger(__name__)
 
 
-async def get_hyperopt(request):
-
-    json_payload = dict(request.rel_url.query)
-    json_payload = filter_illegal_char(json_payload)
-
-    try:
-        uid = json_payload["uid"]
-        channel = json_payload["channel"]
-        hyperopt = await _get_hyperopt(uid, channel)
-        return json_response(
-            status=200,
-            data=hyperopt
-        )
-    except Exception as e:
-        logger.error("Get hyperopt error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def get_hyperopt(request: dict):
+    uid = request["uid"]
+    channel = request["channel"]
+    logger.info(f"get {channel} hyperopt")
+    hyperopt = await _get_hyperopt(uid, channel)
+    return hyperopt
 
 
-async def create_hyperopt(request):
-
-    try:
-        thread = threading.Thread(
-            target=_create_hyperopt,
-            daemon=True
-        )
-        thread.start()
-        return json_response(
-            status=200,
-            data={}
-        )
-    except Exception as e:
-        logger.error("Create hyperopt error.")
-        logger.exception("")
-        error_message = str(e) if isinstance(e, BackendException) else "Unexpected Error"
-        return json_response(
-            status=500,
-            data={
-                'code': 500,
-                'message': error_message
-            }
-        )
+@error_handler()
+@input_filter
+async def create_hyperopt(request: dict):
+    logger.info("Create hyperopt")
+    asyncio.create_task(_create_hyperopt())

@@ -9,6 +9,7 @@ class Exchange(str, Enum):
     BINANCE = "binance"
     FTX = "ftx"
     FTXUS = "ftxus"
+    OKX = "okx"
 
 
 class Api(BaseModel):
@@ -16,6 +17,7 @@ class Api(BaseModel):
     user = fields.ForeignKeyField("darius.User", related_name="api_user")
     api_key = fields.CharField(64, null=False)
     api_secret = fields.CharField(400, null=False)
+    password = fields.CharField(400, null=True)
     exchange = fields.CharEnumField(Exchange, max_length=16, null=False)
     subaccount = fields.CharField(32, null=True)
 
@@ -26,7 +28,7 @@ class Api(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del", "user", "api_secret", "user_id"]
+        exclude = ["created_at", "updated_at", "is_del", "user", "api_secret", "user_id", "password"]
 
     def __str__(self):
         return f"Api [{self.id}] {self.api_key} {self.api_secret} {self.subaccount}"

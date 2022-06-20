@@ -14,6 +14,7 @@ class User(BaseModel):
     referrer = fields.CharField(8, null=True)
     referral_code = fields.CharField(8, null=False, unique=True)
     referrer_count = fields.IntField(null=False, default=0)
+    referral = fields.OneToOneField("darius.Referral", related_name="user_referral", null=True, unqiue=True)
 
     class Meta:
         table = "user"
@@ -21,7 +22,7 @@ class User(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "is_del", "role", "id"]
+        exclude = ["created_at", "updated_at", "is_del", "id"]
 
     def __str__(self):
         return f"User [{self.id}] {self.user_name} {self.email}"

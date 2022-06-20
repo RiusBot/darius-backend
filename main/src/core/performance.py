@@ -3,12 +3,12 @@ import json
 import logging
 import requests
 import calendar
-from datetime import datetime, timedelta
+from datetime import datetime
 from aiocache import cached
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import Performance, User
-from main.src.models.performance import PerformanceSchemaModel
+from main.src.models.channel import ChannelType
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.config import app_config
@@ -27,7 +27,7 @@ async def _get_performance(channel: str) -> dict:
         include=["channel", "start_at", "result"]
     )
     performance_list = await Performance_Pydantic_List.from_queryset(
-        Performance.filter(is_del=False, channel=channel).limit(12)
+        Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
     )
     performance_list = json.loads(performance_list.json())
     for performance in performance_list:
@@ -35,7 +35,7 @@ async def _get_performance(channel: str) -> dict:
         buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
         sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
 
-        keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+        # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
         performance["result"] = {
             'wins': buy_result["wins"] + sell_result['losses'],
             'losses': buy_result["losses"] + sell_result['wins'],
@@ -46,12 +46,16 @@ async def _get_performance(channel: str) -> dict:
 
     return performance_list
 
+
 @cached(ttl=43200)
 @atomic()
 async def _get_performances() -> dict:
-    logger.info(f"Get all Performance")
+    logger.info("Get all Performance")
 
     channel_list = await Performance.filter(is_del=False).distinct().values_list('channel', flat=True)
+    # remove channel in db if not define in models.channel
+    channel_list = [i for i in channel_list if i in ChannelType]
+
     Performance_Pydantic_List = pydantic_queryset_creator(
         Performance,
         include=["channel", "start_at", "result"]
@@ -60,7 +64,7 @@ async def _get_performances() -> dict:
 
     for channel in channel_list:
         performance_list = await Performance_Pydantic_List.from_queryset(
-            Performance.filter(is_del=False, channel=channel).limit(12)
+            Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
         )
         performance_list = json.loads(performance_list.json())
         for performance in performance_list:
@@ -68,7 +72,7 @@ async def _get_performances() -> dict:
             buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
             sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
 
-            keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+            # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
             performance["result"] = {
                 'wins': buy_result["wins"] + sell_result['losses'],
                 'losses': buy_result["losses"] + sell_result['wins'],
@@ -82,9 +86,9 @@ async def _get_performances() -> dict:
 
 
 def _create_performance():
-    logger.info(f"Create performance")
+    logger.info("Create performance")
     date = datetime.now()
-    y, m, d = date.year, date.month, date.day
+    y, m = date.year, date.month
     start = datetime(y, m, 1)
     _, last_day = calendar.monthrange(y, m)
     end = datetime(y, m, last_day)
@@ -111,7 +115,7 @@ def _create_performance():
     if response.status_code != 200:
         logging.error(f"create performance failed. {msg}")
     else:
-        logging.info(f"create performance success.")
+        logging.info("create performance success.")
 
 
 @atomic()

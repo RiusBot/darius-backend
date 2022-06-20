@@ -1,6 +1,6 @@
-import ccxt
 import json
 import logging
+import ccxt.async_support as ccxt
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from typing import List
@@ -31,10 +31,13 @@ async def _get_user_api(user: User) -> List[Api]:
     return api_list
 
 
-def validate_api_permission(api_key: str, api_secret: str, exchange: str, subaccount: str):
+async def validate_api_permission(api_key: str, api_secret: str, password: str, exchange: str, subaccount: str):
 
     if exchange in ["ftx", "ftxus"]:
         if len(api_key) != 40 or len(api_secret) != 40:
+            raise BackendException("Invalid length")
+    elif exchange == "okx":
+        if len(api_key) != 36 or len(api_secret) != 32:
             raise BackendException("Invalid length")
     elif exchange == "binance":
         if len(api_key) != 64 or len(api_secret) != 64:
@@ -53,40 +56,62 @@ def validate_api_permission(api_key: str, api_secret: str, exchange: str, subacc
         'enableRateLimit': True,
         'apiKey': api_key,
         "secret": api_secret,
+        "password": password,
         "headers": headers
     })
-    if not exchange.checkRequiredCredentials():
-        raise BackendException("Invalid exchange credentials.")
     try:
-        exchange.fetch_balance()
-    except Exception:
+        exchange.checkRequiredCredentials()
+        await exchange.fetch_balance()
+    except ccxt.AuthenticationError:
         raise BackendException("Invalid API Permission.")
+    finally:
+        await exchange.close()
+
+
+@atomic()
+async def validate_api_number(user: User, api_list: list):
+
+    # basic & trial
+    role = 'trial'
+
+    if user.role.name == "vip":
+        role = 'vip'
+    elif user.role.name == "admin":
+        role = 'admin'
+    else:
+        # subscriber
+        has_subscription = await user.subscription_user.filter(is_del=False).exists()
+        if has_subscription:
+            role = 'subscriber'
+
+    api_number_limit = {
+        'trial': 1,
+        'vip': 3,
+        'admin': 100,
+        'subscriber': 3
+    }.get(role, 0)
+
+    non_delete_api_list = [api for api in api_list if not api.is_del]
+    if len(non_delete_api_list) >= api_number_limit:
+        raise BackendException(f"Maximum {api_number_limit} api for {role}")
 
 
 @atomic()
 @permission_validator("create_user_api")
-async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
+async def _create_user_api(user: User, api_key: str, api_secret: str, password: str, exchange: str, subaccount: str) -> int:
     uid = user.uid
     logger.info(f"Create new api for user [{uid}]")
-
-    api_number_limit = 1
-
-    # validate if trial
-    has_subscription = await user.subscription_user.filter(is_del=False).exists()
-    if has_subscription:
-        api_number_limit = 3
+    api_list = await user.api_user.filter()
 
     # validate api number
-    api_list = await user.api_user.filter(is_del=False)
-    valid_api_list = [api for api in api_list if not api.is_del]
-    if valid_api_list and len(valid_api_list) >= api_number_limit and user.role.name != "admin":
-        raise BackendException(f"Maximum {api_number_limit} api")
+    await validate_api_number(user, api_list)
 
     # validate api permission
-    validate_api_permission(api_key, api_secret, exchange, subaccount)
+    await validate_api_permission(api_key, api_secret, password, exchange, subaccount)
 
     # encrypt api_secret
     api_secret = encrypt(api_key, api_secret)
+    password = encrypt(api_key, password) if password else None
 
     # validate api duplicate
     for api in api_list:
@@ -104,6 +129,7 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, exchange: 
         user=user,
         api_key=api_key,
         api_secret=api_secret,
+        password=password,
         exchange=exchange,
         subaccount=subaccount
     )
@@ -125,7 +151,7 @@ async def _update_user_api(user: User, api_id: int, api_key: str, api_secret: st
         raise BackendException("Invalid api.")
 
     # validate api permission
-    validate_api_permission(api_key, api_secret, exchange, subaccount)
+    await validate_api_permission(api_key, api_secret, exchange, subaccount)
 
     # update api
     api.api_key = api_key
@@ -147,9 +173,16 @@ async def _delete_user_api(user: User, api_id: int) -> int:
         raise BackendException("Invalid api_id")
 
     # validate no bot using
-    bot_using_this_api = await api.config_api.filter(is_del=False).first()
-    if bot_using_this_api is not None:
-        raise BackendException("API still in use.")
+    async for config_using_this_api in api.config_api.filter(is_del=False).prefetch_related("bot"):
+        if config_using_this_api.bot.is_del:
+
+            # check if config is somehow not deleted
+            if not config_using_this_api.is_del:
+                logger.info(f"Bot {config_using_this_api.bot.id} is del, config {config_using_this_api.id} is not. delete now.")
+                config_using_this_api.is_del = True
+                await config_using_this_api.save()
+        else:
+            raise BackendException("API still in use.")
 
     # delete api
     api.is_del = True
@@ -165,10 +198,13 @@ async def _clean_api() -> int:
 
     logger.info(f"All {api_count} api")
     async for api in Api.filter(is_del=False).all():
+        if api.id == 401:
+            continue
         try:
             api_secret = decrypt(api.api_key, api.api_secret)
-            validate_api_permission(api.api_key, api_secret, api.exchange, api.subaccount)
-        except Exception:
+            password = decrypt(api.api_key, api.password) if api.password else None
+            await validate_api_permission(api.api_key, api_secret, password, api.exchange, api.subaccount)
+        except BackendException:
             # remove running bot
             async for config in api.config_api.filter(is_del=False).prefetch_related('bot'):
                 config.is_del = True
@@ -181,5 +217,7 @@ async def _clean_api() -> int:
             api.is_del = True
             await api.save()
             remove_api_count += 1
+        except Exception:
+            logger.exception("")
 
     logger.info(f"Remove {remove_api_count} api, remove {remove_bot_count} bots.")

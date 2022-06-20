@@ -1,12 +1,8 @@
-import json
 import logging
 import requests
 from datetime import datetime, timedelta
 from tortoise.transactions import atomic
-from tortoise.contrib.pydantic import pydantic_queryset_creator
-from main.src.models import Hyperopt, User
-from main.src.models.hyperopt import HyperoptSchemaModel
-from main.src.exception import BackendException
+from main.src.models import User
 from main.src.core.permission import permission_validator
 from main.src.config import app_config
 from main.src.core.auth import fetch_secret_token_firestore
@@ -26,7 +22,7 @@ async def _get_hyperopt(user: User, channel: str) -> dict:
 
 
 def _create_hyperopt() -> dict:
-    logger.info(f"Create hyperopt")
+    logger.info("Create hyperopt")
     date = datetime.now()
     start = (date - timedelta(days=180)).strftime("%Y%m%d")
     end = date.strftime("%Y%m%d")
@@ -50,6 +46,6 @@ def _create_hyperopt() -> dict:
     except Exception:
         msg += f"{response.text}"
     if response.status_code != 200:
-        logging.error(f"create hyperopt failed. {msg}")
+        logger.error(f"create hyperopt failed. {msg}")
     else:
-        logging.info(f"create hyperopt success.")
+        logger.info("create hyperopt success.")

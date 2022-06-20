@@ -7,7 +7,7 @@ from main.src.models import BaseModel
 class Telegram(BaseModel):
 
     user = fields.ForeignKeyField("darius.User", related_name="telegram_user")
-    telegram_id = fields.IntField(pk=False, null=False, unique=True)
+    telegram_id = fields.BigIntField(pk=False, null=False, unique=True)
 
     class Meta:
         table = "telegram"
@@ -15,7 +15,7 @@ class Telegram(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["is_del", "id"]
+        exclude = ["updated_at", "is_del", "id"]
 
     def __str__(self):
         return f"User [{self.id}] {self.telegram_id}"

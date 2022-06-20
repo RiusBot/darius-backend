@@ -22,6 +22,7 @@ class BotConfig(BaseModel):
     bot = fields.OneToOneField("darius.BotOrder", related_name="config_bot")
     # api = fields.OneToOneField("darius.Api", related_name="config_api")
     api = fields.ForeignKeyField("darius.Api", related_name="config_api")
+    pair = fields.ForeignKeyField("darius.Pair", related_name="config_pair", null=True)
     test = fields.BooleanField(null=False, default=False)
     hyperopt = fields.BooleanField(null=False, default=False)
     duplicate = fields.BooleanField(null=True, default=False)
@@ -43,7 +44,7 @@ class BotConfig(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "id", "is_del"]
+        exclude = ["created_at", "updated_at", "id", "is_del"]
 
     def __str__(self):
         return f"Bot Config [{self.id}]"
