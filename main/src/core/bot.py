@@ -159,7 +159,7 @@ async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: i
     return task_dict
 
 
-async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = 40) -> Dict[Future, int]:
+async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = 100) -> Dict[Future, int]:
     logger.info("Start async activate bot executor")
     url = app_config["BOT_EXECUTOR_ENDPOINT"]
 
@@ -176,7 +176,7 @@ async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: 
 
         logger.info(f"All {len(config_list)} scheduled.")
         responses = await asyncio.gather(*tasks)
-        return responses
+        return {config['bot_id']: result for config, result in zip(config_list, responses)}
 
 
 async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, list]:
@@ -330,8 +330,9 @@ async def _execute_bot_signal(
                     "price": price,
                 }
                 logger.info(json.dumps(data_dict))
-                task_dict = await send_bot_executor(config_list, data_dict)
-                result_dict = await recieve_execute_result(task_dict)
+                # task_dict = await send_bot_executor(config_list, data_dict)
+                # result_dict = await recieve_execute_result(task_dict)
+                result_dict = await send_bot_executor2(config_list, data_dict)
             except Exception as e:
                 error_msg = f"send and receive data error. {e}"
                 logger.error(
@@ -452,8 +453,9 @@ async def _execute_webhook_signal(
                     "price": price,
                 }
                 logger.info(json.dumps(data_dict))
-                task_dict = await send_bot_executor(config_list, data_dict)
-                result_dict = await recieve_execute_result(task_dict)
+                # task_dict = await send_bot_executor(config_list, data_dict)
+                # result_dict = await recieve_execute_result(task_dict)
+                result_dict = await send_bot_executor2(config_list, data_dict)
             except Exception as e:
                 error_msg = f"send and receive data error. {e}"
                 logger.error(

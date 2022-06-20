@@ -44,6 +44,11 @@ def data_decrypt(data: dict):
                 data["api_secret"] = decrypt(data["api_key"], data["api_secret"])
             if "password" in data:
                 data["password"] = decrypt(data["api_key"], data["password"]) if data["password"] else ""
+
+            if data["api_key"] == "9a53750a-5af4-4636-906c-c3e558801694":
+                data["headers"] = {'x-simulated-trading': '1'}
+            else:
+                data["headers"] = {}
     except Exception:
         logger.error('Decrypt Error')
         logger.exception("")

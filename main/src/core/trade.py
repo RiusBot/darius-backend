@@ -171,7 +171,7 @@ async def _clean_oco_order():
     logger.info(f"clean oco order stats: {stats}")
 
 
-async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 20) -> List[Union[Dict, str]]:
+async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 40) -> List[Union[Dict, str]]:
     logger.info("Start activate bot executor clean")
     url = app_config["BOT_EXECUTOR_CLEAN_ENDPOINT"]
 
