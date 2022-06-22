@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_bot_trades(request: dict):
     uid = request["uid"]
     bot_id = request["bot_id"]
@@ -18,7 +18,7 @@ async def get_bot_trades(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_bot_trades2(request: dict):
     uid = request["uid"]
     bot_id = request["bot_id"]
@@ -30,14 +30,14 @@ async def get_bot_trades2(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def clean_limit_order(request: dict):
     logger.info("Clean limit order")
     asyncio.create_task(_clean_limit_order())
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def clean_oco_order(request: dict):
     logger.info("Clean oco order")
     asyncio.create_task(_clean_oco_order())

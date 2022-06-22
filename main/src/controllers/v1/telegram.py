@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_telegram(request: dict):
     uid = request["uid"]
     logger.debug(f"get user {uid} telegram")
@@ -16,7 +16,7 @@ async def get_user_telegram(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def check_tg_user_valid(request: dict):
     telegram_id = request["telegram_id"]
     chat_id = request["chat_id"]
@@ -26,7 +26,7 @@ async def check_tg_user_valid(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_user_telegram(request: dict):
     uid = request["uid"]
     telegram_id = request['telegram_id']
@@ -36,7 +36,7 @@ async def create_user_telegram(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_user_telegram(request: dict):
     uid = request["uid"]
     telegram_id = request["telegram_id"]
@@ -45,7 +45,7 @@ async def update_user_telegram(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def delete_user_telegram(request: dict):
     uid = request["uid"]
     logger.info(f"delete user {uid} telegram")
@@ -53,7 +53,7 @@ async def delete_user_telegram(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter(False)
 async def user_telegram_send_message(request: dict):
     uid = request["uid"]
     msg = request["msg"]

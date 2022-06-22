@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_hyperopt(request: dict):
     uid = request["uid"]
     channel = request["channel"]
@@ -18,7 +18,7 @@ async def get_hyperopt(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_hyperopt(request: dict):
     logger.info("Create hyperopt")
     thread = threading.Thread(

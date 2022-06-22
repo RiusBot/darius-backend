@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def recaptcha_assessment(request: dict):
     token = request['token']
     action = request['action']

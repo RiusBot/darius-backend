@@ -19,7 +19,7 @@ async def get_health_readiness(request):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_stats(request: dict):
     uid = request['uid']
     logger.info("Get Riusbot stats")

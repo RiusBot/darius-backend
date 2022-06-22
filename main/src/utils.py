@@ -132,23 +132,27 @@ def error_handler():
     return _error_handler
 
 
-def input_filter(f):
-    @wraps(f)
-    async def wrapper(request, *args, **kwargs):
+def input_filter(filtered=True):
+    def _input_filter(f):
+        @wraps(f)
+        async def wrapper(request, *args, **kwargs):
 
-        if request.method == "GET":
-            json_payload = dict(request.rel_url.query)
-            json_payload = filter_illegal_char(json_payload)
-        else:
-            try:
-                json_payload = await request.json()
-                json_payload = filter_illegal_char(json_payload)
-            except json.decoder.JSONDecodeError:
-                json_payload = {}
+            if request.method == "GET":
+                json_payload = dict(request.rel_url.query)
+                if filtered:
+                    json_payload = filter_illegal_char(json_payload)
+            else:
+                try:
+                    json_payload = await request.json()
+                    if filtered:
+                        json_payload = filter_illegal_char(json_payload)
+                except json.decoder.JSONDecodeError:
+                    json_payload = {}
 
-        args = filter_illegal_char({e: i for e, i in enumerate(args)})
-        args = [args[key] for key in sorted(args.keys())]
-        kwargs = filter_illegal_char(kwargs)
-        return await f(json_payload, *args, **kwargs)
+            args = filter_illegal_char({e: i for e, i in enumerate(args)})
+            args = [args[key] for key in sorted(args.keys())]
+            kwargs = filter_illegal_char(kwargs)
+            return await f(json_payload, *args, **kwargs)
 
-    return wrapper
+        return wrapper
+    return _input_filter

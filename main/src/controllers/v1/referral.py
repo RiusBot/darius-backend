@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_referral_info(request: dict):
     uid = request["uid"]
     logger.info("Get user {uid} referral info")
@@ -16,7 +16,7 @@ async def get_user_referral_info(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_referral_history(request: dict):
     uid = request["uid"]
     logger.info(f"Get user {uid} referral history")
@@ -27,7 +27,7 @@ async def get_user_referral_history(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_user_referral_info(request: dict):
     uid = request["uid"]
     logger.info(f"update user {uid} referral info")

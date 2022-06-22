@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_transaction(request: dict):
     uid = request["uid"]
     logger.debug(f"get user {uid} transaction")
@@ -16,7 +16,7 @@ async def get_user_transaction(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_user_transaction(request: dict):
     uid = request["uid"]
     wallet = request["wallet"]
@@ -28,7 +28,7 @@ async def create_user_transaction(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_user_transaction(request: dict):
     uid = request["uid"]
     transaction_id = request["transaction_id"]
@@ -40,7 +40,7 @@ async def update_user_transaction(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def delete_user_transaction(request: dict):
     uid = request["uid"]
     transaction_id = request["transaction_id"]

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_user_profile(request: dict):
     uid = request["uid"]
     user_name = request["user_name"]
@@ -16,7 +16,7 @@ async def update_user_profile(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_profile(request: dict):
     uid = request["uid"]
     logger.info(f"Get user {uid} profile")
@@ -25,7 +25,7 @@ async def get_user_profile(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_user(request: dict):
     uid = request["uid"]
     referrer = request.get("referrer")
@@ -35,6 +35,7 @@ async def create_user(request: dict):
 
 
 @error_handler()
+@input_filter()
 async def delete_user(request: dict):
     uid = request["uid"]
     delete_uid = request["delete_uid"]
