@@ -2163,6 +2163,8 @@ components:
         - BUY
         - SELL
         - null
+        - buy
+        - sell
 
     BotStatus:
       type: string

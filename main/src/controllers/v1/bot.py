@@ -25,6 +25,7 @@ async def execute_webhook_signal(request, bot_id: int):
     request["recieve_timestamp"] = datetime.now().timestamp()
     request["content"] = ""
     request["channel"] = "WEBHOOK"
+    request["action"] = request["action"].upper()
 
     request['entry'] = request.pop('price', None)
     request['quantity'] = request.pop('position', None)
