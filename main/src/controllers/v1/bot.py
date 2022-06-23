@@ -25,6 +25,11 @@ async def execute_webhook_signal(request, bot_id: int):
     request["recieve_timestamp"] = datetime.now().timestamp()
     request["content"] = ""
     request["channel"] = "WEBHOOK"
+
+    request['entry'] = request.pop('price', None)
+    request['quantity'] = request.pop('position', None)
+    if request['quantity'] != 0:
+        request['quantity'] = None
     asyncio.create_task(_execute_webhook_signal(**request))
 
 

@@ -263,6 +263,20 @@ paths:
                 symbol:
                   type: string
                   maxLength: 8
+                price:
+                  type: number
+                  minimum: 0
+                amount:
+                  type: number
+                  minimum: 0
+                position:
+                  type: number
+                stop_loss:
+                  type: number
+                  minimum: 0
+                take_profit:
+                  type: number
+                  minimum: 0
                 action:
                   $ref: '#/components/schemas/Action'
               required:

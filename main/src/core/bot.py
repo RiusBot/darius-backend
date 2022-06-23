@@ -390,6 +390,7 @@ async def _execute_webhook_signal(
     stop_loss: float = None,
     take_profit: float = None,
     price: float = None,
+    amount: float = None
 ):
     try:
         bot_dict, message = None, None
@@ -422,7 +423,7 @@ async def _execute_webhook_signal(
                 action,
                 datetime.fromtimestamp(message_timestamp),
                 datetime.fromtimestamp(recieve_timestamp),
-                quantity,
+                amount,  # webhook write amount as quantity
                 entry,
                 stop_loss,
                 take_profit
@@ -451,6 +452,7 @@ async def _execute_webhook_signal(
                     "scalp_stop_loss": stop_loss,
                     "scalp_take_profit": take_profit,
                     "price": price,
+                    "amount": amount
                 }
                 logger.info(json.dumps(data_dict))
                 # task_dict = await send_bot_executor(config_list, data_dict)

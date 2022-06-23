@@ -98,7 +98,7 @@ async def _get_subscription_info(user: User, channel: str) -> dict:
         is_del=False,
         channel=channel,
         user_id__not_in=(27, 34, 700),  # my testing accounts
-        balance__lt=3000,
+        user__balance__lt=3000,
         expire_date__gt=datetime.now(),
     ).count()
 
