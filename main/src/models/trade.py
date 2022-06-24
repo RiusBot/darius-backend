@@ -26,6 +26,8 @@ class Trade(BaseModel):
     open_order = fields.CharField(50, null=True)
     tp_order = fields.CharField(50, null=True)
     sl_order = fields.CharField(50, null=True)
+    quantity = fields.FloatField(null=True)
+    balance = fields.FloatField(null=True)
 
     class Meta:
         table = "trade_history"

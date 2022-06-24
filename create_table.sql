@@ -350,6 +350,8 @@ CREATE TABLE IF NOT EXISTS `trade_history` (
     `sl_order` VARCHAR(50),
     `tp_order` VARCHAR(50),
     `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `quantity` DOUBLE,
+    `balance` DOUBLE,
     KEY (`bot_id`),
     KEY (`message_id`),
     KEY (`created_at`),

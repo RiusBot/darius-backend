@@ -2559,6 +2559,14 @@ components:
         tp_order:
           type: string
           nullable: True
+        balance:
+          type: number
+          nullable: True
+          minimum: 0
+        quantity:
+          type: number
+          nullable: True
+          minimum: 0
       required:
       - message
       - status

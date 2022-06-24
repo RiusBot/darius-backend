@@ -215,6 +215,8 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
                 open_order=result.get("open_order"),
                 sl_order=result.get("sl_order"),
                 tp_order=result.get("tp_order"),
+                balance=result.get("balance"),
+                quantity=result.get("quantity"),
             )
 
         trade_list.append(trade)
