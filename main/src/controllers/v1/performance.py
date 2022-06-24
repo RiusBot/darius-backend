@@ -1,6 +1,5 @@
 import logging
 import asyncio
-import threading
 from main.src.core.performance import _get_performance, _create_performance, _get_performances
 from main.src.utils import error_handler, input_filter
 

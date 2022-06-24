@@ -21,8 +21,4 @@ async def get_hyperopt(request: dict):
 @input_filter()
 async def create_hyperopt(request: dict):
     logger.info("Create hyperopt")
-    thread = threading.Thread(
-        target=_create_hyperopt,
-        daemon=True
-    )
-    thread.start()
+    asyncio.create_task(_create_hyperopt())
