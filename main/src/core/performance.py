@@ -3,7 +3,6 @@ import json
 import aiohttp
 import asyncio
 import logging
-import requests
 import calendar
 from datetime import datetime
 from aiocache import cached

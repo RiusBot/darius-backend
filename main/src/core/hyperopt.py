@@ -1,7 +1,6 @@
 import logging
 import aiohttp
 import asyncio
-import requests
 from datetime import datetime, timedelta
 from tortoise.transactions import atomic
 from main.src.models import User

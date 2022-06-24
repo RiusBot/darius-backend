@@ -1,5 +1,5 @@
 import logging
-import threading
+import asyncio
 from main.src.core.hyperopt import _get_hyperopt, _create_hyperopt
 from main.src.utils import error_handler, input_filter
 
