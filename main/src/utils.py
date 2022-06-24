@@ -64,7 +64,7 @@ async def fetch(session, sem, url: str, request_data: dict, max_retry: int = 3, 
             request_data = data_decrypt(request_data)
 
             for i in range(max_retry):
-                async with session.post(url, json=request_data, timeout=20) as response:
+                async with session.post(url, json=request_data, timeout=60) as response:
                     response = await response.text()
 
                     if (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
