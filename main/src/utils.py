@@ -55,16 +55,16 @@ def data_decrypt(data: dict):
     return data
 
 
-async def fetch(session, sem, url: str, request_data: dict, max_retry: int = 3, error: str = "ERROR"):
+async def fetch(session, sem, url: str, request_data: dict, max_retry: int = 3, error: str = "ERROR", timeout: int = 60):
     if request_data.get("test"):
         return "Test only"
     try:
         async with sem:
-            request_data["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
+            request_data["token"] = fetch_secret_token_firestore()
             request_data = data_decrypt(request_data)
 
             for i in range(max_retry):
-                async with session.post(url, json=request_data, timeout=60) as response:
+                async with session.post(url, json=request_data, timeout=timeout) as response:
                     response = await response.text()
 
                     if (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):

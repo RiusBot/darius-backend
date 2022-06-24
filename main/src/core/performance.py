@@ -1,5 +1,7 @@
 import os
 import json
+import aiohttp
+import asyncio
 import logging
 import requests
 import calendar
@@ -13,6 +15,7 @@ from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.config import app_config
 from main.src.core.auth import fetch_secret_token_firestore
+from main.src.utils import fetch
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +37,28 @@ async def _get_performance(channel: str) -> dict:
         performance["date"] = performance.pop("start_at")[:7]
         buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
         sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
+
+        """
+        收益率 profit_total
+        盈利金額 final_balance - starting_balance
+        總成交量 total_volume
+        手續費 total_volume * 0.002
+        勝率 win / (win+loss)
+        最大回撤 max_relative_drawdown
+        盈虧比
+        平均持倉時間 holding_avg
+        win
+        loss
+        交易次數 total_trades
+        盈利最高幣種  best_pair key
+        虧損最高幣種  worst_pair key
+        頻率 trades_per_day
+        ====
+        cagr
+        sharperatio
+        annual_roi
+        delta market_change
+        """
 
         # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
         performance["result"] = {
@@ -85,7 +110,7 @@ async def _get_performances() -> dict:
     return performance_result
 
 
-def _create_performance():
+async def _create_performance():
     logger.info("Create performance")
     date = datetime.now()
     y, m = date.year, date.month
@@ -102,20 +127,14 @@ def _create_performance():
         'token': fetch_secret_token_firestore()
     }
 
-    response = requests.post(
-        url,
-        json=data
-    )
+    async with aiohttp.ClientSession(timeout=3600) as session:
+        sem = asyncio.Semaphore(1)
+        response = await fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800)
 
-    msg = ""
-    try:
-        msg += f"{response.json()}"
-    except Exception:
-        msg += f"{response.text}"
-    if response.status_code != 200:
-        logging.error(f"create performance failed. {msg}")
-    else:
-        logging.info("create performance success.")
+        if isinstance(response, str):
+            logging.error(f"create performance failed. {response}")
+        else:
+            logging.info("create performance success.")
 
 
 @atomic()
