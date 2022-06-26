@@ -54,7 +54,7 @@ async def _clean_subscription() -> List[Subscription]:
     await Subscription.filter(
         is_del=False,
         expire_date__lt=datetime.now()
-    ).update(is_del=True)
+    ).update(is_del=None)
 
     # clean trial expired bot
     await BotOrder.filter(

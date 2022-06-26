@@ -152,7 +152,7 @@ async def _create_performance():
 
     async with aiohttp.ClientSession(timeout=3600) as session:
         sem = asyncio.Semaphore(1)
-        response = await fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800)
+        response = await fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=3600)
         # response, all_time_response = await asyncio.gather(
         #     fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800),
         #     fetch(session, sem, url, all_time_data, error="CREATE ALL TIME PERFORMANCE ERROR", timeout=1800),
