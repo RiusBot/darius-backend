@@ -21,6 +21,29 @@ logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
+"""
+收益率 profit_total
+盈利金額 final_balance - starting_balance
+總成交量 total_volume
+手續費 total_volume * 0.002
+勝率 win / (win+loss)
+最大回撤 max_relative_drawdown
+盈虧比
+平均持倉時間 holding_avg
+win
+loss
+交易次數 total_trades
+盈利最高幣種  best_pair key
+虧損最高幣種  worst_pair key
+頻率 trades_per_day
+====
+cagr
+sharperatio
+annual_roi
+delta market_change
+"""
+
+
 @atomic()
 async def _get_performance(channel: str) -> dict:
     logger.info(f"Get {channel} Performance")
@@ -29,35 +52,37 @@ async def _get_performance(channel: str) -> dict:
         include=["channel", "start_at", "result"]
     )
     performance_list = await Performance_Pydantic_List.from_queryset(
-        Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
+        Performance.filter(
+            is_del=False,
+            channel=channel,
+            start_at__gt=datetime(2000, 1, 1),
+        ).order_by("-start_at").limit(12)
     )
     performance_list = json.loads(performance_list.json())
     for performance in performance_list:
-        performance["date"] = performance.pop("start_at")[:7]
+        performance = process_backtest_report(performance)
+
+    return performance_list
+
+
+def process_backtest_report(performance: dict):
+    performance["date"] = performance.pop("start_at")[:7]
+    report = json.loads(performance["result"])
+
+    if "riusbot_hedge" in report["strategy"]:
+        result = json.loads(performance["result"])["strategy"]["riusbot_hedge"]
+
+        # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+        performance["result"] = {
+            'wins': result["wins"],
+            'losses': result["losses"],
+            'draws': result["draws"],
+            'profit_total': result["profit_total"],
+            'total_trades': result["total_trades"],
+        }
+    else:
         buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
         sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
-
-        """
-        收益率 profit_total
-        盈利金額 final_balance - starting_balance
-        總成交量 total_volume
-        手續費 total_volume * 0.002
-        勝率 win / (win+loss)
-        最大回撤 max_relative_drawdown
-        盈虧比
-        平均持倉時間 holding_avg
-        win
-        loss
-        交易次數 total_trades
-        盈利最高幣種  best_pair key
-        虧損最高幣種  worst_pair key
-        頻率 trades_per_day
-        ====
-        cagr
-        sharperatio
-        annual_roi
-        delta market_change
-        """
 
         # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
         performance["result"] = {
@@ -68,7 +93,7 @@ async def _get_performance(channel: str) -> dict:
             'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
         }
 
-    return performance_list
+    return performance
 
 
 @cached(ttl=43200)
@@ -88,22 +113,15 @@ async def _get_performances() -> dict:
 
     for channel in channel_list:
         performance_list = await Performance_Pydantic_List.from_queryset(
-            Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
+            Performance.filter(
+                is_del=False,
+                channel=channel,
+                start_at__gt=datetime(2000, 1, 1),
+            ).order_by("-start_at").limit(12)
         )
         performance_list = json.loads(performance_list.json())
         for performance in performance_list:
-            performance["date"] = performance.pop("start_at")[:7]
-            buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
-            sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
-
-            # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
-            performance["result"] = {
-                'wins': buy_result["wins"] + sell_result['losses'],
-                'losses': buy_result["losses"] + sell_result['wins'],
-                'draws': buy_result["draws"] + sell_result['draws'],
-                'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
-                'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
-            }
+            performance = process_backtest_report(performance)
         performance_result[channel] = performance_list
 
     return performance_result
@@ -125,10 +143,20 @@ async def _create_performance():
         'timerange': f'{start}-{end}',
         'token': fetch_secret_token_firestore()
     }
+    # all_time_data = {
+    #     'timeframe': '1h',
+    #     'timerange': f'{start}-{end}',
+    #     'token': fetch_secret_token_firestore(),
+    #     'all_time': True
+    # }
 
     async with aiohttp.ClientSession(timeout=3600) as session:
         sem = asyncio.Semaphore(1)
         response = await fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800)
+        # response, all_time_response = await asyncio.gather(
+        #     fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800),
+        #     fetch(session, sem, url, all_time_data, error="CREATE ALL TIME PERFORMANCE ERROR", timeout=1800),
+        # )
 
         if isinstance(response, str):
             logging.error(f"create performance failed. {response}")
