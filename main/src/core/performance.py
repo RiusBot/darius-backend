@@ -55,7 +55,7 @@ async def _get_performance(channel: str) -> dict:
         Performance.filter(
             is_del=False,
             channel=channel,
-            start_at__gt=datetime(2000, 1, 1),
+            start_at__gt=datetime(2021, 1, 1),
         ).order_by("-start_at").limit(12)
     )
     performance_list = json.loads(performance_list.json())
@@ -116,7 +116,7 @@ async def _get_performances() -> dict:
             Performance.filter(
                 is_del=False,
                 channel=channel,
-                start_at__gt=datetime(2000, 1, 1),
+                start_at__gt=datetime(2021, 1, 1),
             ).order_by("-start_at").limit(12)
         )
         performance_list = json.loads(performance_list.json())
