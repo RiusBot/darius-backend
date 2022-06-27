@@ -22,29 +22,6 @@ logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
-"""
-收益率 profit_total
-盈利金額 final_balance - starting_balance
-總成交量 total_volume
-手續費 total_volume * 0.002
-勝率 win / (win+loss)
-最大回撤 max_relative_drawdown
-盈虧比
-平均持倉時間 holding_avg
-win
-loss
-交易次數 total_trades
-盈利最高幣種  best_pair key
-虧損最高幣種  worst_pair key
-頻率 trades_per_day
-====
-cagr
-sharperatio
-annual_roi
-delta market_change
-"""
-
-
 @atomic()
 async def _get_performance(channel: str) -> dict:
     logger.info(f"Get {channel} all time Performance")
@@ -59,11 +36,11 @@ async def _get_performance(channel: str) -> dict:
         all_time_performance = await PerformanceSchemaModel.from_tortoise_orm(all_time_performance)
         all_time_performance = all_time_performance.dict()
         backtest_report = json.loads(all_time_performance['result'])['strategy']['riusbot_hedge']
-        backtest_report = {
+        report = {
             'roi': backtest_report['profit_total'],
             'profit': backtest_report['final_balance'] - backtest_report['starting_balance'],
             'volume': backtest_report['total_volume'],
-            'fee': backtest_report['total_volume'] * 0.001,
+            'fee': backtest_report['total_volume'] * 0.002,
             'win_rate': backtest_report['wins'] / (backtest_report['wins'] + backtest_report['losses']),
             'max_drawdown': backtest_report['max_relative_drawdown'],
             'holding_avg': backtest_report['holding_avg'],
@@ -79,39 +56,9 @@ async def _get_performance(channel: str) -> dict:
         }
     return {
         'channel': channel,
-        'result': backtest_report,
+        'result': report,
+        'trades': backtest_report['trades']
     }
-
-
-def process_backtest_report(performance: dict):
-    performance["date"] = performance.pop("start_at")[:7]
-    report = json.loads(performance["result"])
-
-    if "riusbot_hedge" in report["strategy"]:
-        result = json.loads(performance["result"])["strategy"]["riusbot_hedge"]
-
-        # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
-        performance["result"] = {
-            'wins': result["wins"],
-            'losses': result["losses"],
-            'draws': result["draws"],
-            'profit_total': result["profit_total"],
-            'total_trades': result["total_trades"],
-        }
-    else:
-        buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
-        sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
-
-        # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
-        performance["result"] = {
-            'wins': buy_result["wins"] + sell_result['losses'],
-            'losses': buy_result["losses"] + sell_result['wins'],
-            'draws': buy_result["draws"] + sell_result['draws'],
-            'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
-            'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
-        }
-
-    return performance
 
 
 @cached(ttl=43200)
@@ -139,7 +86,33 @@ async def _get_performances() -> dict:
         )
         performance_list = json.loads(performance_list.json())
         for performance in performance_list:
-            performance = process_backtest_report(performance)
+            performance["date"] = performance.pop("start_at")[:7]
+            report = json.loads(performance["result"])
+
+            if "riusbot_hedge" in report["strategy"]:
+                result = json.loads(performance["result"])["strategy"]["riusbot_hedge"]
+
+                # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+                performance["result"] = {
+                    'wins': result["wins"],
+                    'losses': result["losses"],
+                    'draws': result["draws"],
+                    'profit_total': result["profit_total"],
+                    'total_trades': result["total_trades"],
+                }
+            else:
+                buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
+                sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
+
+                # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+                performance["result"] = {
+                    'wins': buy_result["wins"] + sell_result['losses'],
+                    'losses': buy_result["losses"] + sell_result['wins'],
+                    'draws': buy_result["draws"] + sell_result['draws'],
+                    'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
+                    'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
+                }
+
         performance_result[channel] = performance_list
 
     return performance_result

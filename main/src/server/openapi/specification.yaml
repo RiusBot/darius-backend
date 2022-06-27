@@ -2480,6 +2480,14 @@ components:
           type: object
         channel:
           $ref: '#/components/schemas/Channel'
+        trades:
+          type: array
+          items:
+            type: object
+      required:
+        - result
+        - channel
+        - trades
 
     Transaction:
       type: object
