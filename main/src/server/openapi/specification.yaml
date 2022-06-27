@@ -1209,9 +1209,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Performance'
+                $ref: '#/components/schemas/Performance'
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -2478,11 +2476,6 @@ components:
     Performance:
       type: object
       properties:
-        date:
-          type: string
-          maxLength: 10
-          example:
-            value: "2022-01-01"
         result:
           type: object
         channel:
@@ -2562,7 +2555,6 @@ components:
         balance:
           type: number
           nullable: True
-          minimum: 0
         quantity:
           type: number
           nullable: True

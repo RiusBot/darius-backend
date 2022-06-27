@@ -10,6 +10,7 @@ from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 from main.src.models import Performance, User
 from main.src.models.channel import ChannelType
+from main.src.models.performance import PerformanceSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.config import app_config
@@ -46,23 +47,40 @@ delta market_change
 
 @atomic()
 async def _get_performance(channel: str) -> dict:
-    logger.info(f"Get {channel} Performance")
-    Performance_Pydantic_List = pydantic_queryset_creator(
-        Performance,
-        include=["channel", "start_at", "result"]
-    )
-    performance_list = await Performance_Pydantic_List.from_queryset(
-        Performance.filter(
-            is_del=False,
-            channel=channel,
-            start_at__gt=datetime(2021, 1, 1),
-        ).order_by("-start_at").limit(12)
-    )
-    performance_list = json.loads(performance_list.json())
-    for performance in performance_list:
-        performance = process_backtest_report(performance)
+    logger.info(f"Get {channel} all time Performance")
 
-    return performance_list
+    backtest_report = {}
+    all_time_performance = await Performance.filter(
+        is_del=False,
+        channel=channel,
+        start_at=datetime(1970, 1, 1),
+    ).order_by("end_at").first()
+    if all_time_performance is not None:
+        all_time_performance = await PerformanceSchemaModel.from_tortoise_orm(all_time_performance)
+        all_time_performance = all_time_performance.dict()
+        backtest_report = json.loads(all_time_performance['result'])['strategy']['riusbot_hedge']
+        backtest_report = {
+            'roi': backtest_report['profit_total'],
+            'profit': backtest_report['final_balance'] - backtest_report['starting_balance'],
+            'volume': backtest_report['total_volume'],
+            'fee': backtest_report['total_volume'] * 0.001,
+            'win_rate': backtest_report['wins'] / (backtest_report['wins'] + backtest_report['losses']),
+            'max_drawdown': backtest_report['max_relative_drawdown'],
+            'holding_avg': backtest_report['holding_avg'],
+            'total_trades': backtest_report['total_trades'],
+            'best_pair': backtest_report['best_pair']['key'],
+            'worst_pair': backtest_report['worst_pair']['key'],
+            'trades_per_day': backtest_report['trades_per_day'],
+            'start': backtest_report['backtest_start'],
+            'end': backtest_report['backtest_end'],
+            'cagr': backtest_report['cagr'],
+            'sharperatio': backtest_report['sharperatio'],
+            'annual_roi': backtest_report['annual_roi'],
+        }
+    return {
+        'channel': channel,
+        'result': backtest_report,
+    }
 
 
 def process_backtest_report(performance: dict):
