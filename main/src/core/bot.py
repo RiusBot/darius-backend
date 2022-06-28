@@ -143,23 +143,7 @@ def black_white_list_filter(config_dict):
     return True
 
 
-async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = None) -> Dict[Future, int]:
-    logger.info("Start activate bot executor")
-    url = app_config["BOT_EXECUTOR_ENDPOINT"]
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        task_dict = dict()
-        for config in config_list:
-            config.update(data_dict)
-            if black_white_list_filter(config):
-                task = executor.submit(send_to_execute, url, config)
-                task_dict[task] = config["bot_id"]
-
-        logger.info(f"All {len(config_list)} submitted.")
-    return task_dict
-
-
-async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = 100) -> Dict[Future, int]:
+async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = 100) -> Dict[Future, int]:
     logger.info("Start async activate bot executor")
     url = app_config["BOT_EXECUTOR_ENDPOINT"]
 
@@ -171,7 +155,7 @@ async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: 
         sem = asyncio.Semaphore(workers)
         tasks = []
         for config in config_list:
-            task = asyncio.create_task(fetch(session, sem, url, config, error="EXECUTE"))
+            task = asyncio.create_task(fetch(session, sem, url, config, error="EXECUTE ERROR"))
             tasks.append(task)
 
         logger.info(f"All {len(config_list)} scheduled.")
@@ -332,9 +316,7 @@ async def _execute_bot_signal(
                     "price": price,
                 }
                 logger.info(json.dumps(data_dict))
-                # task_dict = await send_bot_executor(config_list, data_dict)
-                # result_dict = await recieve_execute_result(task_dict)
-                result_dict = await send_bot_executor2(config_list, data_dict)
+                result_dict = await send_bot_executor(config_list, data_dict)
             except Exception as e:
                 error_msg = f"send and receive data error. {e}"
                 logger.error(
@@ -457,9 +439,7 @@ async def _execute_webhook_signal(
                     "amount": amount
                 }
                 logger.info(json.dumps(data_dict))
-                # task_dict = await send_bot_executor(config_list, data_dict)
-                # result_dict = await recieve_execute_result(task_dict)
-                result_dict = await send_bot_executor2(config_list, data_dict)
+                result_dict = await send_bot_executor(config_list, data_dict)
             except Exception as e:
                 error_msg = f"send and receive data error. {e}"
                 logger.error(

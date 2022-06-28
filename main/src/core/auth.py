@@ -1,5 +1,6 @@
 import os
 import json
+import secrets
 import requests
 import logging
 import functools
@@ -59,7 +60,7 @@ def check_server_access(json_payload):
         requestToken = json_payload.get('token')
         if not Token or not requestToken:
             return False
-        return Token == requestToken
+        return secrets.compare_digest(Token, requestToken)
     except Exception:
         logger.error("exception when dealing with check_server_access token")
         return False
@@ -100,10 +101,9 @@ def check_client_access(json_payload: dict):
         if clientUserIdToken is None or clientUserIdToken == '':
             return False
         decoded_token = auth.verify_id_token(clientUserIdToken, check_revoked=True)
-        if json_payload.get('uid') != decoded_token.get('uid'):
+        if decoded_token.get('uid') is None or json_payload.get('uid') is None:
             return False
-        uid = decoded_token.get('uid')
-        return (uid is not None)
+        return secrets.compare_digest(json_payload["uid"], decoded_token["uid"])
     except Exception:
         logger.error("exception when dealing with check_client_access token")
         return False

@@ -8,7 +8,7 @@ from datetime import datetime
 from aiocache import cached
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
-from main.src.models import Performance, User
+from main.src.models import Performance, User, Message
 from main.src.models.channel import ChannelType
 from main.src.models.performance import PerformanceSchemaModel
 from main.src.exception import BackendException
@@ -118,7 +118,7 @@ async def _get_performances() -> dict:
     return performance_result
 
 
-async def _create_performance():
+async def _create_performance(all_time):
     logger.info("Create performance")
     date = datetime.now()
     y, m = date.year, date.month
@@ -128,31 +128,33 @@ async def _create_performance():
 
     start = start.strftime("%Y%m%d")
     end = end.strftime("%Y%m%d")
-    url = f'{app_config["BOT_OPTIMIZER_URL"]}/backtest'
+    url = f'{app_config["BOT_OPTIMIZER_URL"]}/backtest_v2'
     data = {
         'timeframe': '1h',
         'timerange': f'{start}-{end}',
         'token': fetch_secret_token_firestore()
     }
-    # all_time_data = {
-    #     'timeframe': '1h',
-    #     'timerange': f'{start}-{end}',
-    #     'token': fetch_secret_token_firestore(),
-    #     'all_time': True
-    # }
 
-    async with aiohttp.ClientSession(timeout=3600) as session:
-        sem = asyncio.Semaphore(1)
-        response = await fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=3600)
-        # response, all_time_response = await asyncio.gather(
-        #     fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800),
-        #     fetch(session, sem, url, all_time_data, error="CREATE ALL TIME PERFORMANCE ERROR", timeout=1800),
-        # )
-
-        if isinstance(response, str):
-            logging.error(f"create performance failed. {response}")
-        else:
-            logging.info("create performance success.")
+    if all_time:
+        channel_list = await Message.all().distinct().values('channel')
+        data['all_time'] = True
+        for channel in channel_list:
+            data["channels"] = [channel]
+            async with aiohttp.ClientSession(timeout=1800) as session:
+                sem = asyncio.Semaphore(1)
+                response = await fetch(session, sem, url, data, error="CREATE ALL TIME PERFORMANCE ERROR", timeout=1800)
+                if isinstance(response, str):
+                    logging.error(f"create {channel} all time performance failed. {response}")
+                else:
+                    logging.info(f"create {channel} all time performance success.")
+    else:
+        async with aiohttp.ClientSession(timeout=1800) as session:
+            sem = asyncio.Semaphore(1)
+            response = await fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800)
+            if isinstance(response, str):
+                logging.error(f"create performance failed. {response}")
+            else:
+                logging.info("create performance success.")
 
 
 @atomic()

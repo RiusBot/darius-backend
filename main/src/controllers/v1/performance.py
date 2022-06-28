@@ -27,4 +27,5 @@ async def get_performances(request: dict):
 @input_filter()
 async def create_performance(request: dict):
     logger.info("create performance")
-    asyncio.create_task(_create_performance())
+    all_time = request.get('all_time', False)
+    asyncio.create_task(_create_performance(all_time))

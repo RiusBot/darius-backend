@@ -29,7 +29,7 @@ async def _create_hyperopt() -> dict:
     start = (date - timedelta(days=180)).strftime("%Y%m%d")
     end = date.strftime("%Y%m%d")
 
-    url = f'{app_config["BOT_OPTIMIZER_URL"]}/hyperopt'
+    url = f'{app_config["BOT_OPTIMIZER_URL"]}/hyperopt_v2'
     data = {
         'timeframe': '1h',
         'days': 90,
