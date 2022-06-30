@@ -1,9 +1,12 @@
+import secrets
 import logging
+from datetime import datetime
 from aiohttp.web import json_response
 from tortoise.transactions import atomic
 from main.src.core.stats import _get_stats
 from main.src.exception import BackendException
 from main.src.utils import error_handler, input_filter
+from main.src.models import Provider, RoiLog
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +31,29 @@ async def get_stats(request: dict):
     logger.info("Get Riusbot stats")
     stats = await _get_stats(uid)
     return stats
+
+
+@error_handler()
+@input_filter()
+async def roilog(request: dict):
+    logger.info("Log provider roi")
+    provider = request['provider']
+    access_token = request['access_token']
+    roi = request['roi']
+    timestamp = request['timestamp']
+
+    provider = await Provider.filter(is_del=False, name=provider).first()
+    if provider is None:
+        raise BackendException("Provider not found")
+    if not secrets.compare_digest(provider.access_token, access_token):
+        raise BackendException("invalid access token")
+
+    await RoiLog.create(
+        provider=provider,
+        roi=roi,
+        timestamp=datetime.fromtimestamp(timestamp),
+    )
+    return {"message": 'success'}
 
 
 async def clean_no_subscription_bot(request):

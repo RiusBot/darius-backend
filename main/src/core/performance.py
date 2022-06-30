@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
+@cached(ttl=86400)
 @atomic()
 async def _get_performance(channel: str) -> dict:
     logger.info(f"Get {channel} all time Performance")
@@ -57,7 +58,7 @@ async def _get_performance(channel: str) -> dict:
     return {
         'channel': channel,
         'result': report,
-        'trades': backtest_report['trades']
+        'trades': backtest_report['trades'],
     }
 
 

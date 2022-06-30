@@ -15,6 +15,7 @@ from .performance import Performance
 from .hyperopt import Hyperopt
 from .pair import Pair
 from .referral import Referral, ReferralHistory
+from .provider import Provider, RoiLog
 
 
 __all__ = [
@@ -35,5 +36,7 @@ __all__ = [
     "Hyperopt",
     "Pair",
     "Referral",
-    "ReferralHistory"
+    "ReferralHistory",
+    "Provider",
+    "RoiLog",
 ]

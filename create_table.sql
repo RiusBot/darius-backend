@@ -1,4 +1,30 @@
 
+-- provider
+CREATE TABLE `provider` (
+    `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `name` varchar(16) UNIQUE NOT NULL,
+    `access_token` varchar(32) UNIQUE NOT NULL,
+    KEY (`provider`),
+    KEY (`is_del`)
+) CHARACTER SET utf8;
+
+
+-- roi_log
+CREATE TABLE `roi_log` (
+    `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `provider_id` INT(11),
+    `timestamp` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `roi` int(11) NOT NULL  DEFAULT 0,
+    KEY (`is_del`),
+    CONSTRAINT FOREIGN KEY(`provider_id`) REFERENCES `provider`(id) ON DELETE CASCADE
+) CHARACTER SET utf8;
+
 -- referral
 CREATE TABLE `referral` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,

@@ -66,6 +66,46 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /roilog:
+    post:
+      tags:
+      - general
+      summary: log roi from providers
+      operationId: main.src.controllers.v1.general.roilog
+      security: []
+      requestBody:
+        required: True
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  maxLength: 16
+                access_token:
+                  type: string
+                  maxLength: 32
+                roi:
+                  type: number
+                timestamp:
+                  type: number
+                  minimum: 0
+              required:
+                - provider
+                - access_token
+                - roi
+                - timestamp
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /create_test_data:
     get:
       tags:
