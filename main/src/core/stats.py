@@ -1,4 +1,5 @@
 import ccxt
+import asyncio
 import logging
 from collections import defaultdict
 from tortoise.functions import Sum
@@ -12,11 +13,19 @@ logger = logging.getLogger(__name__)
 
 @permission_validator("get_stats")
 async def _get_stats(user: User):
+
+    user_balance_stats, bot_quantity_stats, user_stats, bot_stats = await asyncio.gather(
+        get_user_balance_stats(),
+        get_bot_quantity_stats(),
+        get_user_stats(),
+        get_bot_stats(),
+    )
+
     return {
-        'user_balance_stats': await get_user_balance_stats(),
-        'bot_quantity_stats': await get_bot_quantity_stats(),
-        'user_stats': await get_user_stats(),
-        'bot_stats': await get_bot_stats(),
+        'user_balance_stats': user_balance_stats,
+        'bot_quantity_stats': bot_quantity_stats,
+        'user_stats': user_stats,
+        'bot_stats': bot_stats,
         # 'transaction_stats': await get_transaction_stats(),
     }
 

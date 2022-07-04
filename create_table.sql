@@ -20,7 +20,7 @@ CREATE TABLE `roi_log` (
     `is_del` BOOLEAN NOT NULL DEFAULT False,
     `provider_id` INT(11),
     `timestamp` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    `roi` int(11) NOT NULL  DEFAULT 0,
+    `roi` DOUBLE NOT NULL  DEFAULT 0,
     KEY (`is_del`),
     CONSTRAINT FOREIGN KEY(`provider_id`) REFERENCES `provider`(id) ON DELETE CASCADE
 ) CHARACTER SET utf8;

@@ -8,6 +8,7 @@ tags:
   - name: fee
   - name: bot
   - name: general
+  - name: log
   - name: api
   - name: pair
   - name: account
@@ -69,9 +70,9 @@ paths:
   /roilog:
     post:
       tags:
-      - general
+      - log
       summary: log roi from providers
-      operationId: main.src.controllers.v1.general.roilog
+      operationId: main.src.controllers.v1.log.roilog
       security: []
       requestBody:
         required: True
@@ -96,6 +97,24 @@ paths:
                 - access_token
                 - roi
                 - timestamp
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /rebatelog:
+    post:
+      tags:
+      - log
+      summary: log rebate from exchange
+      operationId: main.src.controllers.v1.log.rebatelog
+      security:
+        - bearerAuthBackendOnly: []
       responses:
         200:
           description: success

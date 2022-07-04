@@ -19,8 +19,8 @@ class Provider(BaseModel):
 
     def __str__(self):
         return f"Provider [{self.id}]"
-    
-    
+
+
 ProviderSchemaModel = pydantic_model_creator(Provider, name="Provider")
 ProviderInSchemaModel = pydantic_model_creator(Provider, name="ProviderIn", exclude_readonly=True)
 
