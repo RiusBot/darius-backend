@@ -2027,6 +2027,18 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /clean_all_position:
+    delete:
+      tags:
+      - trade
+      summary: clean all position
+      operationId: main.src.controllers.v1.trade.clean_all_position
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /recaptcha_assessment:
     post:
       tags:

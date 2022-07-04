@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from main.src.core.trade import _clean_limit_order, _clean_oco_order, _get_bot_trades, _get_bot_trades2
+from main.src.core.trade import _clean_limit_order, _clean_oco_order, _get_bot_trades, _get_bot_trades2, _clean_all_position
 from main.src.utils import error_handler, input_filter
 
 
@@ -41,3 +41,13 @@ async def clean_limit_order(request: dict):
 async def clean_oco_order(request: dict):
     logger.info("Clean oco order")
     asyncio.create_task(_clean_oco_order())
+
+
+@error_handler()
+@input_filter()
+async def clean_all_position(request: dict):
+    logger.info("Clean all position")
+    bot_id = request['bot_id']
+    uid = request['uid']
+    status = await _clean_all_position(uid, bot_id)
+    return {'status': status}

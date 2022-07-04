@@ -9,7 +9,7 @@ from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 
 from main.src.config import app_config
-from main.src.models import Trade, User
+from main.src.models import Trade, User, BotOrder
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.core.bot import process_bot_config
@@ -169,6 +169,30 @@ async def _clean_oco_order():
             stats[result] += 1
 
     logger.info(f"clean oco order stats: {stats}")
+
+
+@atomic()
+@permission_validator("clean_all_position")
+async def _clean_all_position(user: User, bot_id: int):
+    logger.info("Clean all position")
+
+    bot = await BotOrder.filter(
+        is_del=False,
+        id=bot_id
+    ).prefetch_related(
+        "config__api",
+        "config__pair",
+        "user",
+    ).first()
+
+    config_list = [process_bot_config(bot.config)]
+    result_list = await send_bot_executor_clean(config_list, {'type': 'position'})
+
+    for config, result in zip(config_list, result_list):
+        if isinstance(result, dict):
+            return result.get("status")
+        else:
+            return result
 
 
 async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 40) -> List[Union[Dict, str]]:
