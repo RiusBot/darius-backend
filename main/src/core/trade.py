@@ -192,7 +192,8 @@ async def _clean_all_position(user: User, bot_id: int):
         if isinstance(result, dict):
             return result.get("status")
         else:
-            return result
+            logger.error(f"close position error {result}")
+            return 'CLOSE POSITION ERROR'
 
 
 async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 40) -> List[Union[Dict, str]]:

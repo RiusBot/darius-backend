@@ -50,4 +50,5 @@ async def clean_all_position(request: dict):
     bot_id = request['bot_id']
     uid = request['uid']
     status = await _clean_all_position(uid, bot_id)
+    logger.info(f'clean all position status: {status}')
     return {'status': status}
