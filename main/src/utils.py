@@ -27,9 +27,11 @@ def generate_random_string(k: int):
 
 
 async def pagination(query, page: int, pagesize: int) -> Tuple[QuerySet, int, int]:
+    if pagesize < 1:
+        raise BackendException("Invalid pagesize")
     total_count = await query.limit(1000).count()
     totalpage = (total_count // pagesize) + (total_count % pagesize != 0)
-    if totalpage > 0 and page >= totalpage:
+    if (totalpage > 0 and page >= totalpage) or page < 0:
         raise BackendException("Invalid page")
     offset = page * pagesize
     limit = pagesize
