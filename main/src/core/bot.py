@@ -561,13 +561,17 @@ def fill_hyperopt(hyperopt: dict, config: dict):
 
 
 @atomic()
-async def validate_config(user: User, config: dict):
+async def validate_config(user: User, config: dict, channel: str = None):
 
     # validate api belongs to user
     api_id = config["api_id"]
     api = await user.api_user.filter(id=api_id, is_del=False).first()
     if api is None:
         raise BackendException("Invalid api_id")
+
+    # validate acdc
+    if channel == "ACDC" and api.exchange != "okx":
+        raise BackendException("ACDC requires using OKX")
 
     # validate trailing order
     validate_trailing(api, config)
@@ -644,7 +648,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     logger.info(f"Create new bot for user [{uid}]")
 
     subscription, is_trial, trial_expired_at = await validate_subscription(user, channel, config)
-    api, pair, others = await validate_config(user, config)
+    api, pair, others = await validate_config(user, config, channel)
 
     # create bot
     config["api"] = api
@@ -674,6 +678,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         else:
             raise BackendException("Webhook bot exists !! One per account.")
     else:
+
         bot_config = await BotConfig.create(
             **config
         )
@@ -711,16 +716,17 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
     logger.info(f"Update bot [{bot_id}]")
 
-    api, pair, others = await validate_config(user, config)
+    bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
+    if bot_order is None:
+        raise BackendException(f"Bot {bot_id} not found")
+
+    api, pair, others = await validate_config(user, config, bot_order.channel)
 
     # update bot
     config["api"] = api
     config["pair"] = pair
     config["others"] = others
 
-    bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
-    if bot_order is None:
-        raise BackendException(f"No Bot {bot_id}")
     if status:
         bot_order.status = status
     for key, value in config.items():

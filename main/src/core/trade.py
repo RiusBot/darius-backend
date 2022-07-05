@@ -174,7 +174,7 @@ async def _clean_oco_order():
 @atomic()
 @permission_validator("clean_all_position")
 async def _clean_all_position(user: User, bot_id: int):
-    logger.info("Clean all position")
+    logger.info(f"Clean all position for bot {bot_id}")
 
     bot = await BotOrder.filter(
         is_del=False,
