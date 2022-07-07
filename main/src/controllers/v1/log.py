@@ -43,10 +43,14 @@ async def rebatelog(request: dict):
     logger.info("Log rebate")
 
     logging_client = cloud_logging.Client()
-    log_name = "rebate"
+    log_name = "rebate_v2"
     rebate_logger = logging_client.logger(log_name)
     rebate_info = Exchange.fapiPrivate_get_apireferral_overview()
     rebate_info['exchange'] = 'binance'
+
+    for key in ['totalTradeVol', 'totalTradeUser', 'totalRebateVol']:
+        rebate_info[key] = float(rebate_info[key])
+
     rebate_logger.log_struct(rebate_info)
 
     # for entry in rebate_logger.list_entries():
