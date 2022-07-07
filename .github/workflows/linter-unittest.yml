@@ -31,7 +31,7 @@ jobs:
         make style-check
   
   unit-test:
-
+    needs: style-check
     runs-on: ubuntu-latest
 
     steps:
@@ -45,6 +45,6 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f ./tests/requirements.txt ]; then pip install -r ./tests/requirements.txt; fi
     - name: pytest
-      runs: |
+      run: |
         make test
 
