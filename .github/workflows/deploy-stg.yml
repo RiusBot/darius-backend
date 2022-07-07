@@ -3,12 +3,12 @@ name: Release Deployment
 
 on:
   workflow_run:
-  workflows: [Tests]
-    types:
-      - completed
-    branches:
-      - "dev"
-      - "testing/**"
+    workflows: [Tests]
+      types:
+        - completed
+      branches:
+        - "dev"
+        - "testing/**"
 
 jobs:
   deploy:

@@ -1,9 +1,7 @@
-import asyncio
 import pytest
 from asynctest import TestCase, Mock, CoroutineMock
 from asynctest.mock import patch
 from parameterized import parameterized
-from main.src.exception import BackendException
 from ccxt import BaseError
 
 from main.src.utils import generate_random_string, pagination, data_decrypt, error_handler, input_filter
@@ -60,7 +58,7 @@ class TestUtilsClass(TestCase):
             data_decrypt({'api_key': '123', 'api_secret': '456', 'password': '789'}),
             {'api_key': '123', 'api_secret': 'decrpyted', 'password': 'decrpyted', 'headers': {}}
         )
-        
+
         self.assertEqual(
             data_decrypt({'api_key': '123', 'api_secret': '456', 'password': None}),
             {'api_key': '123', 'api_secret': 'decrpyted', 'password': '', 'headers': {}}
@@ -94,13 +92,13 @@ class TestUtilsClass(TestCase):
         get_request = Mock()
         get_request.method = "GET"
         get_request.rel_url = Mock()
-        get_request.rel_url.query = {1:1}
+        get_request.rel_url.query = {1: 1}
         filter_data, arg1 = await test(get_request, 1)
-        self.assertEqual(filter_data, {1:1})
+        self.assertEqual(filter_data, {1: 1})
         self.assertEqual(arg1, 1)
 
         post_request = Mock()
-        post_request.json = CoroutineMock(return_value={2:2})
+        post_request.json = CoroutineMock(return_value={2: 2})
         filter_data, arg1 = await test(post_request, '2')
-        self.assertEqual(filter_data, {2:2})
+        self.assertEqual(filter_data, {2: 2})
         self.assertEqual(arg1, '2')

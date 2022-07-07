@@ -9,6 +9,7 @@ from main.src.exception import BackendException
 logger = logging.getLogger(__name__)
 
 
+# flake8: noqa: E128
 async def create_recaptcha_assessment(token, recaptcha_action):
     """ Create an assessment to analyze the risk of a UI action.
     """
