@@ -2,7 +2,10 @@
 name: Release Deployment
 
 on:
-  push:
+  workflow_run:
+  workflows: [Tests]
+    types:
+      - completed
     branches:
       - "dev"
       - "testing/**"
