@@ -4,8 +4,8 @@ name: Deployment
 on:
   workflow_run:
     workflows: [Tests]
-      types: [completed]
-      branches: [dev]
+    types: [completed]
+    branches: [dev]
 
 jobs:
   deploy:
