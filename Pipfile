@@ -76,6 +76,9 @@ pytest = '*'
 pytest-cov = '*'
 pytest-mock = '*'
 pytest-custom-exit-code = '*'
+pytest-asyncio = '*'
+asynctest = '*'
+parameterized = '*'
 
 [requires]
 python_version = "3.7"
