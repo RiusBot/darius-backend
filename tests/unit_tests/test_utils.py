@@ -64,7 +64,8 @@ class TestUtilsClass(TestCase):
             {'api_key': '123', 'api_secret': 'decrpyted', 'password': '', 'headers': {}}
         )
 
-    async def test_fetch(self):
+    @patch("main.src.utils.fetch_secret_token_firestore")
+    async def test_fetch(self, fetch_secret_token_firestore):
         pass
 
     @parameterized.expand([
