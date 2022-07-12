@@ -34,6 +34,17 @@ async def roilog(request: dict):
         roi=roi,
         timestamp=datetime.fromtimestamp(timestamp),
     )
+
+    logging_client = cloud_logging.Client()
+    log_name = "roi"
+    roi_logger = logging_client.logger(log_name)
+    roi_info = {
+        'roi': roi,
+        'provider': provider.name,
+        'timestamp': timestamp
+    }
+    roi_logger.log_struct(roi_info)
+
     return {"message": 'success'}
 
 
