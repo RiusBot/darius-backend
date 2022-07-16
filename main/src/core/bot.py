@@ -26,6 +26,7 @@ from main.src.core.permission import permission_validator
 from main.src.utils import fetch, pagination
 from main.src.core.referral import create_user_referral_history
 from main.src.constant import quote_constant
+from main.src.core.notify import notify
 
 
 logger = logging.getLogger(__name__)
@@ -178,6 +179,7 @@ async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, li
 async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict[int, BotOrder]):
     logger.info("Write trade results")
 
+    query = []
     trade_list = []
     for bot_id, result in result_dict.items():
         bot = bot_dict[bot_id]
@@ -203,12 +205,17 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
                 quantity=result.get("quantity"),
             )
 
+        notify_info = {
+            'status': trade.status,
+            'symbol': message.symbol,
+            'bot': str(bot),
+        }
+        query.append(notify(bot.user, "OPEN", notify_info))
         trade_list.append(trade)
 
     logger.info(f"write {len(trade_list)} trade results")
-    await Trade.bulk_create(
-        trade_list
-    )
+    query.append(Trade.bulk_create(trade_list))
+    await asyncio.gather(*query)
 
 
 @atomic()

@@ -16,6 +16,7 @@ from .hyperopt import Hyperopt
 from .pair import Pair
 from .referral import Referral, ReferralHistory
 from .provider import Provider, RoiLog
+from .notify import Notify
 
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "ReferralHistory",
     "Provider",
     "RoiLog",
+    "Notify",
 ]

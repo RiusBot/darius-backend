@@ -1,4 +1,21 @@
 
+-- notify
+CREATE TABLE `notify` (
+    `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `user_id` INT NOT NULL,
+    `service` varchar(32) NOT NULL,
+    `notify` varchar(32) NOT NULL,
+    KEY (`user_id`),
+    KEY (`service`),
+    KEY (`notify`),
+    KEY (`is_del`),
+    FOREIGN KEY(user_id) REFERENCES user(id),
+    UNIQUE KEY `unique` (`user_id`,`service`,`notify`)
+) CHARACTER SET utf8;
+
 -- provider
 CREATE TABLE `provider` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,

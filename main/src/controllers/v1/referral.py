@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 @input_filter()
 async def get_user_referral_info(request: dict):
     uid = request["uid"]
-    logger.info("Get user {uid} referral info")
+    logger.info(f"Get user {uid} referral info")
     referral_info = await _get_user_referral_info(uid)
     return referral_info
 
