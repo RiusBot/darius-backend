@@ -13,7 +13,7 @@ class ServiceType(str, Enum):
 
 
 class NotifyType(str, Enum):
-    TG = "TG"
+    TELEGRAM = "TELEGRAM"
     EMAIL = "EMAIL"
     SMS = "SMS"
 
