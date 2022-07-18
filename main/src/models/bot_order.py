@@ -31,7 +31,7 @@ class BotOrder(BaseModel):
         exclude = ["created_at", "updated_at", "is_del"]
 
     def __str__(self):
-        return f"BOT [{self.channel} {self.id}]"
+        return f"[{self.channel} {self.id}]"
 
 
 BotOrderSchemaModel = pydantic_model_creator(BotOrder, name="BotOrder")

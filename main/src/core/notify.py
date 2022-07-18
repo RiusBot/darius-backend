@@ -17,7 +17,7 @@ async def notify(user: User, service: str, info: dict):
         notify_list = await Notify.filter(user=user, service=service, is_del=False)
         msg = MessageTemplate(service, info)
         for notify in notify_list:
-            if notify.notify == "TG":
+            if notify.notify == "TELEGRAM":
                 await _user_telegram_send_message(user.uid, msg)
             elif notify.notify == "SMS":
                 pass
