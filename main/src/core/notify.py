@@ -40,7 +40,7 @@ async def dict_to_entries(user: User, notify_config: dict):
     input_list = []
     for notify in notify_config:
         for service in notify_config[notify]:
-            query = Notify.filter(is_del=False, service=service, notify=notify).first()
+            query = Notify.filter(user=user, is_del=False, service=service, notify=notify).first()
             inst_query.append(query)
             input_list.append((notify, service))
 
