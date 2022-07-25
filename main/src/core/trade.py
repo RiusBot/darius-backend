@@ -125,7 +125,8 @@ async def _clean_limit_order():
                 notify_info = {
                     'status': status,
                     'symbol': trade.message.symbol,
-                    'bot': str(trade.bot)
+                    'bot': str(trade.bot),
+                    'action': trade.message.action,
                 }
                 query.append(notify(user, "LIMIT", notify_info))
                 query.append(trade.save())

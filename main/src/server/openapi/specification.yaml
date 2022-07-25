@@ -432,7 +432,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 1000
+                    maximum: 2000
                   bots:
                     type: array
                     items:
@@ -541,7 +541,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 1000
+                    maximum: 2000
                   trades:
                     type: array
                     items:
@@ -2041,7 +2041,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 1000
+                    maximum: 2000
                   referral_history:
                     type: array
                     items:
@@ -2195,7 +2195,7 @@ components:
     TotalPage:
       type: integer
       minimum: 0
-      maximum: 100
+      maximum: 200
     
     Notify:
       type: object

@@ -209,6 +209,7 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
             'status': trade.status,
             'symbol': message.symbol,
             'bot': str(bot),
+            'action': message.action,
         }
         query.append(notify(bot.user, "OPEN", notify_info))
         trade_list.append(trade)

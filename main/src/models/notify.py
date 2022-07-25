@@ -22,12 +22,12 @@ def MessageTemplate(service: str, info: dict):
 
     if service == "OCO":
         return f"""{info.get('bot')} OCO order
-        {info['symbol']} closed with status {info.get('status')}
+        {info['symbol']} {info.get('action')} closed with status {info.get('status')}
         """
     elif service == "LIMIT":
         return f"{info.get('bot')} {info.get('symbol')} LIMIT order status {info.get('status')}"
     elif service == "OPEN":
-        return f"{info.get('bot')} open {info.get('symbol')} order {info.get('status')}"
+        return f"{info.get('bot')} open {info.get('symbol')} {info.get('action')} order {info.get('status')}"
 
 
 def ConfigTemplate():
