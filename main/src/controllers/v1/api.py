@@ -25,7 +25,8 @@ async def create_user_api(request: dict):
     password = request.get("password")
     exchange = request["exchange"]
     subaccount = request.get("subaccount")
-    api_id = await _create_user_api(uid, api_key, api_secret, password, exchange, subaccount)
+    testnet = request.get("testnet", False)
+    api_id = await _create_user_api(uid, api_key, api_secret, password, exchange, subaccount, testnet)
     return {"api_id": api_id}
 
 
@@ -37,9 +38,11 @@ async def update_user_api(request: dict):
     logger.debug(f"Update user {uid} api {api_id}")
     api_key = request["api_key"]
     api_secret = request["api_secret"]
+    password = request.get("password")
     exchange = request["exchange"]
     subaccount = request.get("subaccount")
-    api_id = await _update_user_api(uid, api_id, api_key, api_secret, exchange, subaccount)
+    testnet = request.get("testnet", False)
+    api_id = await _update_user_api(uid, api_id, api_key, api_secret, password, exchange, subaccount, testnet)
 
 
 @error_handler()

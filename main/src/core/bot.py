@@ -41,7 +41,7 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
         async for bot in BotOrder.filter(
             is_del=False,
             status="RUNNING",
-            channel=channel
+            channel=channel,
         ).prefetch_related(
             "config__api",
             "config__pair",
@@ -107,9 +107,8 @@ def send_to_execute(url: str, config: dict):
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
             config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else ""
-            config["headers"] = {} if config["api_key"] != "9a53750a-5af4-4636-906c-c3e558801694" else {'x-simulated-trading': '1'}
         except Exception:
-            logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
+            logger.error(f'Decrypt error, use raw secret. api_id: {config["api_id"]}.')
             logger.exception("")
 
         max_retry = 3

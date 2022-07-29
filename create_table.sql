@@ -226,6 +226,7 @@ CREATE TABLE `api` (
     `password` varchar(64),
     `exchange` varchar(16) NOT NULL,
     `subaccount` varchar(32),
+    `testnet` BOOLEAN NOT NULL DEFAULT False,
     `is_del` BOOLEAN NOT NULL DEFAULT False,
     KEY (`user_id`),
     KEY (`exchange`),

@@ -31,8 +31,9 @@ async def _get_user_api(user: User) -> List[Api]:
     return api_list
 
 
-async def validate_api_permission(api_key: str, api_secret: str, password: str, exchange: str, subaccount: str):
+async def validate_api_permission(api_key: str, api_secret: str, password: str, exchange: str, subaccount: str, testnet: bool = False):
 
+    # length validation
     if exchange in ["ftx", "ftxus"]:
         if len(api_key) != 40 or len(api_secret) != 40:
             raise BackendException("Invalid length")
@@ -51,6 +52,9 @@ async def validate_api_permission(api_key: str, api_secret: str, password: str, 
             }
         else:
             raise BackendException(f"{exchange} does not support subaccount")
+    if testnet:
+        if exchange == 'okx':
+            headers.update({'x-simulated-trading': '1'})
 
     exchange = getattr(ccxt, exchange)({
         'enableRateLimit': True,
@@ -60,6 +64,8 @@ async def validate_api_permission(api_key: str, api_secret: str, password: str, 
         "headers": headers
     })
     try:
+        if exchange == 'binance':
+            exchange.set_sandbox_mode(testnet)
         exchange.checkRequiredCredentials()
         await exchange.fetch_balance()
     except ccxt.AuthenticationError:
@@ -98,7 +104,7 @@ async def validate_api_number(user: User, api_list: list):
 
 @atomic()
 @permission_validator("create_user_api")
-async def _create_user_api(user: User, api_key: str, api_secret: str, password: str, exchange: str, subaccount: str) -> int:
+async def _create_user_api(user: User, api_key: str, api_secret: str, password: str, exchange: str, subaccount: str, testnet: bool) -> int:
     uid = user.uid
     logger.info(f"Create new api for user [{uid}]")
     api_list = await user.api_user.filter()
@@ -107,7 +113,7 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, password: 
     await validate_api_number(user, api_list)
 
     # validate api permission
-    await validate_api_permission(api_key, api_secret, password, exchange, subaccount)
+    await validate_api_permission(api_key, api_secret, password, exchange, subaccount, testnet)
 
     # encrypt api_secret
     api_secret = encrypt(api_key, api_secret)
@@ -131,17 +137,17 @@ async def _create_user_api(user: User, api_key: str, api_secret: str, password: 
         api_secret=api_secret,
         password=password,
         exchange=exchange,
-        subaccount=subaccount
+        subaccount=subaccount,
+        testnet=testnet
     )
     api_id = api.id
-
     logger.info(f"Create api [{api_id}]")
     return api_id
 
 
 @atomic()
 @permission_validator("update_user_api")
-async def _update_user_api(user: User, api_id: int, api_key: str, api_secret: str, exchange: str, subaccount: str) -> int:
+async def _update_user_api(user: User, api_id: int, api_key: str, api_secret: str, password: str, exchange: str, subaccount: str, testnet: bool) -> int:
     uid = user.uid
     logger.info(f"Update api [{api_id}] for user [{uid}]")
 
@@ -151,13 +157,14 @@ async def _update_user_api(user: User, api_id: int, api_key: str, api_secret: st
         raise BackendException("Invalid api.")
 
     # validate api permission
-    await validate_api_permission(api_key, api_secret, exchange, subaccount)
+    await validate_api_permission(api_key, api_secret, password, exchange, subaccount, testnet)
 
     # update api
     api.api_key = api_key
     api.api_secret = api_secret
     api.exchange = exchange
     api.subaccount = subaccount
+    api.testnet = testnet
     await api.save()
 
 
@@ -203,7 +210,7 @@ async def _clean_api() -> int:
         try:
             api_secret = decrypt(api.api_key, api.api_secret)
             password = decrypt(api.api_key, api.password) if api.password else None
-            await validate_api_permission(api.api_key, api_secret, password, api.exchange, api.subaccount)
+            await validate_api_permission(api.api_key, api_secret, password, api.exchange, api.subaccount, api.testnet)
         except BackendException:
             # remove running bot
             async for config in api.config_api.filter(is_del=False).prefetch_related('bot'):

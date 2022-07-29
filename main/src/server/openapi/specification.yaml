@@ -326,17 +326,22 @@ paths:
                 price:
                   type: number
                   minimum: 0
+                  nullable: true
                 amount:
                   type: number
                   minimum: 0
+                  nullable: true
                 position:
                   type: number
+                  nullable: true
                 stop_loss:
                   type: number
                   minimum: 0
+                  nullable: true
                 take_profit:
                   type: number
                   minimum: 0
+                  nullable: true
                 action:
                   $ref: '#/components/schemas/Action'
               required:
@@ -2457,6 +2462,9 @@ components:
           type: string
           maxLength: 64
           nullable: true
+        testnet:
+          type: boolean
+          default: false
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:
@@ -2480,6 +2488,9 @@ components:
           type: string
           maxLength: 64
           nullable: true
+        testnet:
+          type: boolean
+          default: false
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:
