@@ -126,6 +126,25 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /botlog:
+    post:
+      tags:
+      - log
+      summary: log bot stats in riusbot
+      operationId: main.src.controllers.v1.log.botlog
+      security:
+        - bearerAuthBackendOnly: []
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+
   /create_test_data:
     get:
       tags:
