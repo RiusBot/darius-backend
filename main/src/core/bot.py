@@ -26,6 +26,7 @@ from main.src.core.permission import permission_validator
 from main.src.utils import fetch, pagination
 from main.src.core.referral import create_user_referral_history
 from main.src.constant import quote_constant
+from main.src.core.notify import notify
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ async def get_all_bot(channel: str) -> Dict[int, BotOrder]:
         async for bot in BotOrder.filter(
             is_del=False,
             status="RUNNING",
-            channel=channel
+            channel=channel,
         ).prefetch_related(
             "config__api",
             "config__pair",
@@ -106,9 +107,8 @@ def send_to_execute(url: str, config: dict):
         try:
             config["api_secret"] = decrypt(config["api_key"], config["api_secret"])
             config["password"] = decrypt(config["api_key"], config["password"]) if config["password"] else ""
-            config["headers"] = {} if config["api_key"] != "9a53750a-5af4-4636-906c-c3e558801694" else {'x-simulated-trading': '1'}
         except Exception:
-            logger.error(f'Decrypt error, use plain. api_id: {config["api_id"]}.')
+            logger.error(f'Decrypt error, use raw secret. api_id: {config["api_id"]}.')
             logger.exception("")
 
         max_retry = 3
@@ -143,23 +143,7 @@ def black_white_list_filter(config_dict):
     return True
 
 
-async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = None) -> Dict[Future, int]:
-    logger.info("Start activate bot executor")
-    url = app_config["BOT_EXECUTOR_ENDPOINT"]
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        task_dict = dict()
-        for config in config_list:
-            config.update(data_dict)
-            if black_white_list_filter(config):
-                task = executor.submit(send_to_execute, url, config)
-                task_dict[task] = config["bot_id"]
-
-        logger.info(f"All {len(config_list)} submitted.")
-    return task_dict
-
-
-async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: int = 40) -> Dict[Future, int]:
+async def send_bot_executor(config_list: List[dict], data_dict: dict, workers: int = 100) -> Dict[Future, int]:
     logger.info("Start async activate bot executor")
     url = app_config["BOT_EXECUTOR_ENDPOINT"]
 
@@ -171,12 +155,12 @@ async def send_bot_executor2(config_list: List[dict], data_dict: dict, workers: 
         sem = asyncio.Semaphore(workers)
         tasks = []
         for config in config_list:
-            task = asyncio.create_task(fetch(session, sem, url, config, error="EXECUTE"))
+            task = asyncio.create_task(fetch(session, sem, url, config, error="EXECUTE ERROR"))
             tasks.append(task)
 
         logger.info(f"All {len(config_list)} scheduled.")
         responses = await asyncio.gather(*tasks)
-        return responses
+        return {config['bot_id']: result for config, result in zip(config_list, responses)}
 
 
 async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, list]:
@@ -194,6 +178,7 @@ async def recieve_execute_result(task_dict: Dict[Future, int]) -> Tuple[list, li
 async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict[int, BotOrder]):
     logger.info("Write trade results")
 
+    query = []
     trade_list = []
     for bot_id, result in result_dict.items():
         bot = bot_dict[bot_id]
@@ -215,14 +200,22 @@ async def write_trade_result(message: Message, result_dict: dict, bot_dict: Dict
                 open_order=result.get("open_order"),
                 sl_order=result.get("sl_order"),
                 tp_order=result.get("tp_order"),
+                balance=result.get("balance"),
+                quantity=result.get("quantity"),
             )
 
+        notify_info = {
+            'status': trade.status,
+            'symbol': message.symbol,
+            'bot': str(bot),
+            'action': message.action,
+        }
+        query.append(notify(bot.user, "OPEN", notify_info))
         trade_list.append(trade)
 
     logger.info(f"write {len(trade_list)} trade results")
-    await Trade.bulk_create(
-        trade_list
-    )
+    query.append(Trade.bulk_create(trade_list))
+    await asyncio.gather(*query)
 
 
 @atomic()
@@ -330,8 +323,7 @@ async def _execute_bot_signal(
                     "price": price,
                 }
                 logger.info(json.dumps(data_dict))
-                task_dict = await send_bot_executor(config_list, data_dict)
-                result_dict = await recieve_execute_result(task_dict)
+                result_dict = await send_bot_executor(config_list, data_dict)
             except Exception as e:
                 error_msg = f"send and receive data error. {e}"
                 logger.error(
@@ -389,6 +381,7 @@ async def _execute_webhook_signal(
     stop_loss: float = None,
     take_profit: float = None,
     price: float = None,
+    amount: float = None
 ):
     try:
         bot_dict, message = None, None
@@ -421,7 +414,7 @@ async def _execute_webhook_signal(
                 action,
                 datetime.fromtimestamp(message_timestamp),
                 datetime.fromtimestamp(recieve_timestamp),
-                quantity,
+                amount,  # webhook write amount as quantity
                 entry,
                 stop_loss,
                 take_profit
@@ -450,10 +443,10 @@ async def _execute_webhook_signal(
                     "scalp_stop_loss": stop_loss,
                     "scalp_take_profit": take_profit,
                     "price": price,
+                    "amount": amount
                 }
                 logger.info(json.dumps(data_dict))
-                task_dict = await send_bot_executor(config_list, data_dict)
-                result_dict = await recieve_execute_result(task_dict)
+                result_dict = await send_bot_executor(config_list, data_dict)
             except Exception as e:
                 error_msg = f"send and receive data error. {e}"
                 logger.error(
@@ -575,13 +568,17 @@ def fill_hyperopt(hyperopt: dict, config: dict):
 
 
 @atomic()
-async def validate_config(user: User, config: dict):
+async def validate_config(user: User, config: dict, channel: str = None):
 
     # validate api belongs to user
     api_id = config["api_id"]
     api = await user.api_user.filter(id=api_id, is_del=False).first()
     if api is None:
         raise BackendException("Invalid api_id")
+
+    # validate acdc
+    if channel == "ACDC" and api.exchange != "okx":
+        raise BackendException("ACDC requires using OKX")
 
     # validate trailing order
     validate_trailing(api, config)
@@ -658,7 +655,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
     logger.info(f"Create new bot for user [{uid}]")
 
     subscription, is_trial, trial_expired_at = await validate_subscription(user, channel, config)
-    api, pair, others = await validate_config(user, config)
+    api, pair, others = await validate_config(user, config, channel)
 
     # create bot
     config["api"] = api
@@ -688,6 +685,7 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
         else:
             raise BackendException("Webhook bot exists !! One per account.")
     else:
+
         bot_config = await BotConfig.create(
             **config
         )
@@ -725,16 +723,17 @@ async def _create_user_bot(user: User, channel: str, config: dict) -> int:
 async def _update_user_bot(user: User, bot_id: int, config: dict, status: str) -> int:
     logger.info(f"Update bot [{bot_id}]")
 
-    api, pair, others = await validate_config(user, config)
+    bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
+    if bot_order is None:
+        raise BackendException(f"Bot {bot_id} not found")
+
+    api, pair, others = await validate_config(user, config, bot_order.channel)
 
     # update bot
     config["api"] = api
     config["pair"] = pair
     config["others"] = others
 
-    bot_order = await BotOrder.filter(is_del=False, id=bot_id).prefetch_related("config").first()
-    if bot_order is None:
-        raise BackendException(f"No Bot {bot_id}")
     if status:
         bot_order.status = status
     for key, value in config.items():

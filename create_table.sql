@@ -1,4 +1,47 @@
 
+-- notify
+CREATE TABLE `notify` (
+    `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `user_id` INT NOT NULL,
+    `service` varchar(32) NOT NULL,
+    `notify` varchar(32) NOT NULL,
+    KEY (`user_id`),
+    KEY (`service`),
+    KEY (`notify`),
+    KEY (`is_del`),
+    FOREIGN KEY(user_id) REFERENCES user(id),
+    UNIQUE KEY `unique` (`user_id`,`service`,`notify`)
+) CHARACTER SET utf8;
+
+-- provider
+CREATE TABLE `provider` (
+    `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `name` varchar(16) UNIQUE NOT NULL,
+    `access_token` varchar(32) UNIQUE NOT NULL,
+    KEY (`provider`),
+    KEY (`is_del`)
+) CHARACTER SET utf8;
+
+
+-- roi_log
+CREATE TABLE `roi_log` (
+    `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `provider_id` INT(11),
+    `timestamp` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `roi` DOUBLE NOT NULL  DEFAULT 0,
+    KEY (`is_del`),
+    CONSTRAINT FOREIGN KEY(`provider_id`) REFERENCES `provider`(id) ON DELETE CASCADE
+) CHARACTER SET utf8;
+
 -- referral
 CREATE TABLE `referral` (
     `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -183,6 +226,7 @@ CREATE TABLE `api` (
     `password` varchar(64),
     `exchange` varchar(16) NOT NULL,
     `subaccount` varchar(32),
+    `testnet` BOOLEAN NOT NULL DEFAULT False,
     `is_del` BOOLEAN NOT NULL DEFAULT False,
     KEY (`user_id`),
     KEY (`exchange`),
@@ -350,6 +394,8 @@ CREATE TABLE IF NOT EXISTS `trade_history` (
     `sl_order` VARCHAR(50),
     `tp_order` VARCHAR(50),
     `is_del` BOOLEAN NOT NULL DEFAULT False,
+    `quantity` DOUBLE,
+    `balance` DOUBLE,
     KEY (`bot_id`),
     KEY (`message_id`),
     KEY (`created_at`),

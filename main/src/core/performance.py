@@ -1,50 +1,65 @@
 import os
 import json
+import aiohttp
+import asyncio
 import logging
-import requests
 import calendar
 from datetime import datetime
 from aiocache import cached
 from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
-from main.src.models import Performance, User
+from main.src.models import Performance, User, Message
 from main.src.models.channel import ChannelType
+from main.src.models.performance import PerformanceSchemaModel
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.config import app_config
 from main.src.core.auth import fetch_secret_token_firestore
+from main.src.utils import fetch
 
 
 logger = logging.getLogger(__name__)
 usingProjectId = os.getenv('project_id', 'local')
 
 
+@cached(ttl=86400)
 @atomic()
 async def _get_performance(channel: str) -> dict:
-    logger.info(f"Get {channel} Performance")
-    Performance_Pydantic_List = pydantic_queryset_creator(
-        Performance,
-        include=["channel", "start_at", "result"]
-    )
-    performance_list = await Performance_Pydantic_List.from_queryset(
-        Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
-    )
-    performance_list = json.loads(performance_list.json())
-    for performance in performance_list:
-        performance["date"] = performance.pop("start_at")[:7]
-        buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
-        sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
+    logger.info(f"Get {channel} all time Performance")
 
-        # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
-        performance["result"] = {
-            'wins': buy_result["wins"] + sell_result['losses'],
-            'losses': buy_result["losses"] + sell_result['wins'],
-            'draws': buy_result["draws"] + sell_result['draws'],
-            'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
-            'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
+    backtest_report = {}
+    all_time_performance = await Performance.filter(
+        is_del=False,
+        channel=channel,
+        start_at=datetime(1970, 1, 1),
+    ).order_by("end_at").first()
+    if all_time_performance is not None:
+        all_time_performance = await PerformanceSchemaModel.from_tortoise_orm(all_time_performance)
+        all_time_performance = all_time_performance.dict()
+        backtest_report = json.loads(all_time_performance['result'])['strategy']['riusbot_hedge']
+        report = {
+            'roi': backtest_report['profit_total'],
+            'profit': backtest_report['final_balance'] - backtest_report['starting_balance'],
+            'volume': backtest_report['total_volume'],
+            'fee': backtest_report['total_volume'] * 0.002,
+            'win_rate': backtest_report['wins'] / (backtest_report['wins'] + backtest_report['losses']),
+            'max_drawdown': backtest_report['max_relative_drawdown'],
+            'holding_avg': backtest_report['holding_avg'],
+            'total_trades': backtest_report['total_trades'],
+            'best_pair': backtest_report['best_pair']['key'],
+            'worst_pair': backtest_report['worst_pair']['key'],
+            'trades_per_day': backtest_report['trades_per_day'],
+            'start': backtest_report['backtest_start'],
+            'end': backtest_report['backtest_end'],
+            'cagr': backtest_report['cagr'],
+            'sharperatio': backtest_report['sharperatio'],
+            'annual_roi': backtest_report['annual_roi'],
         }
-
-    return performance_list
+    return {
+        'channel': channel,
+        'result': report,
+        'trades': backtest_report['trades'],
+    }
 
 
 @cached(ttl=43200)
@@ -64,28 +79,47 @@ async def _get_performances() -> dict:
 
     for channel in channel_list:
         performance_list = await Performance_Pydantic_List.from_queryset(
-            Performance.filter(is_del=False, channel=channel).order_by("-start_at").limit(12)
+            Performance.filter(
+                is_del=False,
+                channel=channel,
+                start_at__gt=datetime(2021, 1, 1),
+            ).order_by("-start_at").limit(12)
         )
         performance_list = json.loads(performance_list.json())
         for performance in performance_list:
             performance["date"] = performance.pop("start_at")[:7]
-            buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
-            sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
+            report = json.loads(performance["result"])
 
-            # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
-            performance["result"] = {
-                'wins': buy_result["wins"] + sell_result['losses'],
-                'losses': buy_result["losses"] + sell_result['wins'],
-                'draws': buy_result["draws"] + sell_result['draws'],
-                'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
-                'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
-            }
+            if "riusbot_hedge" in report["strategy"]:
+                result = json.loads(performance["result"])["strategy"]["riusbot_hedge"]
+
+                # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+                performance["result"] = {
+                    'wins': result["wins"],
+                    'losses': result["losses"],
+                    'draws': result["draws"],
+                    'profit_total': result["profit_total"],
+                    'total_trades': result["total_trades"],
+                }
+            else:
+                buy_result = json.loads(performance["result"])["strategy"]["riusbot"]
+                sell_result = json.loads(performance["result"])["strategy"]["riusbot_sell"]
+
+                # keys = ['wins', 'losses', 'draws', "profit_total", "total_trades"]
+                performance["result"] = {
+                    'wins': buy_result["wins"] + sell_result['losses'],
+                    'losses': buy_result["losses"] + sell_result['wins'],
+                    'draws': buy_result["draws"] + sell_result['draws'],
+                    'profit_total': buy_result["profit_total"] - sell_result['profit_total'],
+                    'total_trades': buy_result["total_trades"] + sell_result['total_trades'],
+                }
+
         performance_result[channel] = performance_list
 
     return performance_result
 
 
-def _create_performance():
+async def _create_performance(all_time):
     logger.info("Create performance")
     date = datetime.now()
     y, m = date.year, date.month
@@ -95,27 +129,33 @@ def _create_performance():
 
     start = start.strftime("%Y%m%d")
     end = end.strftime("%Y%m%d")
-    url = f'{app_config["BOT_OPTIMIZER_URL"]}/backtest'
+    url = f'{app_config["BOT_OPTIMIZER_URL"]}/backtest_v2'
     data = {
         'timeframe': '1h',
         'timerange': f'{start}-{end}',
         'token': fetch_secret_token_firestore()
     }
 
-    response = requests.post(
-        url,
-        json=data
-    )
-
-    msg = ""
-    try:
-        msg += f"{response.json()}"
-    except Exception:
-        msg += f"{response.text}"
-    if response.status_code != 200:
-        logging.error(f"create performance failed. {msg}")
+    if all_time:
+        channel_list = await Message.all().distinct().values('channel')
+        data['all_time'] = True
+        for channel in channel_list:
+            data["channels"] = [channel]
+            async with aiohttp.ClientSession(timeout=1800) as session:
+                sem = asyncio.Semaphore(1)
+                response = await fetch(session, sem, url, data, error="CREATE ALL TIME PERFORMANCE ERROR", timeout=1800)
+                if isinstance(response, str):
+                    logging.error(f"create {channel} all time performance failed. {response}")
+                else:
+                    logging.info(f"create {channel} all time performance success.")
     else:
-        logging.info("create performance success.")
+        async with aiohttp.ClientSession(timeout=1800) as session:
+            sem = asyncio.Semaphore(1)
+            response = await fetch(session, sem, url, data, error="CREATE PERFORMANCE ERROR", timeout=1800)
+            if isinstance(response, str):
+                logging.error(f"create performance failed. {response}")
+            else:
+                logging.info("create performance success.")
 
 
 @atomic()

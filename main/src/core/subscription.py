@@ -54,7 +54,7 @@ async def _clean_subscription() -> List[Subscription]:
     await Subscription.filter(
         is_del=False,
         expire_date__lt=datetime.now()
-    ).update(is_del=True)
+    ).update(is_del=None)
 
     # clean trial expired bot
     await BotOrder.filter(
@@ -98,7 +98,7 @@ async def _get_subscription_info(user: User, channel: str) -> dict:
         is_del=False,
         channel=channel,
         user_id__not_in=(27, 34, 700),  # my testing accounts
-        balance__lt=3000,
+        user__balance__lt=3000,
         expire_date__gt=datetime.now(),
     ).count()
 
@@ -217,7 +217,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
         subscription_count = await user.subscription_user.all().count()
         if subscription_count == 1:
             if role != 'vip':
-                # first subscription refund 30%
+                # first subscription refund 20%
                 user.balance += float(plan.price) * 0.3
     else:
         new_expire_date = subscription.expire_date + timedelta(days=int(plan.day))
@@ -228,7 +228,7 @@ async def _create_user_subscription(user: User, plan_id: int) -> List[int]:
 
         if role != 'vip':
             # renew (expand) refund 10%
-            user.balance += float(plan.price) * 0.15
+            user.balance += float(plan.price) * 0.1
 
     # referrer get rebate from user subscription
     await asyncio.gather(

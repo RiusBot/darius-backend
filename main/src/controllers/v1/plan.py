@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_plan(request: dict, plan_id: int):
     logger.debug(f"get plan {plan_id}")
     uid = request["uid"]
@@ -16,7 +16,7 @@ async def get_plan(request: dict, plan_id: int):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_plans(request: dict):
     uid = request["uid"]
     plan = await _get_plans(uid)
@@ -24,7 +24,7 @@ async def get_plans(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_plan(request: dict):
     uid = request["uid"]
     name = request["name"]
@@ -37,7 +37,7 @@ async def create_plan(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_plan(request: dict):
     uid = request["uid"]
     plan_id = request["plan_id"]
@@ -50,7 +50,7 @@ async def update_plan(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def delete_plan(request: dict):
     uid = request["uid"]
     plan_id = request["plan_id"]

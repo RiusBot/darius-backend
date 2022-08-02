@@ -9,10 +9,11 @@ from tortoise.transactions import atomic
 from tortoise.contrib.pydantic import pydantic_queryset_creator
 
 from main.src.config import app_config
-from main.src.models import Trade, User
+from main.src.models import Trade, User, BotOrder
 from main.src.exception import BackendException
 from main.src.core.permission import permission_validator
 from main.src.core.bot import process_bot_config
+from main.src.core.notify import notify
 from main.src.utils import fetch, pagination
 
 
@@ -87,6 +88,7 @@ async def _clean_limit_order():
     logger.info("Clean limit order")
     one_hour_ago = datetime.now() - timedelta(minutes=70)
     config_list = []
+    user_list = []
     trade_dict = {}
     async for trade in Trade.filter(
         created_at__gt=one_hour_ago,
@@ -96,6 +98,7 @@ async def _clean_limit_order():
     ).prefetch_related(
         "bot__config__api",
         "bot__config__pair",
+        "bot__user",
         "message"
     ):
         if trade.open_order:
@@ -105,11 +108,13 @@ async def _clean_limit_order():
             config_dict["symbol"] = trade.message.symbol
             config_list.append(config_dict)
             trade_dict[trade.id] = trade
+            user_list.append(trade.bot.user)
 
     result_list = await send_bot_executor_clean(config_list, {'type': 'limit'})
 
+    query = []
     stats = defaultdict(int)
-    for config, result in zip(config_list, result_list):
+    for user, config, result in zip(user_list, config_list, result_list):
         trade_id = config["trade_id"]
         if isinstance(result, dict):
             status = result.get("status")
@@ -117,10 +122,18 @@ async def _clean_limit_order():
             if status:
                 trade = trade_dict[trade_id]
                 trade.status = status
-                await trade.save()
+                notify_info = {
+                    'status': status,
+                    'symbol': trade.message.symbol,
+                    'bot': str(trade.bot),
+                    'action': trade.message.action,
+                }
+                query.append(notify(user, "LIMIT", notify_info))
+                query.append(trade.save())
         else:
             stats['error'] += 1
 
+    await asyncio.gather(*query)
     logger.info(f"clean limit order stats: {stats}")
 
 
@@ -130,6 +143,7 @@ async def _clean_oco_order():
 
     start_date = datetime.now() - timedelta(days=7)
     config_list = []
+    user_list = []
     trade_dict = {}
     async for trade in Trade.filter(
         created_at__gt=start_date,
@@ -141,6 +155,7 @@ async def _clean_oco_order():
     ).prefetch_related(
         "bot__config__api",
         "bot__config__pair",
+        "bot__user",
         "message"
     ):
         if trade.sl_order or trade.tp_order:
@@ -150,12 +165,14 @@ async def _clean_oco_order():
             config_dict["tp_order"] = trade.tp_order
             config_dict["trade_id"] = trade.id
             config_list.append(config_dict)
+            user_list.append(trade.bot.user)
             trade_dict[trade.id] = trade
 
     result_list = await send_bot_executor_clean(config_list, {'type': 'oco'})
 
+    query = []
     stats = defaultdict(int)
-    for config, result in zip(config_list, result_list):
+    for user, config, result in zip(user_list, config_list, result_list):
         trade_id = config["trade_id"]
         if isinstance(result, dict):
             status = result.get("status")
@@ -163,15 +180,48 @@ async def _clean_oco_order():
             if status:
                 trade = trade_dict[trade_id]
                 trade.status = status
-                await trade.save()
+                notify_info = {
+                    'status': status,
+                    'symbol': trade.message.symbol,
+                    'bot': str(trade.bot),
+                    'action': trade.message.action,
+                }
+                query.append(notify(user, "OCO", notify_info))
+                query.append(trade.save())
         else:
             stats['error'] += 1
             stats[result] += 1
 
+    await asyncio.gather(*query)
     logger.info(f"clean oco order stats: {stats}")
 
 
-async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 20) -> List[Union[Dict, str]]:
+@atomic()
+@permission_validator("clean_all_position")
+async def _clean_all_position(user: User, bot_id: int):
+    logger.info(f"Clean all position for bot {bot_id}")
+
+    bot = await BotOrder.filter(
+        is_del=False,
+        id=bot_id
+    ).prefetch_related(
+        "config__api",
+        "config__pair",
+        "user",
+    ).first()
+
+    config_list = [process_bot_config(bot.config)]
+    result_list = await send_bot_executor_clean(config_list, {'type': 'position'})
+
+    for config, result in zip(config_list, result_list):
+        if isinstance(result, dict):
+            return result.get("status")
+        else:
+            logger.error(f"close position error {result}")
+            return 'CLOSE POSITION ERROR'
+
+
+async def send_bot_executor_clean(config_list: List[dict], data_dict: dict = {}, workers: int = 40) -> List[Union[Dict, str]]:
     logger.info("Start activate bot executor clean")
     url = app_config["BOT_EXECUTOR_CLEAN_ENDPOINT"]
 

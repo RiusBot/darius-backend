@@ -32,6 +32,7 @@ read commands in ```make install-gcloud``` need sudo to work
 
 # start the microservice (in project root folder)
 * acquire credential file first
+```
 make start-local
 ```
 

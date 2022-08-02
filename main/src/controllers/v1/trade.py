@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from main.src.core.trade import _clean_limit_order, _clean_oco_order, _get_bot_trades, _get_bot_trades2
+from main.src.core.trade import _clean_limit_order, _clean_oco_order, _get_bot_trades, _get_bot_trades2, _clean_all_position
 from main.src.utils import error_handler, input_filter
 
 
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_bot_trades(request: dict):
     uid = request["uid"]
     bot_id = request["bot_id"]
@@ -18,7 +18,7 @@ async def get_bot_trades(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_bot_trades2(request: dict):
     uid = request["uid"]
     bot_id = request["bot_id"]
@@ -30,14 +30,25 @@ async def get_bot_trades2(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def clean_limit_order(request: dict):
     logger.info("Clean limit order")
     asyncio.create_task(_clean_limit_order())
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def clean_oco_order(request: dict):
     logger.info("Clean oco order")
     asyncio.create_task(_clean_oco_order())
+
+
+@error_handler()
+@input_filter()
+async def clean_all_position(request: dict):
+    logger.info("Clean all position")
+    bot_id = request['bot_id']
+    uid = request['uid']
+    status = await _clean_all_position(uid, bot_id)
+    logger.info(f'clean all position status: {status}')
+    return {'status': status}

@@ -9,10 +9,10 @@ service: darius-backend
 # runtime: custom
 # env: flex
 
-# resources:
-#   cpu: 1
-#   memory_gb: 4
-#   disk_size_gb: 20
+resources:
+  cpu: 1
+  memory_gb: 1
+  disk_size_gb: 10
   
 # liveness_check:
 #   check_interval_sec: 120
@@ -25,8 +25,12 @@ env_variables:
   project_id: darius-332003
   
 automatic_scaling:
-  max_instances: 10
-  
+  max_instances: 2
+  min_instances: 0
+  max_concurrent_requests: 30
+  min_pending_latency: "500ms"
+  max_idle_instances: 1
+  min_idle_instances: 0
 
 
 # entrypoint: gunicorn -b :$PORT main:app

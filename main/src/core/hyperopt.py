@@ -1,11 +1,13 @@
 import logging
-import requests
+import aiohttp
+import asyncio
 from datetime import datetime, timedelta
 from tortoise.transactions import atomic
 from main.src.models import User
 from main.src.core.permission import permission_validator
 from main.src.config import app_config
 from main.src.core.auth import fetch_secret_token_firestore
+from main.src.utils import fetch
 
 
 logger = logging.getLogger(__name__)
@@ -21,13 +23,13 @@ async def _get_hyperopt(user: User, channel: str) -> dict:
     }
 
 
-def _create_hyperopt() -> dict:
+async def _create_hyperopt() -> dict:
     logger.info("Create hyperopt")
     date = datetime.now()
     start = (date - timedelta(days=180)).strftime("%Y%m%d")
     end = date.strftime("%Y%m%d")
 
-    url = f'{app_config["BOT_OPTIMIZER_URL"]}/hyperopt'
+    url = f'{app_config["BOT_OPTIMIZER_URL"]}/hyperopt_v2'
     data = {
         'timeframe': '1h',
         'days': 90,
@@ -35,17 +37,11 @@ def _create_hyperopt() -> dict:
         'token': fetch_secret_token_firestore()
     }
 
-    response = requests.post(
-        url,
-        json=data
-    )
+    async with aiohttp.ClientSession(timeout=3600) as session:
+        sem = asyncio.Semaphore(1)
+        response = await fetch(session, sem, url, data, error="CREATE HYPEROPT ERROR", timeout=1800)
 
-    msg = ""
-    try:
-        msg += f"{response.json()}"
-    except Exception:
-        msg += f"{response.text}"
-    if response.status_code != 200:
-        logger.error(f"create hyperopt failed. {msg}")
-    else:
-        logger.info("create hyperopt success.")
+        if isinstance(response, str):
+            logger.error(f"create hyperopt failed. {response}")
+        else:
+            logger.info("create hyperopt success.")

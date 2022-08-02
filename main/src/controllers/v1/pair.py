@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_all_pair(request: dict):
     uid = request["uid"]
     logger.info(f"Get user {uid} pair")
@@ -17,7 +17,7 @@ async def get_all_pair(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_pair(request):
     uid = request["uid"]
     logger.info(f"Get user {uid} pair")
@@ -26,7 +26,7 @@ async def get_user_pair(request):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_user_pair(request: dict):
     uid = request["uid"]
     logger.info(f"Create user {uid} pair")
@@ -38,7 +38,7 @@ async def create_user_pair(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_user_pair(request: dict):
     uid = request["uid"]
     logger.info(f"Update user {uid} pair")
@@ -50,7 +50,7 @@ async def update_user_pair(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def delete_user_pair(request: dict):
     uid = request["uid"]
     logger.info(f"Delete user {uid} pair")
@@ -59,7 +59,7 @@ async def delete_user_pair(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_builtin_pair(request: dict):
     logger.debug("Get builtin pair")
     uid = request["uid"]
@@ -68,7 +68,7 @@ async def get_builtin_pair(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_builtin_pair(request: dict):
     logger.info("Create builtin pair")
     uid = request["uid"]
@@ -80,7 +80,7 @@ async def create_builtin_pair(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_builtin_pair(request: dict):
     uid = request["uid"]
     pair_id = request["pair_id"]
@@ -92,7 +92,7 @@ async def update_builtin_pair(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def delete_builtin_pair(request: dict):
     uid = request["uid"]
     pair_id = request["pair_id"]

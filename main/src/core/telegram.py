@@ -29,6 +29,8 @@ def fetch_telegram_bot_token_firestore():
 async def _user_telegram_send_message(uid: str, msg: str):
     logger.info(f"Send telegram msg to user {uid}")
     user = await User.filter(uid=uid).first()
+    if user is None:
+        raise BackendException(f"Invalid uid {uid}")
     bind_telegram = await user.telegram_user.all().first()
     if bind_telegram is None:
         raise BackendException("User has no bind telegram")

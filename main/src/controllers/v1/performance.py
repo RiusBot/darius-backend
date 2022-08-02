@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_performance(request: dict, channel: str):
     logger.debug(f"get {channel} performance")
     performance = await _get_performance(channel)
@@ -16,7 +16,7 @@ async def get_performance(request: dict, channel: str):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_performances(request: dict):
     logger.debug("get performances")
     performances = await _get_performances()
@@ -24,7 +24,8 @@ async def get_performances(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_performance(request: dict):
     logger.info("create performance")
-    asyncio.create_task(_create_performance())
+    all_time = request.get('all_time', False)
+    asyncio.create_task(_create_performance(all_time))

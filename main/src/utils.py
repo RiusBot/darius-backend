@@ -27,9 +27,11 @@ def generate_random_string(k: int):
 
 
 async def pagination(query, page: int, pagesize: int) -> Tuple[QuerySet, int, int]:
-    total_count = await query.limit(1000).count()
+    if pagesize < 1:
+        raise BackendException("Invalid pagesize")
+    total_count = await query.limit(2000).count()
     totalpage = (total_count // pagesize) + (total_count % pagesize != 0)
-    if totalpage > 0 and page >= totalpage:
+    if (totalpage > 0 and page >= totalpage) or page < 0:
         raise BackendException("Invalid page")
     offset = page * pagesize
     limit = pagesize
@@ -44,22 +46,27 @@ def data_decrypt(data: dict):
                 data["api_secret"] = decrypt(data["api_key"], data["api_secret"])
             if "password" in data:
                 data["password"] = decrypt(data["api_key"], data["password"]) if data["password"] else ""
+
+            if data["api_key"] == "9a53750a-5af4-4636-906c-c3e558801694":
+                data["headers"] = {'x-simulated-trading': '1'}
+            else:
+                data["headers"] = {}
     except Exception:
         logger.error('Decrypt Error')
         logger.exception("")
     return data
 
 
-async def fetch(session, sem, url: str, request_data: dict, max_retry: int = 3, error: str = "ERROR"):
+async def fetch(session, sem, url: str, request_data: dict, max_retry: int = 3, error: str = "ERROR", timeout: int = 60):
     if request_data.get("test"):
         return "Test only"
     try:
         async with sem:
-            request_data["token"] = fetch_secret_token_firestore() if usingProjectId != "local" else ""
+            request_data["token"] = fetch_secret_token_firestore()
             request_data = data_decrypt(request_data)
 
             for i in range(max_retry):
-                async with session.post(url, json=request_data, timeout=15) as response:
+                async with session.post(url, json=request_data, timeout=timeout) as response:
                     response = await response.text()
 
                     if (isinstance(response, str) and ("Rate exceeded" in response or "DDoSProtection" in response or "Too many requests" in response)):
@@ -127,23 +134,27 @@ def error_handler():
     return _error_handler
 
 
-def input_filter(f):
-    @wraps(f)
-    async def wrapper(request, *args, **kwargs):
+def input_filter(filtered=True):
+    def _input_filter(f):
+        @wraps(f)
+        async def wrapper(request, *args, **kwargs):
 
-        if request.method == "GET":
-            json_payload = dict(request.rel_url.query)
-            json_payload = filter_illegal_char(json_payload)
-        else:
-            try:
-                json_payload = await request.json()
-                json_payload = filter_illegal_char(json_payload)
-            except json.decoder.JSONDecodeError:
-                json_payload = {}
+            if request.method == "GET":
+                json_payload = dict(request.rel_url.query)
+                if filtered:
+                    json_payload = filter_illegal_char(json_payload)
+            else:
+                try:
+                    json_payload = await request.json()
+                    if filtered:
+                        json_payload = filter_illegal_char(json_payload)
+                except json.decoder.JSONDecodeError:
+                    json_payload = {}
 
-        args = filter_illegal_char({e: i for e, i in enumerate(args)})
-        args = [args[key] for key in sorted(args.keys())]
-        kwargs = filter_illegal_char(kwargs)
-        return await f(json_payload, *args, **kwargs)
+            args = filter_illegal_char({e: i for e, i in enumerate(args)})
+            args = [args[key] for key in sorted(args.keys())]
+            kwargs = filter_illegal_char(kwargs)
+            return await f(json_payload, *args, **kwargs)
 
-    return wrapper
+        return wrapper
+    return _input_filter

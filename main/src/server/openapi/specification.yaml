@@ -8,6 +8,7 @@ tags:
   - name: fee
   - name: bot
   - name: general
+  - name: log
   - name: api
   - name: pair
   - name: account
@@ -19,6 +20,7 @@ tags:
   - name: telegram
   - name: trade
   - name: referral
+  - name: notify
 security:
   - bearerAuth: []
 paths:
@@ -65,6 +67,83 @@ paths:
                 - message
         default:
           $ref: '#/components/responses/Unexpected'
+
+  /roilog:
+    post:
+      tags:
+      - log
+      summary: log roi from providers
+      operationId: main.src.controllers.v1.log.roilog
+      security: []
+      requestBody:
+        required: True
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  maxLength: 16
+                access_token:
+                  type: string
+                  maxLength: 32
+                roi:
+                  type: number
+                timestamp:
+                  type: number
+                  minimum: 0
+              required:
+                - provider
+                - access_token
+                - roi
+                - timestamp
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /rebatelog:
+    post:
+      tags:
+      - log
+      summary: log rebate from exchange
+      operationId: main.src.controllers.v1.log.rebatelog
+      security:
+        - bearerAuthBackendOnly: []
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /botlog:
+    post:
+      tags:
+      - log
+      summary: log bot stats in riusbot
+      operationId: main.src.controllers.v1.log.botlog
+      security:
+        - bearerAuthBackendOnly: []
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          $ref: '#/components/responses/Unexpected'
+
 
   /create_test_data:
     get:
@@ -263,6 +342,25 @@ paths:
                 symbol:
                   type: string
                   maxLength: 8
+                price:
+                  type: number
+                  minimum: 0
+                  nullable: true
+                amount:
+                  type: number
+                  minimum: 0
+                  nullable: true
+                position:
+                  type: number
+                  nullable: true
+                stop_loss:
+                  type: number
+                  minimum: 0
+                  nullable: true
+                take_profit:
+                  type: number
+                  minimum: 0
+                  nullable: true
                 action:
                   $ref: '#/components/schemas/Action'
               required:
@@ -358,7 +456,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 1000
+                    maximum: 2000
                   bots:
                     type: array
                     items:
@@ -467,7 +565,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 1000
+                    maximum: 2000
                   trades:
                     type: array
                     items:
@@ -1195,9 +1293,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Performance'
+                $ref: '#/components/schemas/Performance'
         default:
           $ref: '#/components/responses/Unexpected'
 
@@ -1820,6 +1916,61 @@ paths:
         default:
           $ref: '#/components/responses/Unexpected'
 
+  /get_user_notify:
+    get:
+      tags:
+      - notify
+      summary: get user notify config
+      operationId: main.src.controllers.v1.notify.get_user_notify
+      parameters:
+        - in: query
+          name: uid
+          schema:
+            type: string
+            maxLength: 28
+            minLength: 28
+          description: user ID
+          required: true
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notify'
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /update_user_notify:
+    patch:
+      tags:
+      - notify
+      summary: update user notify
+      operationId: main.src.controllers.v1.notify.update_user_notify
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  properties:
+                    config:
+                      $ref: '#/components/schemas/Notify'
+                - type: object
+                  properties:
+                    uid:
+                      type: string
+                      maxLength: 28
+                      minLength: 28
+                  required:
+                  - uid
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
   /get_user_referral_info:
     get:
       tags:
@@ -1914,7 +2065,7 @@ paths:
                   total_count:
                     type: integer
                     minimum: 0
-                    maximum: 1000
+                    maximum: 2000
                   referral_history:
                     type: array
                     items:
@@ -1950,6 +2101,18 @@ paths:
       operationId: main.src.controllers.v1.trade.clean_oco_order
       security:
         - bearerAuthBackendOnly: []
+      responses:
+        '200':
+          description: success
+        default:
+          $ref: '#/components/responses/Unexpected'
+
+  /clean_all_position:
+    delete:
+      tags:
+      - trade
+      summary: clean all position
+      operationId: main.src.controllers.v1.trade.clean_all_position
       responses:
         '200':
           description: success
@@ -2056,7 +2219,17 @@ components:
     TotalPage:
       type: integer
       minimum: 0
-      maximum: 100
+      maximum: 200
+    
+    Notify:
+      type: object
+      properties:
+        TG:
+          type: object
+        EMAIL:
+          type: object
+        SMS:
+          type: object
 
     ReferralHistory:
       type: object
@@ -2149,6 +2322,8 @@ components:
         - BUY
         - SELL
         - null
+        - buy
+        - sell
 
     BotStatus:
       type: string
@@ -2306,6 +2481,9 @@ components:
           type: string
           maxLength: 64
           nullable: true
+        testnet:
+          type: boolean
+          default: false
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:
@@ -2329,6 +2507,9 @@ components:
           type: string
           maxLength: 64
           nullable: true
+        testnet:
+          type: boolean
+          default: false
         exchange:
           $ref: '#/components/schemas/Exchange'
         subaccount:
@@ -2462,15 +2643,18 @@ components:
     Performance:
       type: object
       properties:
-        date:
-          type: string
-          maxLength: 10
-          example:
-            value: "2022-01-01"
         result:
           type: object
         channel:
           $ref: '#/components/schemas/Channel'
+        trades:
+          type: array
+          items:
+            type: object
+      required:
+        - result
+        - channel
+        - trades
 
     Transaction:
       type: object
@@ -2543,6 +2727,13 @@ components:
         tp_order:
           type: string
           nullable: True
+        balance:
+          type: number
+          nullable: True
+        quantity:
+          type: number
+          nullable: True
+          minimum: 0
       required:
       - message
       - status

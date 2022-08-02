@@ -20,6 +20,7 @@ class Api(BaseModel):
     password = fields.CharField(400, null=True)
     exchange = fields.CharEnumField(Exchange, max_length=16, null=False)
     subaccount = fields.CharField(32, null=True)
+    testnet = fields.BooleanField(null=False, default=False)
 
     class Meta:
         table = "api"
@@ -28,7 +29,7 @@ class Api(BaseModel):
         ordering = ["-created_at", "id"]
 
     class PydanticMeta:
-        exclude = ["created_at", "updated_at", "is_del", "user", "api_secret", "user_id", "password"]
+        exclude = ["created_at", "updated_at", "is_del", "user", "api_secret", "user_id", "password", "testnet"]
 
     def __str__(self):
         return f"Api [{self.id}] {self.api_key} {self.api_secret} {self.subaccount}"

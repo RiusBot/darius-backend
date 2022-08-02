@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def execute_bot_signal(request: dict):
     logger.info("Start bot signal execute")
     asyncio.create_task(_execute_bot_signal(**request))
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def execute_webhook_signal(request, bot_id: int):
     logger.info(f"Start webhook signal {bot_id}")
     request["bot_id"] = bot_id
@@ -25,11 +25,17 @@ async def execute_webhook_signal(request, bot_id: int):
     request["recieve_timestamp"] = datetime.now().timestamp()
     request["content"] = ""
     request["channel"] = "WEBHOOK"
+    request["action"] = request["action"].upper()
+
+    request['entry'] = request.pop('price', None)
+    request['quantity'] = request.pop('position', None)
+    if request['quantity'] != 0:
+        request['quantity'] = None
     asyncio.create_task(_execute_webhook_signal(**request))
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_bots(request: dict):
     uid = request["uid"]
     logger.info(f"get user {uid} bots")
@@ -38,7 +44,7 @@ async def get_user_bots(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def get_user_history_bots(request: dict):
     uid = request["uid"]
     logger.info(f"Get user {uid} history bots")
@@ -49,7 +55,7 @@ async def get_user_history_bots(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def create_user_bot(request: dict):
     uid = request["uid"]
     logger.info(f"Create user {uid} bot")
@@ -60,7 +66,7 @@ async def create_user_bot(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def update_user_bot(request: dict):
     uid = request["uid"]
     bot_id = request["bot_id"]
@@ -71,7 +77,7 @@ async def update_user_bot(request: dict):
 
 
 @error_handler()
-@input_filter
+@input_filter()
 async def delete_user_bot(request: dict):
     uid = request["uid"]
     bot_id = request["bot_id"]
